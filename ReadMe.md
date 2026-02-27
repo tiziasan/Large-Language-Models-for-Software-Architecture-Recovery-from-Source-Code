@@ -11,7 +11,7 @@ The **Prompts** folder contains a file collecting all prompts used in the study 
 The **Task 1** folder is structured into three subfolders:
 
 * **code**: contains one subfolder for each analyzed sample, named `T1_sample_X`. Each of these subfolders includes the ground truth file, the code snippet provided as input to the LLM, and the PlantUML files generated as output, both in textual format and already rendered as PNG images.
-* **analysis**: contains the analysis results for Task 1.
+* **analysis**: contains the analysis results for Task 1 and the analysis results from the MDRE-LLM tool coparison.
 * **plot**: contains the Python scripts and the related files used to generate the plots reported in the paper.
 
 ## Task 2
