@@ -1,0 +1,79 @@
+@startuml
+top to bottom direction
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title Documentation Repository Architecture (Static Site Generation)
+
+package "Source Content" {
+    package "Code Examples" {
+        component "Quickstarts\n(Go, JS, Python)" as Quickstarts
+        component "Tutorials\n(TypeScript)" as Tutorials
+        component "Samples" as Samples
+    }
+
+    package "External Definitions" {
+        file "GraphQL Schemas\n(Local or Sibling Repo)" as ExternalSchemas
+    }
+
+    package "Documentation Assets" {
+        component "Diagram Sources\n(.plantuml)" as PlantUMLSources
+        component "Theme & Scripts\n(Hugo Book Theme)" as Theme
+    }
+}
+
+package "Build & Transformation Scripts" {
+    component "extract.js\n(Node.js)" as Extractor
+    note right of Extractor
+        Parses source files for
+        CODE:BEGIN / CODE:END blocks
+    end note
+
+    component "graphql.js\n(Node.js)" as SchemaParser
+    note right of SchemaParser
+        Transforms GraphQL SDL
+        to JSON representation
+    end note
+
+    component "render.sh\n(Shell)" as Renderer
+}
+
+package "Generated Data" {
+    file "data/examples.json" as ExamplesData
+    file "data/eos/graphql.json" as SchemaData
+    file "Static Images\n(PNG)" as Images
+}
+
+package "Site Assembly & Distribution" {
+    component "Hugo\n(Static Site Generator)" as Hugo
+    component "Netlify\n(CI/CD)" as Netlify
+}
+
+' Relationships
+
+' Extraction Flow
+Quickstarts --> Extractor : "Input"
+Tutorials --> Extractor : "Input"
+Samples --> Extractor : "Input"
+Extractor --> ExamplesData : "Generates"
+
+' Schema Processing Flow
+ExternalSchemas --> SchemaParser : "Input"
+SchemaParser --> SchemaData : "Generates"
+
+' Diagram Rendering
+PlantUMLSources --> Renderer : "Input"
+Renderer --> Images : "Generates"
+
+' Site Generation
+ExamplesData --> Hugo : "Data Source"
+SchemaData --> Hugo : "Data Source"
+Images --> Hugo : "Static Asset"
+Theme --> Hugo : "Layout & Logic"
+
+' Orchestration (based on netlify.toml)
+Netlify --> Extractor : "Executes (via npm script)"
+Netlify --> Hugo : "Executes Build"
+
+@enduml

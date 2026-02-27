@@ -1,0 +1,70 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title High-Level Architecture: FFunc (FastCGI Function Framework)
+
+actor "Web Server\n(Nginx)" as WebServer
+
+package "FFunc Application Process" {
+
+    package "Framework Core" {
+        component "Master Controller" as Master
+        note bottom of Master
+            - Entry point & daemonization
+            - Signal handling
+            - Process lifecycle (fork/spawn)
+        end note
+
+        component "Worker Runtime" as Worker
+        note bottom of Worker
+            - Thread pool management
+            - FastCGI socket management
+            - Request loop (Accept_r)
+        end note
+
+        component "Request Dispatcher" as Dispatcher
+        note bottom of Dispatcher
+            - Symbol table lookup (dlsym)
+            - Mapping "FN_HANDLER" to function pointers
+            - Session context creation
+        end note
+
+        component "Memory & I/O Infrastructure" as Infra
+        note bottom of Infra
+            - Custom Memory Pooling
+            - Request Body/Query parsing
+            - Output buffering
+        end note
+    }
+
+    package "User Implementation" {
+        component "App Configuration" as AppConfig
+        note bottom of AppConfig
+            - Port/Thread settings
+            - Function name registration
+        end note
+
+        component "Business Handlers" as Handlers
+        note bottom of Handlers
+            - Specific logic (e.g., getProfile)
+            - Compiles into binary
+        end note
+    }
+}
+
+' Interactions
+WebServer <==> Worker : FastCGI Protocol\n(TCP/Unix Socket)
+
+Master .> AppConfig : Invokes for startup settings
+Master --> Worker : Spawns processes
+
+Worker --> Dispatcher : Delegates request processing
+Dispatcher --> Infra : Initializes Session & Pool
+
+Dispatcher ..> Handlers : Dynamically invokes\n(Runtime Linking)
+
+Handlers --> Infra : Allocates memory\nReads/Writes data
+
+@enduml

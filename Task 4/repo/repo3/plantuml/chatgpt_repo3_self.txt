@@ -1,0 +1,38 @@
+@startuml
+title High-Level Architecture (evidence-based, minimal assumptions)
+
+skinparam componentStyle rectangle
+hide stereotype
+
+package "Build & CI" {
+  [CMake Tooling\n(cmake/*.cmake)] as cmake
+  [Code Coverage Config\n(codecov.yml)] as codecov
+}
+
+package "Deployment" {
+  [Deployment Script\n(deploy.sh)] as deploy
+}
+
+package "Libraries" {
+  package "httpcl (HTTP Client Library)" {
+    [HTTP Client API\n(libs/httpcl/include/httpcl/http-client.hpp)] as http_client
+    [HTTP Client Settings\n(libs/httpcl/include/httpcl/http-settings.hpp)] as http_settings
+  }
+
+  package "http (HTTP Support Library)" {
+    [HTTP Library\n(libs/http/*)] as http_lib
+  }
+}
+
+' Inferred strictly from repository structure: httpcl is its own library, and libs/http exists as a separate library.
+' The dominant and minimally-assumed relationship is that the HTTP client library uses some HTTP support library.
+
+http_client --> http_settings : configured by
+http_client --> http_lib : uses (library dependency)
+
+cmake ..> http_client : builds
+cmake ..> http_lib : builds
+codecov ..> cmake : coverage setup
+deploy ..> cmake : invokes build/deploy steps
+
+@enduml

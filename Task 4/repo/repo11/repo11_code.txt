@@ -1,0 +1,3419 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/*.png, **/*.jpg, **/*.jpeg, **/*.gif, **/*.svg, **/*.pdf, **/*.jar, **/*.exe, **/*.dll, **/*.txt, **/*.json, **/*.md, **/*.html, **/*.css, **/*.npy, **/*.pickle, **/*.pb, **/*.index, node_modules/**/*, **/*/LICENSE/**/*, LICENSEHEADER, LICENSE, .github, **/*/test/**/*, data/**/*, docs/**/*, build/**/*, dist/**/*, samples/**/*, config/**/*, doc/spec/**/*, gradle/wrapper/**/*, native.handler/**/*, **/*.scss, test/**/*, test-sol/**/*, setup, index.rst, .gitignore, .solcover.js, .soliumignore, .travis.yaml, .travis.yml, .vs/slnx.sqlite, tests/**/*, **/*/cnn/**/*
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+codeCoverage.sh
+contracts/IMatryxToken.sol
+contracts/IToken.sol
+contracts/LibCommit.sol
+contracts/LibGlobals.sol
+contracts/LibPlatform.sol
+contracts/LibTournament.sol
+contracts/MatryxCommit.sol
+contracts/MatryxForwarder.sol
+contracts/MatryxPlatform.sol
+contracts/MatryxSystem.sol
+contracts/MatryxToken/BasicToken.sol
+contracts/MatryxToken/ERC20.sol
+contracts/MatryxToken/ERC20Basic.sol
+contracts/MatryxToken/Haltable.sol
+contracts/MatryxToken/lifecycle/Migrations.sol
+contracts/MatryxToken/math/SafeMath.sol
+contracts/MatryxToken/MatryxToken.sol
+contracts/MatryxToken/MintableToken.sol
+contracts/MatryxToken/ownership/Ownable.sol
+contracts/MatryxToken/ownership/UpgradeAgent.sol
+contracts/MatryxToken/ReleasableToken.sol
+contracts/MatryxToken/StandardToken.sol
+contracts/MatryxToken/UpgradeableToken.sol
+contracts/MatryxTournament.sol
+contracts/Migrations.sol
+contracts/Ownable.sol
+contracts/SafeMath.sol
+contracts/test-contracts/ICommitUpgradeTransition.sol
+contracts/test-contracts/LibCommit2.sol
+contracts/test-contracts/LibCommitUpgradeTransition.sol
+contracts/test-contracts/LibPlatform2.sol
+contracts/test-contracts/LibTournament2.sol
+ganache-local.sh
+gas-parser/index.js
+generate-setup/generate.js
+generate-setup/parse.js
+generate-setup/setup-commands
+generate-setup/setup-template
+migrations/1_initial_migration.js
+migrations/2_deployToken.js
+migrations/2_migrate_system.js
+migrations/3_migrate_contracts.js
+migrations/4_migrate_libraries.js
+migrations/5_migrate_testing.js
+truffle-config.js
+truffle/benchmark.js
+truffle/leAutomatedPreload.js
+truffle/network.js
+truffle/README
+truffle/test.js
+truffle/utils.js
+
+================================================================
+Files
+================================================================
+
+================
+File: codeCoverage.sh
+================
+rm -rf ./build
+rm -rf ./coverage
+./node_modules/.bin/solidity-coverage
+cd coverage
+open index.html
+
+================
+File: contracts/IMatryxToken.sol
+================
+pragma solidity ^0.5.7;
+interface IMatryxToken {
+  function balanceOf(address who) external view returns (uint256);
+  function allowance(address owner, address spender) external view returns (uint256);
+  function transferFrom(address from, address to, uint256 value) external returns (bool);
+  function transfer(address to, uint256 value) external returns (bool);
+  function approve(address spender, uint256 value) external returns (bool);
+  event Transfer(address indexed from, address indexed to, uint256 value);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+================
+File: contracts/IToken.sol
+================
+pragma solidity ^0.5.7;
+interface IToken {
+    function balanceOf(address who) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function transfer(address to, uint256 value) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
+    function upgrade(uint256 value) external;
+    function mint(address to, uint256 value) external;
+    function finishMinting() external;
+}
+
+================
+File: contracts/LibCommit.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./SafeMath.sol";
+import "./MatryxPlatform.sol";
+import "./MatryxForwarder.sol";
+import "./MatryxTournament.sol";
+library LibCommit {
+    using SafeMath for uint256;
+    event GroupMemberAdded(bytes32 indexed commitHash, address indexed user);
+    event CommitClaimed(bytes32 commitHash);
+    event CommitCreated(bytes32 indexed parentHash, bytes32 commitHash, address indexed creator, bool indexed isFork);
+    struct Commit {
+        address owner;
+        uint256 timestamp;
+        bytes32 groupHash;
+        bytes32 commitHash;
+        string content;
+        uint256 value;
+        uint256 ownerTotalValue;
+        uint256 totalValue;
+        uint256 height;
+        bytes32 parentHash;
+    }
+    struct CommitWithdrawalStats {
+        uint256 totalWithdrawn;
+        mapping(address=>uint256) amountWithdrawn;
+    }
+    struct Group {
+        address[] members;
+        mapping(address=>bool) hasMember;
+    }
+    function getCommit(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash
+    )
+        public
+        view
+        returns (Commit memory commit)
+    {
+        return data.commits[commitHash];
+    }
+    function getBalance(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return data.commitBalance[commitHash];
+    }
+    function getCommitByContent(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        string memory content
+    )
+        public
+        view
+        returns (Commit memory commit)
+    {
+        bytes32 lookupHash = keccak256(abi.encodePacked(content));
+        bytes32 commitHash = data.commitHashes[lookupHash];
+        return data.commits[commitHash];
+    }
+    function getGroupMembers(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash
+    )
+        public
+        view
+        returns (address[] memory)
+    {
+        bytes32 groupHash = data.commits[commitHash].groupHash;
+        return data.groups[groupHash].members;
+    }
+    function getSubmissionsForCommit(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash
+    )
+        public
+        view
+        returns (bytes32[] memory)
+    {
+        return data.commitToSubmissions[commitHash];
+    }
+    function _canUseMatryx(
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        address user
+    )
+        internal
+        returns (bool)
+    {
+        if (data.blacklist[user]) return false;
+        if (data.whitelist[user]) return true;
+        if (IToken(info.token).balanceOf(user) > 0) {
+            data.whitelist[user] = true;
+            return true;
+        }
+        return false;
+    }
+    function _createGroup(
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash,
+        address user
+    )
+        internal
+        returns (bytes32)
+    {
+        bytes32 groupHash = keccak256(abi.encodePacked(commitHash));
+        data.groups[groupHash].hasMember[user] = true;
+        data.groups[groupHash].members.push(user);
+        emit GroupMemberAdded(commitHash, user);
+        return groupHash;
+    }
+    function addGroupMember(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash,
+        address user
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        require(data.commits[commitHash].owner != address(0), "Invalid commit");
+        bytes32 groupHash = data.commits[commitHash].groupHash;
+        require(data.groups[groupHash].hasMember[sender], "Only group members can add a new member");
+        require(!data.groups[groupHash].hasMember[user], "User is already a group member");
+        data.groups[groupHash].hasMember[user] = true;
+        data.groups[groupHash].members.push(user);
+        emit GroupMemberAdded(commitHash, user);
+    }
+    function addGroupMembers(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash,
+        address[] memory users
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        require(data.commits[commitHash].owner != address(0), "Invalid commit");
+        bytes32 groupHash = data.commits[commitHash].groupHash;
+        require(data.groups[groupHash].hasMember[sender], "Only group members can add a new member");
+        for(uint256 i = 0; i < users.length; i++) {
+            address user = users[i];
+            if (data.groups[groupHash].hasMember[user]) continue;
+            data.groups[groupHash].hasMember[user] = true;
+            data.groups[groupHash].members.push(user);
+            emit GroupMemberAdded(commitHash, user);
+        }
+    }
+    function claimCommit(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        require(data.commitClaims[commitHash] == uint256(0), "Commit hash already claimed");
+        data.commitClaims[commitHash] = now;
+        emit CommitClaimed(commitHash);
+    }
+    function createCommit(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        bytes32 parentHash,
+        bool isFork,
+        bytes32 salt,
+        string memory content,
+        uint256 value
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        bytes32 commitHash = keccak256(abi.encodePacked(sender, salt, content));
+        _createCommit(sender, info, data, parentHash, commitHash, isFork, content, value);
+    }
+    function createSubmission(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        address tAddress,
+        string memory subContent,
+        bytes32 parentHash,
+        bool isFork,
+        bytes32 salt,
+        string memory commitContent,
+        uint256 value
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        bytes32 commitHash = keccak256(abi.encodePacked(sender, salt, commitContent));
+        _createCommit(sender, info, data, parentHash, commitHash, isFork, commitContent, value);
+        LibTournament.createSubmission(tAddress, sender, info, data, subContent, commitHash);
+    }
+    function _createCommit(
+        address owner,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        bytes32 parentHash,
+        bytes32 commitHash,
+        bool isFork,
+        string memory content,
+        uint256 value
+    )
+        internal
+    {
+        require(value > 0, "Cannot create a zero-value commit");
+        require(data.commits[commitHash].owner == address(0), "Commit already exists");
+        require(parentHash == bytes32(0) || data.commits[parentHash].owner != address(0), "Parent must be null or real commit");
+        if (parentHash != bytes32(0)) {
+            require(data.commits[parentHash].height < 5000, "Commit chain limit reached");
+        }
+        uint256 claimTime = data.commitClaims[commitHash];
+        require(claimTime > 0 && claimTime < now, "Commit must be claimed in a previous block");
+        bytes32 lookupHash = keccak256(abi.encodePacked(content));
+        require(data.commitHashes[lookupHash] == bytes32(0), "Commit already created from content");
+        bytes32 groupHash;
+        if (isFork || parentHash == bytes32(0)) {
+            groupHash = _createGroup(data, commitHash, owner);
+        } else {
+            groupHash = data.commits[parentHash].groupHash;
+            require(data.groups[groupHash].hasMember[owner], "Must be a part of the group");
+        }
+        uint256 ownerTotalValue = value;
+        if (parentHash != bytes32(0)) {
+            bytes32 latest = _getLatestCommitForUser(data, parentHash, owner);
+            if (latest != bytes32(0)) {
+                ownerTotalValue = ownerTotalValue.add(data.commits[latest].ownerTotalValue);
+            }
+        }
+        Commit storage commit = data.commits[commitHash];
+        commit.owner = owner;
+        commit.timestamp = claimTime;
+        commit.groupHash = groupHash;
+        commit.commitHash = commitHash;
+        commit.content = content;
+        commit.value = value;
+        commit.ownerTotalValue = ownerTotalValue;
+        commit.totalValue = data.commits[parentHash].totalValue.add(value);
+        commit.height = data.commits[parentHash].height + 1;
+        commit.parentHash = parentHash;
+        data.commitHashes[lookupHash] = commitHash;
+        if (isFork) {
+            require(parentHash != bytes32(0), "Fork must have parent");
+            uint256 totalValue = data.commits[parentHash].totalValue;
+            data.totalBalance = data.totalBalance.add(totalValue);
+            data.commitBalance[parentHash] = data.commitBalance[parentHash].add(totalValue);
+            require(IToken(info.token).transferFrom(owner, address(this), totalValue), "Transfer failed");
+        }
+        emit CommitCreated(parentHash, commitHash, owner, isFork);
+    }
+    function getAvailableRewardForUser(
+        address,
+        address sender,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash,
+        address user
+    )
+        public
+        view
+        returns (uint256)
+    {
+        bytes32 latestUserCommit = _getLatestCommitForUser(data, commitHash, user);
+        if (latestUserCommit == bytes32(0)) return 0;
+        CommitWithdrawalStats storage stats = data.commitWithdrawalStats[commitHash];
+        uint256 userValue = data.commits[latestUserCommit].ownerTotalValue;
+        uint256 totalValue = data.commits[commitHash].totalValue;
+        uint256 balance = data.commitBalance[commitHash];
+        uint256 totalBalance = balance.add(stats.totalWithdrawn);
+        uint256 userShare = totalBalance.mul(userValue).div(totalValue).sub(stats.amountWithdrawn[user]);
+        return userShare;
+    }
+    function withdrawAvailableReward(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        require(data.commits[commitHash].owner != address(0), "Commit does not exist");
+        uint256 userShare = getAvailableRewardForUser(sender, sender, data, commitHash, sender);
+        require(userShare > 0, "No reward available");
+        CommitWithdrawalStats storage stats = data.commitWithdrawalStats[commitHash];
+        data.totalBalance = data.totalBalance.sub(userShare);
+        data.commitBalance[commitHash] = data.commitBalance[commitHash].sub(userShare);
+        stats.totalWithdrawn = stats.totalWithdrawn.add(userShare);
+        stats.amountWithdrawn[sender] = stats.amountWithdrawn[sender].add(userShare);
+        require(IToken(info.token).transfer(sender, userShare), "Transfer failed");
+    }
+    function _getLatestCommitForUser(
+        MatryxPlatform.Data storage data,
+        bytes32 commitHash,
+        address user
+    )
+        internal
+        view
+        returns (bytes32)
+    {
+        Commit storage c = data.commits[commitHash];
+        while (true) {
+            if (c.owner == user) return c.commitHash;
+            if (c.parentHash == bytes32(0)) return bytes32(0);
+            c = data.commits[c.parentHash];
+        }
+    }
+}
+
+================
+File: contracts/LibGlobals.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+library LibGlobals {
+    struct o_uint256 {
+        bool exists;
+        uint256 value;
+    }
+    enum RoundState { NotYetOpen, Unfunded, Open, InReview, HasWinners, Closed, Abandoned }
+    enum TournamentState { NotYetOpen, OnHold, Open, Closed, Abandoned}
+    enum SelectWinnerAction { DoNothing, StartNextRound, CloseTournament }
+}
+
+================
+File: contracts/LibPlatform.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./SafeMath.sol";
+import "./LibGlobals.sol";
+import "./IToken.sol";
+import "./MatryxSystem.sol";
+import "./MatryxCommit.sol";
+import "./MatryxTournament.sol";
+library LibPlatform {
+    using SafeMath for uint256;
+    event TournamentCreated(address indexed tournament, address indexed creator);
+    event TournamentBountyAdded(address indexed tournament, address indexed donor, uint256 amount);
+    function _canUseMatryx(
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        address user
+    )
+        internal
+        returns (bool)
+    {
+        if (data.blacklist[user]) return false;
+        if (data.whitelist[user]) return true;
+        if (IToken(info.token).balanceOf(user) > 0) {
+            data.whitelist[user] = true;
+            return true;
+        }
+        return false;
+    }
+    function getInfo(
+        address,
+        address,
+        MatryxPlatform.Info storage info
+    )
+        public
+        view
+        returns (MatryxPlatform.Info memory)
+    {
+        return info;
+    }
+    function isTournament(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        address tAddress
+    )
+        public
+        view
+        returns (bool)
+    {
+        return data.tournaments[tAddress].info.owner != address(0);
+    }
+    function isCommit(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 cHash
+    )
+        public
+        view
+        returns (bool)
+    {
+        return data.commits[cHash].owner != address(0);
+    }
+    function isSubmission(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 sHash
+    )
+        public
+        view
+        returns (bool)
+    {
+        return data.submissions[sHash].tournament != address(0);
+    }
+    function getTotalBalance(
+        address,
+        address,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return data.totalBalance;
+    }
+    function getTournamentCount(
+        address,
+        address,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return data.allTournaments.length;
+    }
+    function getTournaments(
+        address,
+        address,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (address[] memory)
+    {
+        return data.allTournaments;
+    }
+    function getSubmission(
+        address,
+        address,
+        MatryxPlatform.Data storage data,
+        bytes32 submissionHash
+    )
+        external
+        view
+        returns (LibTournament.SubmissionData memory)
+    {
+        return data.submissions[submissionHash];
+    }
+    function setUserBlacklisted(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        address user,
+        bool isBlacklisted
+    )
+        public
+    {
+        require(sender == info.owner, "Must be Platform owner");
+        data.blacklist[user] = isBlacklisted;
+    }
+    function createTournament(
+        address,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        LibTournament.TournamentDetails memory tDetails,
+        LibTournament.RoundDetails memory rDetails
+    )
+        public
+        returns (address)
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        require(tDetails.bounty > 0, "Tournament bounty must be greater than 0");
+        require(rDetails.bounty <= tDetails.bounty, "Round bounty cannot exceed Tournament bounty");
+        uint256 version = IMatryxSystem(info.system).getVersion();
+        address tAddress = address(new MatryxTournament(version, info.system));
+        IMatryxSystem(info.system).setContractType(tAddress, uint256(LibSystem.ContractType.Tournament));
+        data.allTournaments.push(tAddress);
+        LibTournament.TournamentData storage tournament = data.tournaments[tAddress];
+        tournament.info.version = version;
+        tournament.info.owner = sender;
+        tournament.details = tDetails;
+        data.totalBalance = data.totalBalance.add(tDetails.bounty);
+        data.tournamentBalance[tAddress] = tDetails.bounty;
+        require(IToken(info.token).transferFrom(sender, address(this), tDetails.bounty), "Transfer failed");
+        LibTournament.createRound(tAddress, address(this), info, data, rDetails);
+        emit TournamentCreated(tAddress, sender);
+        emit TournamentBountyAdded(tAddress, sender, tDetails.bounty);
+        return tAddress;
+    }
+}
+
+================
+File: contracts/LibTournament.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./SafeMath.sol";
+import "./LibGlobals.sol";
+import "./MatryxSystem.sol";
+import "./MatryxPlatform.sol";
+import "./MatryxForwarder.sol";
+import "./IToken.sol";
+import "./MatryxCommit.sol";
+library LibTournament {
+    using SafeMath for uint256;
+    uint256 constant MIN_ROUND_LENGTH = 1 hours;
+    uint256 constant MAX_ROUND_LENGTH = 365 days;
+    event TournamentUpdated(address indexed tournament);
+    event TournamentBountyAdded(address indexed tournament, address indexed donor, uint256 amount);
+    event RoundCreated(address indexed tournament, uint256 roundIndex);
+    event RoundUpdated(address indexed tournament, uint256 roundIndex);
+    event RoundWinnersSelected(address indexed tournament, uint256 roundIndex);
+    event SubmissionCreated(address indexed tournament, bytes32 submissionHash, address indexed creator);
+    event SubmissionRewarded(address indexed tournament, bytes32 submissionHash);
+    struct TournamentInfo {
+        uint256 version;
+        address owner;
+    }
+    struct TournamentDetails {
+        string content;
+        uint256 bounty;
+        uint256 entryFee;
+    }
+    struct TournamentData {
+        LibTournament.TournamentInfo info;
+        LibTournament.TournamentDetails details;
+        LibTournament.RoundData[] rounds;
+        mapping(address=>LibGlobals.o_uint256) entryFeePaid;
+        address[] allEntrants;
+        uint256 totalEntryFees;
+        mapping(address=>bool) hasWithdrawn;
+        uint256 numWithdrawn;
+    }
+    struct RoundInfo {
+        bytes32[] submissions;
+        uint256 submitterCount;
+        LibTournament.WinnersData winners;
+        bool closed;
+    }
+    struct RoundDetails {
+        uint256 start;
+        uint256 duration;
+        uint256 review;
+        uint256 bounty;
+    }
+    struct WinnersData {
+        bytes32[] submissions;
+        uint256[] distribution;
+        uint256 action;
+    }
+    struct RoundData {
+        LibTournament.RoundInfo info;
+        LibTournament.RoundDetails details;
+        mapping(address=>bool) hasSubmitted;
+    }
+    struct SubmissionData {
+        address tournament;
+        uint256 roundIndex;
+        bytes32 commitHash;
+        string content;
+        uint256 reward;
+        uint256 timestamp;
+    }
+    function getInfo(
+        address self,
+        address,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (LibTournament.TournamentInfo memory)
+    {
+        return data.tournaments[self].info;
+    }
+    function getDetails(
+        address self,
+        address,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (LibTournament.TournamentDetails memory)
+    {
+        return data.tournaments[self].details;
+    }
+    function getBalance(
+        address self,
+        address,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return data.tournamentBalance[self];
+    }
+    function getState(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (uint256)
+    {
+        uint256 currentRoundIndex = getCurrentRoundIndex(self, self, data);
+        uint256 roundState = getRoundState(self, sender, data, currentRoundIndex);
+        if (roundState >= uint256(LibGlobals.RoundState.Unfunded) &&
+            roundState <= uint256(LibGlobals.RoundState.HasWinners)
+        ) {
+            return uint256(LibGlobals.TournamentState.Open);
+        }
+        else if (roundState == uint256(LibGlobals.RoundState.NotYetOpen)) {
+            if (currentRoundIndex != 0) {
+                return uint256(LibGlobals.TournamentState.OnHold);
+            }
+            return uint256(LibGlobals.TournamentState.NotYetOpen);
+        }
+        else if (roundState == uint256(LibGlobals.RoundState.Closed)) {
+            return uint256(LibGlobals.TournamentState.Closed);
+        }
+        return uint256(LibGlobals.TournamentState.Abandoned);
+    }
+    function getRoundState(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data,
+        uint256 roundIndex
+    )
+        public
+        view
+        returns (uint256)
+    {
+        LibTournament.RoundData storage round = data.tournaments[self].rounds[roundIndex];
+        if (now < round.details.start) {
+            return uint256(LibGlobals.RoundState.NotYetOpen);
+        }
+        else if (now < round.details.start.add(round.details.duration)) {
+            if (round.details.bounty == 0) {
+                return uint256(LibGlobals.RoundState.Unfunded);
+            }
+            return uint256(LibGlobals.RoundState.Open);
+        }
+        else if (now < round.details.start.add(round.details.duration).add(round.details.review)) {
+            if (round.info.closed) {
+                return uint256(LibGlobals.RoundState.Closed);
+            }
+            else if (round.info.submissions.length == 0) {
+                return uint256(LibGlobals.RoundState.Abandoned);
+            }
+            else if (round.info.winners.submissions.length > 0) {
+                return uint256(LibGlobals.RoundState.HasWinners);
+            }
+            return uint256(LibGlobals.RoundState.InReview);
+        }
+        else if (round.info.winners.submissions.length > 0) {
+            return uint256(LibGlobals.RoundState.Closed);
+        }
+        return uint256(LibGlobals.RoundState.Abandoned);
+    }
+    function getCurrentRoundIndex(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (uint256)
+    {
+        LibTournament.RoundData[] storage rounds = data.tournaments[self].rounds;
+        uint256 numRounds = rounds.length;
+        if (numRounds > 1 && getRoundState(self, sender, data, numRounds-2) == uint256(LibGlobals.RoundState.HasWinners)) {
+            return numRounds - 2;
+        } else {
+            return numRounds - 1;
+        }
+    }
+    function getRoundInfo(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data,
+        uint256 roundIndex
+    )
+        public
+        view
+        returns (LibTournament.RoundInfo memory)
+    {
+        return data.tournaments[self].rounds[roundIndex].info;
+    }
+    function getRoundDetails(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data,
+        uint256 roundIndex
+    )
+        public
+        view
+        returns (LibTournament.RoundDetails memory)
+    {
+        return data.tournaments[self].rounds[roundIndex].details;
+    }
+    function getSubmissionCount(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data
+    )
+        public
+        view
+        returns (uint256)
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        LibTournament.RoundData[] storage rounds = data.tournaments[self].rounds;
+        uint256 count = 0;
+        for (uint256 i = 0; i < rounds.length; i++) {
+            count += tournament.rounds[i].info.submissions.length;
+        }
+        return count;
+    }
+    function getEntryFeePaid(
+        address self,
+        address,
+        MatryxPlatform.Data storage data,
+        address user
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return data.tournaments[self].entryFeePaid[user].value;
+    }
+    function isEntrant(
+        address self,
+        address,
+        MatryxPlatform.Data storage data,
+        address user
+    )
+        public
+        view
+        returns (bool)
+    {
+        return data.tournaments[self].entryFeePaid[user].exists;
+    }
+    function _canUseMatryx(
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        address user
+    )
+        internal
+        returns (bool)
+    {
+        if (data.blacklist[user]) return false;
+        if (data.whitelist[user]) return true;
+        if (IToken(info.token).balanceOf(user) > 0) {
+            data.whitelist[user] = true;
+            return true;
+        }
+        return false;
+    }
+    function enter(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data
+    )
+        public
+    {
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        uint256 entryFee = tournament.details.entryFee;
+        require(sender != tournament.info.owner, "Cannot enter own Tournament");
+        require(!tournament.entryFeePaid[sender].exists, "Cannot enter Tournament more than once");
+        require(getState(self, sender, data) < uint256(LibGlobals.TournamentState.Closed), "Cannot enter closed or abandoned Tournament");
+        data.totalBalance = data.totalBalance.add(entryFee);
+        require(IToken(info.token).transferFrom(sender, address(this), entryFee), "Transfer failed");
+        tournament.entryFeePaid[sender].exists = true;
+        tournament.entryFeePaid[sender].value = entryFee;
+        tournament.totalEntryFees = tournament.totalEntryFees.add(entryFee);
+        tournament.allEntrants.push(sender);
+    }
+    function exit(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(tournament.entryFeePaid[sender].exists, "Must be entrant");
+        uint256 entryFeePaid = tournament.entryFeePaid[sender].value;
+        tournament.entryFeePaid[sender].exists = false;
+        if (entryFeePaid > 0) {
+            tournament.totalEntryFees = tournament.totalEntryFees.sub(entryFeePaid);
+            tournament.entryFeePaid[sender].value = 0;
+            data.totalBalance = data.totalBalance.sub(entryFeePaid);
+            require(IToken(info.token).transfer(sender, entryFeePaid), "Transfer failed");
+        }
+    }
+    function createRound(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        LibTournament.RoundDetails memory rDetails
+    )
+        public
+        returns (uint256)
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == address(this), "Must be called by platform");
+        require(data.tournamentBalance[self] >= rDetails.bounty, "Insufficient funds for Round");
+        require(rDetails.duration >= MIN_ROUND_LENGTH, "Round too short");
+        require(rDetails.duration <= MAX_ROUND_LENGTH, "Round too long");
+        LibTournament.RoundData memory round;
+        round.details = rDetails;
+        if (rDetails.start < now) {
+            round.details.start = now;
+        }
+        tournament.rounds.push(round);
+        uint256 roundIndex = tournament.rounds.length - 1;
+        emit RoundCreated(self, roundIndex);
+        return roundIndex;
+    }
+    function createSubmission(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        string memory content,
+        bytes32 commitHash
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        LibCommit.Commit storage commit = data.commits[commitHash];
+        require(_canUseMatryx(info, data, sender), "Must be allowed to use Matryx");
+        require(tournament.entryFeePaid[sender].exists, "Must have paid entry fee");
+        require(commit.owner == sender, "Must be owner of commit");
+        uint256 index = getCurrentRoundIndex(self, sender, data);
+        require(getRoundState(self, sender, data, index) == uint256(LibGlobals.RoundState.Open), "Round must be Open");
+        bytes32 submissionHash = keccak256(abi.encodePacked(self, commitHash, index));
+        require(data.submissions[submissionHash].timestamp == 0, "Commit has already been submitted to this round");
+        LibTournament.RoundData storage round = tournament.rounds[index];
+        LibTournament.SubmissionData storage submission = data.submissions[submissionHash];
+        submission.tournament = self;
+        submission.roundIndex = index;
+        submission.commitHash = commitHash;
+        submission.content = content;
+        submission.timestamp = now;
+        data.commitToSubmissions[commitHash].push(submissionHash);
+        round.info.submissions.push(submissionHash);
+        if (!round.hasSubmitted[sender]) {
+            round.hasSubmitted[sender] = true;
+            round.info.submitterCount += 1;
+        }
+        emit SubmissionCreated(self, submissionHash, sender);
+    }
+    function updateDetails(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data,
+        LibTournament.TournamentDetails memory tDetails
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        require(getState(self, sender, data) < uint256(LibGlobals.TournamentState.Closed), "Tournament must be active");
+        if (bytes(tDetails.content).length > 0) {
+            tournament.details.content = tDetails.content;
+        }
+        if (tDetails.entryFee != 0) {
+            tournament.details.entryFee = tDetails.entryFee;
+        }
+        emit TournamentUpdated(self);
+    }
+    function addToBounty(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        uint256 amount
+    )
+        public
+    {
+        require(getState(self, sender, data) < uint256(LibGlobals.TournamentState.Closed), "Tournament must be active");
+        require(amount > 0, "Cannot add zero amount");
+        data.totalBalance = data.totalBalance.add(amount);
+        data.tournamentBalance[self] = data.tournamentBalance[self].add(amount);
+        data.tournaments[self].details.bounty = data.tournaments[self].details.bounty.add(amount);
+        require(IToken(info.token).transferFrom(sender, address(this), amount), "Transfer failed");
+        emit TournamentUpdated(self);
+        emit TournamentBountyAdded(self, sender, amount);
+    }
+    function transferToRound(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data,
+        uint256 amount
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        uint256 roundIndex = getCurrentRoundIndex(self, sender, data);
+        LibTournament.RoundData storage round = tournament.rounds[roundIndex];
+        uint256 rState = getRoundState(self, sender, data, roundIndex);
+        require(rState <= uint256(LibGlobals.RoundState.InReview), "Cannot transfer after winners selected");
+        uint256 newBounty = round.details.bounty.add(amount);
+        require(newBounty <= data.tournamentBalance[self], "Tournament does not have the funds");
+        round.details.bounty = newBounty;
+        emit RoundUpdated(self, roundIndex);
+    }
+    function _transferToWinners(
+        address self,
+        MatryxPlatform.Data storage data,
+        uint256 roundIndex
+    )
+        internal
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        LibTournament.RoundData storage round = tournament.rounds[roundIndex];
+        LibTournament.WinnersData storage wData = round.info.winners;
+        uint256 distTotal = 0;
+        for (uint256 i = 0; i < wData.submissions.length; i++) {
+            distTotal = distTotal.add(wData.distribution[i]);
+        }
+        uint256 rewardLeft = round.details.bounty;
+        for (uint256 i = 0; i < wData.submissions.length; i++) {
+            bytes32 winningSub = wData.submissions[i];
+            bytes32 commit = data.submissions[winningSub].commitHash;
+            uint256 reward = rewardLeft;
+            if (i < wData.submissions.length - 1) {
+                reward = wData.distribution[i].mul(round.details.bounty).div(distTotal);
+            }
+            data.commitBalance[commit] = data.commitBalance[commit].add(reward);
+            rewardLeft = rewardLeft.sub(reward);
+            reward = reward.add(data.submissions[winningSub].reward);
+            data.submissions[winningSub].reward = reward;
+            emit SubmissionRewarded(self, winningSub);
+        }
+        data.tournamentBalance[self] = data.tournamentBalance[self].sub(round.details.bounty);
+    }
+    function selectWinners(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data,
+        LibTournament.WinnersData memory wData,
+        LibTournament.RoundDetails memory rDetails
+    )
+        public
+    {
+        require(wData.submissions.length > 0, "Must specify winners");
+        require(wData.submissions.length == wData.distribution.length, "Must include distribution for each winner");
+        require(wData.action < 3, "Invalid SelectWinnerAction");
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        uint256 roundIndex = getCurrentRoundIndex(self, sender, data);
+        require(getRoundState(self, sender, data, roundIndex) == uint256(LibGlobals.RoundState.InReview), "Must be in review");
+        for (uint256 i = 0; i < wData.submissions.length; i++) {
+            LibTournament.SubmissionData storage submission = data.submissions[wData.submissions[i]];
+            bool submissionInRound = submission.tournament == self && submission.roundIndex == roundIndex;
+            require(submissionInRound, "Must select winners from current round");
+        }
+        LibTournament.RoundData storage round = tournament.rounds[roundIndex];
+        LibTournament.RoundDetails memory newRound;
+        round.info.winners = wData;
+        if (wData.action == uint256(LibGlobals.SelectWinnerAction.CloseTournament)) {
+            round.info.closed = true;
+            round.details.bounty = data.tournamentBalance[self];
+            emit RoundUpdated(self, roundIndex);
+            _transferToWinners(self, data, roundIndex);
+        }
+        else if (wData.action == uint256(LibGlobals.SelectWinnerAction.DoNothing)) {
+            _transferToWinners(self, data, roundIndex);
+            uint256 bounty = data.tournamentBalance[self];
+            bounty = bounty < round.details.bounty ? bounty : round.details.bounty;
+            newRound.start = round.details.start.add(round.details.duration).add(round.details.review);
+            newRound.duration = round.details.duration;
+            newRound.review = round.details.review;
+            newRound.bounty = bounty;
+            createRound(self, address(this), info, data, newRound);
+        }
+        else if (wData.action == uint256(LibGlobals.SelectWinnerAction.StartNextRound)) {
+            _transferToWinners(self, data, roundIndex);
+            round.info.closed = true;
+            newRound.start = now;
+            newRound.duration = rDetails.duration;
+            newRound.review = rDetails.review;
+            newRound.bounty = rDetails.bounty;
+            createRound(self, address(this), info, data, newRound);
+        }
+        emit RoundWinnersSelected(self, roundIndex);
+    }
+    function updateNextRound(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data,
+        LibTournament.RoundDetails memory rDetails
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        uint256 roundIndex = tournament.rounds.length - 1;
+        require(getRoundState(self, sender, data, roundIndex) == uint256(LibGlobals.RoundState.NotYetOpen), "Cannot edit open Round");
+        LibTournament.RoundDetails storage details = tournament.rounds[roundIndex].details;
+        if (rDetails.start > 0) {
+            if (tournament.rounds.length > 1) {
+                LibTournament.RoundDetails storage currentDetails = tournament.rounds[roundIndex - 1].details;
+                require(rDetails.start >= currentDetails.start.add(currentDetails.duration).add(currentDetails.review), "Round cannot start before end of review");
+                details.start = rDetails.start;
+            }
+            else {
+                details.start = rDetails.start < now ? now : rDetails.start;
+            }
+        }
+        if (rDetails.duration > 0) {
+            require(rDetails.duration >= MIN_ROUND_LENGTH, "Round too short");
+            require(rDetails.duration <= MAX_ROUND_LENGTH, "Round too long");
+            details.duration = rDetails.duration;
+        }
+        if (rDetails.review > 0) {
+            details.review = rDetails.review;
+        }
+        if (rDetails.bounty > 0) {
+            require(rDetails.bounty <= data.tournamentBalance[self], "Tournament does not have the funds");
+            details.bounty = rDetails.bounty;
+        }
+        emit RoundUpdated(self, roundIndex);
+    }
+    function startNextRound(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        require(tournament.rounds.length > 1, "No round to start");
+        uint256 roundIndex = getCurrentRoundIndex(self, sender, data);
+        require(getRoundState(self, sender, data, roundIndex) == uint256(LibGlobals.RoundState.HasWinners), "Must have selected winners");
+        tournament.rounds[roundIndex].info.closed = true;
+        roundIndex = roundIndex.add(1);
+        tournament.rounds[roundIndex].details.start = now;
+    }
+    function withdrawFromAbandoned(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        uint256 roundIndex = getCurrentRoundIndex(self, sender, data);
+        LibTournament.RoundData storage round = tournament.rounds[roundIndex];
+        require(getState(self, sender, data) == uint256(LibGlobals.TournamentState.Abandoned), "Tournament must be abandoned");
+        require(round.hasSubmitted[sender], "Must be submission owner in latest round");
+        require(!tournament.hasWithdrawn[sender], "Already withdrawn");
+        uint256 tBalance = data.tournamentBalance[self];
+        uint256 submitterCount = round.info.submitterCount.sub(tournament.numWithdrawn);
+        uint256 share = tBalance.div(submitterCount);
+        tournament.hasWithdrawn[sender] = true;
+        tournament.numWithdrawn++;
+        data.totalBalance = data.totalBalance.sub(share);
+        data.tournamentBalance[self] = data.tournamentBalance[self].sub(share);
+        require(IToken(info.token).transfer(sender, share), "Transfer failed");
+        exit(self, sender, info, data);
+    }
+    function closeTournament(
+        address self,
+        address sender,
+        MatryxPlatform.Data storage data
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        require(tournament.rounds.length > 1, "Must be in Round limbo");
+        uint256 roundIndex = getCurrentRoundIndex(self, sender, data);
+        LibTournament.RoundData storage round = tournament.rounds[roundIndex];
+        require(getRoundState(self, sender, data, roundIndex) == uint256(LibGlobals.RoundState.HasWinners), "Must have selected winners");
+        round.info.closed = true;
+        round.details.bounty = data.tournamentBalance[self];
+        emit RoundUpdated(self, roundIndex);
+        _transferToWinners(self, data, roundIndex);
+        tournament.rounds.length--;
+    }
+    function recoverBounty(
+        address self,
+        address sender,
+        MatryxPlatform.Info storage info,
+        MatryxPlatform.Data storage data
+    )
+        public
+    {
+        LibTournament.TournamentData storage tournament = data.tournaments[self];
+        require(sender == tournament.info.owner, "Must be owner");
+        require(tournament.numWithdrawn == 0, "Already withdrawn");
+        uint256 roundIndex = getCurrentRoundIndex(self, sender, data);
+        LibTournament.RoundData storage round = tournament.rounds[roundIndex];
+        require(getRoundState(self, sender, data, roundIndex) == uint256(LibGlobals.RoundState.Abandoned), "Tournament must be abandoned");
+        require(round.info.submissions.length == 0, "Must have 0 submissions");
+        uint256 funds = data.tournamentBalance[self];
+        tournament.numWithdrawn = 1;
+        data.totalBalance = data.totalBalance.sub(funds);
+        data.tournamentBalance[self] = 0;
+        require(IToken(info.token).transfer(sender, funds), "Transfer failed");
+    }
+}
+
+================
+File: contracts/MatryxCommit.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./SafeMath.sol";
+import "./LibCommit.sol";
+import "./MatryxForwarder.sol";
+contract MatryxCommit is MatryxForwarder {
+    constructor (uint256 _version, address _system) MatryxForwarder(_version, _system) public {}
+}
+interface IMatryxCommit {
+    event GroupMemberAdded(bytes32 indexed commitHash, address indexed user);
+    event CommitClaimed(bytes32 commitHash);
+    event CommitCreated(bytes32 indexed parentHash, bytes32 commitHash, address indexed creator, bool indexed isFork);
+    function getCommit(bytes32 commitHash) external view returns (LibCommit.Commit memory commit);
+    function getBalance(bytes32 commitHash) external view returns (uint256);
+    function getCommitByContent(string calldata content) external view returns (LibCommit.Commit memory commit);
+    function getGroupMembers(bytes32 commitHash) external view returns (address[] memory);
+    function getSubmissionsForCommit(bytes32 commitHash) external view returns (bytes32[] memory);
+    function addGroupMember(bytes32 commitHash, address member) external;
+    function addGroupMembers(bytes32 commitHash, address[] calldata members) external;
+    function claimCommit(bytes32 commitHash) external;
+    function createCommit(bytes32 parentHash, bool isFork, bytes32 salt, string calldata content, uint256 value) external;
+    function createSubmission(address tAddress, string calldata content, bytes32 parentHash, bool isFork, bytes32 salt, string calldata commitContent, uint256 value) external;
+    function getAvailableRewardForUser(bytes32 commitHash, address user) external view returns (uint256);
+    function withdrawAvailableReward(bytes32 commitHash) external;
+}
+
+================
+File: contracts/MatryxForwarder.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./MatryxSystem.sol";
+contract MatryxForwarder {
+    struct Info {
+        uint256 version;
+        address system;
+    }
+    Info info;
+    constructor(uint256 _version, address _system) public {
+        info.version = _version;
+        info.system = _system;
+    }
+    function () external {
+        uint256 version = info.version;
+        address platform = IMatryxSystem(info.system).getContract(version, bytes32("MatryxPlatform"));
+        assembly {
+            let ptr := mload(0x40)
+            let res
+            if lt(calldatasize, 0x04) { revert(0, 0) }
+            calldatacopy(ptr, 0, 0x04)
+            mstore(add(ptr, 0x04), caller)
+            mstore(add(ptr, 0x24), version)
+            calldatacopy(add(ptr, 0x44), 0x04, sub(calldatasize, 0x04))
+            res := call(gas, platform, 0, ptr, add(calldatasize, 0x40), 0, 0)
+            returndatacopy(ptr, 0, returndatasize)
+            if iszero(res) { revert(ptr, returndatasize) }
+            return(ptr, returndatasize)
+        }
+    }
+}
+
+================
+File: contracts/MatryxPlatform.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./SafeMath.sol";
+import "./IToken.sol";
+import "./MatryxSystem.sol";
+import "./LibTournament.sol";
+contract MatryxPlatform {
+    using SafeMath for uint256;
+    struct Info {
+        address system;
+        address token;
+        address owner;
+    }
+    struct Data {
+        uint256 totalBalance;
+        mapping(address=>uint256) tournamentBalance;
+        mapping(bytes32=>uint256) commitBalance;
+        mapping(address=>LibTournament.TournamentData) tournaments;
+        mapping(bytes32=>LibTournament.SubmissionData) submissions;
+        address[] allTournaments;
+        mapping(bytes32=>LibCommit.Commit) commits;
+        mapping(bytes32=>LibCommit.Group) groups;
+        mapping(bytes32=>bytes32) commitHashes;
+        mapping(bytes32=>bytes32[]) commitToSubmissions;
+        mapping(bytes32=>LibCommit.CommitWithdrawalStats) commitWithdrawalStats;
+        mapping(bytes32=>uint256) commitClaims;
+        mapping(address=>bool) whitelist;
+        mapping(address=>bool) blacklist;
+    }
+    Info info;
+    Data data;
+    address pendingOwner;
+    constructor(address system, address token) public {
+        info.system = system;
+        info.token = token;
+        info.owner = msg.sender;
+    }
+    function () external {
+        uint256 version = IMatryxSystem(info.system).getVersion();
+        bytes32 libName = IMatryxSystem(info.system).getLibraryName(msg.sender);
+        bool isForwarded = libName != bytes32("LibPlatform");
+        assembly {
+            if isForwarded {
+                calldatacopy(0, 0x24, 0x20)
+                version := mload(0)
+            }
+        }
+        address libAddress = IMatryxSystem(info.system).getContract(version, libName);
+        assembly {
+            let offset := 0x100000000000000000000000000000000000000000000000000000000
+            let res
+            let ptr := mload(0x40)
+            let system := sload(info_slot)
+            mstore(ptr, mul(0x3b15aabf, offset))
+            mstore(add(ptr, 0x04), version)
+            mstore(add(ptr, 0x24), libName)
+            mstore(add(ptr, 0x44), 0)
+            calldatacopy(add(ptr, 0x44), 0, 0x04)
+            res := call(gas, system, 0, ptr, 0x64, 0, 0)
+            returndatacopy(ptr, 0, returndatasize)
+            if iszero(res) { revert(ptr, returndatasize) }
+            let ptr2 := add(ptr, mload(ptr))
+            let m_injParams := add(ptr2, mload(add(ptr2, 0x20)))
+            let injParams_len := mload(m_injParams)
+            m_injParams := add(m_injParams, 0x20)
+            let m_dynParams := add(ptr2, mload(add(ptr2, 0x40)))
+            let dynParams_len := mload(m_dynParams)
+            m_dynParams := add(m_dynParams, 0x20)
+            ptr := add(ptr, returndatasize)
+            mstore(ptr, mload(ptr2))
+            ptr2 := add(ptr, 0x04)
+            mstore(ptr2, address)
+            mstore(add(ptr2, 0x20), caller)
+            let cdOffset := 0x04
+            if isForwarded {
+                mstore(ptr2, caller)
+                calldatacopy(add(ptr2, 0x20), 0x04, 0x20)
+                cdOffset := add(cdOffset, 0x40)
+            }
+            ptr2 := add(ptr2, 0x40)
+            for { let i := 0 } lt(i, injParams_len) { i := add(i, 1) } {
+                let injParam := mload(add(m_injParams, mul(i, 0x20)))
+                mstore(ptr2, injParam)
+                ptr2 := add(ptr2, 0x20)
+            }
+            calldatacopy(ptr2, cdOffset, sub(calldatasize, cdOffset))
+            for { let i := 0 } lt(i, dynParams_len) { i := add(i, 1) } {
+                let idx := mload(add(m_dynParams, mul(i, 0x20)))
+                let loc := add(ptr2, mul(idx, 0x20))
+                mstore(loc, add(mload(loc), mul(add(injParams_len, 2), 0x20)))
+            }
+            let size := add(0x04, sub(calldatasize, cdOffset))
+            size := add(size, mul(add(injParams_len, 2), 0x20))
+            res := delegatecall(gas, libAddress, ptr, size, 0, 0)
+            returndatacopy(ptr, 0, returndatasize)
+            if iszero(res) { revert(ptr, returndatasize) }
+            return(ptr, returndatasize)
+        }
+    }
+    modifier onlyOwner() {
+        require(msg.sender == info.owner, "Must be Platform owner");
+        _;
+    }
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0));
+        pendingOwner = newOwner;
+    }
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner);
+        info.owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+    function upgradeToken(address token) external onlyOwner {
+        IToken(info.token).upgrade(data.totalBalance);
+        require(IToken(token).balanceOf(address(this)) == data.totalBalance, "Token address must match upgraded token");
+        info.token = token;
+    }
+    function withdrawTokens(address token) external onlyOwner {
+        uint256 balance = IToken(token).balanceOf(address(this));
+        if (token == info.token) {
+            balance = balance.sub(data.totalBalance);
+        }
+        require(IToken(token).transfer(msg.sender, balance), "Transfer failed");
+    }
+}
+interface IMatryxPlatform {
+    event TournamentCreated(address indexed tournament, address indexed creator);
+    event TournamentUpdated(address indexed tournament);
+    event TournamentBountyAdded(address indexed tournament, address indexed donor, uint256 amount);
+    event RoundCreated(address indexed tournament, uint256 roundIndex);
+    event RoundUpdated(address indexed tournament, uint256 roundIndex);
+    event RoundWinnersSelected(address indexed tournament, uint256 roundIndex);
+    event SubmissionCreated(address indexed tournament, bytes32 submissionHash, address indexed creator);
+    event SubmissionRewarded(address indexed tournament, bytes32 submissionHash);
+    event GroupMemberAdded(bytes32 indexed commitHash, address indexed user);
+    event CommitClaimed(bytes32 commitHash);
+    event CommitCreated(bytes32 indexed parentHash, bytes32 commitHash, address indexed creator, bool indexed isFork);
+    function transferOwnership(address newOwner) external;
+    function acceptOwnership() external;
+    function upgradeToken(address token) external;
+    function withdrawTokens(address token) external;
+    function getInfo() external view returns (MatryxPlatform.Info memory);
+    function isTournament(address tournament) external view returns (bool);
+    function isCommit(bytes32 commitHash) external view returns (bool);
+    function isSubmission(bytes32 submissionHash) external view returns (bool);
+    function getTotalBalance() external view returns (uint256);
+    function getTournamentCount() external view returns (uint256);
+    function getTournaments() external view returns (address[] memory);
+    function getSubmission(bytes32 submissionHash) external view returns (LibTournament.SubmissionData memory);
+    function setUserBlacklisted(address user, bool isBlacklisted) external;
+    function createTournament(LibTournament.TournamentDetails calldata, LibTournament.RoundDetails calldata) external returns (address);
+}
+
+================
+File: contracts/MatryxSystem.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./Ownable.sol";
+interface IMatryxSystem {
+    function createVersion(uint256 version) external;
+    function setVersion(uint256 version) external;
+    function getVersion() external view returns (uint256);
+    function getAllVersions() external view returns (uint256[] memory);
+    function getPlatformContracts(uint256 version) external view returns (bytes32[] memory);
+    function setContract(uint256 version, bytes32 cName, address cAddress) external;
+    function getContract(uint256 version, bytes32 cName) external view returns (address);
+    function addContractMethod(uint256 version, bytes32 cName, bytes32 selector, MatryxSystem.FnData calldata fnData) external;
+    function addContractMethods(uint256 version, bytes32 cName, bytes32[] calldata selectors, bytes32[] calldata modifiedSelectors, MatryxSystem.FnData calldata fnData) external;
+    function getContractMethod(uint256 version, bytes32 cName, bytes32 selector) external view returns (MatryxSystem.FnData memory);
+    function setContractType(address cAddress, uint256 cType) external;
+    function getContractType(address cAddress) external view returns (uint256);
+    function setLibraryName(uint256 cType, bytes32 lName) external;
+    function getLibraryName(address cAddress) external view returns (bytes32);
+}
+library LibSystem {
+    enum ContractType { Unknown, Platform, Commit, Tournament }
+}
+contract MatryxSystem is IMatryxSystem, Ownable {
+    struct Platform {
+        bool exists;
+        mapping(bytes32=>ContractData) contracts;
+        bytes32[] allContracts;
+    }
+    struct FnData {
+        bytes32 modifiedSelector;
+        uint256[] injectedParams;
+        uint256[] dynamicParams;
+    }
+    struct ContractData {
+        address location;
+        mapping(bytes32=>FnData) fnData;
+    }
+    mapping(address=>uint256) contractType;
+    mapping(uint256=>bytes32) contractTypeToLibraryName;
+    mapping(uint256=>Platform) platformByVersion;
+    uint256[] allVersions;
+    uint256 currentVersion;
+    modifier onlyOwnerOrPlatform {
+        bool isOwner = msg.sender == owner;
+        bool isPlatform = contractType[msg.sender] == uint256(LibSystem.ContractType.Platform);
+        require(isOwner || isPlatform, "Must be owner or Platform");
+        _;
+    }
+    function isContract(address _address) private view returns (bool) {
+        uint256 _size;
+        assembly { _size := extcodesize(_address) }
+        return _size > 0;
+    }
+    function createVersion(uint256 version) public onlyOwner {
+        require(!platformByVersion[version].exists, "Version already exists");
+        platformByVersion[version].exists = true;
+        allVersions.push(version);
+    }
+    function setVersion(uint256 version) public onlyOwner {
+        require(platformByVersion[version].exists, "Version must exist");
+        currentVersion = version;
+    }
+    function getVersion() public view returns (uint256) {
+        return currentVersion;
+    }
+    function getAllVersions() public view returns (uint256[] memory) {
+        return allVersions;
+    }
+    function getPlatformContracts(uint256 version) public view returns (bytes32[] memory) {
+        return platformByVersion[version].allContracts;
+    }
+    function setContract(uint256 version, bytes32 cName, address cAddress) public onlyOwner {
+        require(platformByVersion[version].exists, "No such version");
+        require(isContract(cAddress), "Invalid contract address");
+        if (platformByVersion[version].contracts[cName].location == address(0)) {
+            platformByVersion[version].allContracts.push(cName);
+        }
+        platformByVersion[version].contracts[cName].location = cAddress;
+    }
+    function getContract(uint256 version, bytes32 cName) public view returns (address) {
+        address cAddress = platformByVersion[version].contracts[cName].location;
+        require(isContract(cAddress), "Invalid contract address");
+        return cAddress;
+    }
+    function addContractMethod(
+        uint256 version,
+        bytes32 cName,
+        bytes32 selector,
+        FnData memory fnData
+    )
+        public
+        onlyOwner
+    {
+        require(platformByVersion[version].exists, "No such version");
+        platformByVersion[version].contracts[cName].fnData[selector] = fnData;
+    }
+    function addContractMethods(
+        uint256 version,
+        bytes32 cName,
+        bytes32[] memory selectors,
+        bytes32[] memory modifiedSelectors,
+        FnData memory fnData
+    )
+        public
+        onlyOwner
+    {
+        require(platformByVersion[version].exists, "No such version");
+        require(selectors.length == modifiedSelectors.length, "List of selectors must match in length");
+        for (uint256 i = 0; i < selectors.length; i++) {
+            platformByVersion[version].contracts[cName].fnData[selectors[i]] = fnData;
+            platformByVersion[version].contracts[cName].fnData[selectors[i]].modifiedSelector = modifiedSelectors[i];
+        }
+    }
+    function getContractMethod(
+        uint256 version,
+        bytes32 cName,
+        bytes32 selector
+    )
+        public
+        view
+        returns (FnData memory)
+    {
+        address cAddress = platformByVersion[version].contracts[cName].location;
+        require(isContract(cAddress), "Invalid contract address");
+        FnData memory fnData = platformByVersion[version].contracts[cName].fnData[selector];
+        require(fnData.modifiedSelector != bytes32(0), "Function must exist");
+        return fnData;
+    }
+    function setContractType(address cAddress, uint256 cType) public onlyOwnerOrPlatform {
+        require(isContract(cAddress), "Invalid contract address");
+        contractType[cAddress] = cType;
+    }
+    function getContractType(address cAddress) public view returns (uint256) {
+        return contractType[cAddress];
+    }
+    function setLibraryName(uint256 cType, bytes32 lName) public onlyOwner {
+        contractTypeToLibraryName[cType] = lName;
+    }
+    function getLibraryName(address cAddress) public view returns (bytes32) {
+        uint256 cType = contractType[cAddress];
+        return contractTypeToLibraryName[cType];
+    }
+}
+
+================
+File: contracts/MatryxToken/BasicToken.sol
+================
+pragma solidity ^0.5.0;
+import './ERC20Basic.sol';
+import './math/SafeMath.sol';
+contract BasicToken is ERC20Basic {
+  using SafeMath for uint256;
+  mapping(address => uint256) balances;
+  function balanceOf(address _owner) public view returns (uint256 balance) {
+    return balances[_owner];
+  }
+}
+
+================
+File: contracts/MatryxToken/ERC20.sol
+================
+pragma solidity ^0.5.0;
+import './ERC20Basic.sol';
+import './ownership/Ownable.sol';
+contract ERC20 is Ownable {
+  function allowance(address owner, address spender) public view returns (uint256);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
+  function transfer(address to, uint256 value) public returns (bool);
+  function approve(address spender, uint256 value) public returns (bool);
+  event Transfer(address indexed from, address indexed to, uint256 value);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+================
+File: contracts/MatryxToken/ERC20Basic.sol
+================
+pragma solidity ^0.5.0;
+contract ERC20Basic {
+  uint256 public totalSupply;
+  function balanceOf(address who) public view returns (uint256);
+}
+
+================
+File: contracts/MatryxToken/Haltable.sol
+================
+pragma solidity ^0.5.0;
+import "./ownership/Ownable.sol";
+contract Haltable is Ownable {
+  bool public halted;
+  modifier stopInEmergency {
+    require(!halted);
+    _;
+  }
+  modifier onlyInEmergency {
+    require(halted);
+    _;
+  }
+  function halt() external onlyOwner {
+    halted = true;
+  }
+  function unhalt() external onlyOwner onlyInEmergency {
+    halted = false;
+  }
+}
+
+================
+File: contracts/MatryxToken/lifecycle/Migrations.sol
+================
+pragma solidity ^0.5.0;
+contract Migrations {
+  address public owner;
+  uint public last_completed_migration;
+  modifier restricted() {
+    if (msg.sender == owner) _;
+  }
+  constructor() public {
+    owner = msg.sender;
+  }
+  function setCompleted(uint completed) public restricted {
+    last_completed_migration = completed;
+  }
+  function upgrade(address new_address) public restricted {
+    Migrations upgraded = Migrations(new_address);
+    upgraded.setCompleted(last_completed_migration);
+  }
+}
+
+================
+File: contracts/MatryxToken/math/SafeMath.sol
+================
+pragma solidity ^0.5.0;
+library SafeMath {
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a * b;
+    assert(a == 0 || c / a == b);
+    return c;
+  }
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a / b;
+    return c;
+  }
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
+================
+File: contracts/MatryxToken/MatryxToken.sol
+================
+pragma solidity ^0.5.0;
+import "./MintableToken.sol";
+import "./UpgradeableToken.sol";
+contract MatryxToken is MintableToken, UpgradeableToken{
+  string public name = "MatryxToken";
+  string public symbol = "MTX";
+  uint public decimals = 18;
+  constructor() public UpgradeableToken(msg.sender) {
+  }
+}
+
+================
+File: contracts/MatryxToken/MintableToken.sol
+================
+pragma solidity ^0.5.0;
+import './ReleasableToken.sol';
+contract MintableToken is ReleasableToken {
+  event Mint(address indexed to, uint256 amount);
+  event MintFinished();
+  bool public mintingFinished = false;
+  modifier canMint() {
+    require(!mintingFinished);
+    _;
+  }
+  function mint(address _to, uint256 _amount) public onlyOwner canMint returns (bool) {
+    totalSupply = totalSupply.add(_amount);
+    balances[_to] = balances[_to].add(_amount);
+    emit Mint(_to, _amount);
+    emit Transfer(address(0), _to, _amount);
+    return true;
+  }
+  function finishMinting() public onlyOwner returns (bool) {
+    mintingFinished = true;
+    emit MintFinished();
+    return true;
+  }
+}
+
+================
+File: contracts/MatryxToken/ownership/Ownable.sol
+================
+pragma solidity ^0.5.0;
+contract Ownable {
+  address public owner;
+  constructor() public {
+    owner = msg.sender;
+  }
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    owner = newOwner;
+  }
+}
+
+================
+File: contracts/MatryxToken/ownership/UpgradeAgent.sol
+================
+pragma solidity ^0.5.0;
+contract UpgradeAgent {
+  uint public originalSupply;
+  function isUpgradeAgent() public pure returns (bool) {
+    return true;
+  }
+  function upgradeFrom(address _from, uint256 _value) public;
+}
+
+================
+File: contracts/MatryxToken/ReleasableToken.sol
+================
+pragma solidity ^0.5.0;
+import "./StandardToken.sol";
+contract ReleasableToken is StandardToken {
+  address public releaseAgent;
+  bool public released = false;
+  mapping (address => bool) public transferAgents;
+  modifier canTransfer(address _sender) {
+    require(released || transferAgents[_sender]);
+    _;
+  }
+  modifier inReleaseState(bool releaseState) {
+    require(releaseState == released);
+    _;
+  }
+  modifier onlyReleaseAgent() {
+    require(msg.sender == releaseAgent);
+    _;
+  }
+  function setReleaseAgent(address addr) onlyOwner inReleaseState(false) public {
+    releaseAgent = addr;
+  }
+  function setTransferAgent(address addr, bool state) onlyOwner inReleaseState(false) public {
+    transferAgents[addr] = state;
+  }
+  function releaseTokenTransfer() public onlyReleaseAgent {
+    released = true;
+  }
+  function transfer(address _to, uint _value) canTransfer(msg.sender) public returns (bool success) {
+   return super.transfer(_to, _value);
+  }
+  function transferFrom(address _from, address _to, uint _value) canTransfer(_from) public returns (bool success) {
+    return super.transferFrom(_from, _to, _value);
+  }
+}
+
+================
+File: contracts/MatryxToken/StandardToken.sol
+================
+pragma solidity ^0.5.0;
+import './BasicToken.sol';
+import './ERC20.sol';
+contract StandardToken is ERC20, BasicToken {
+  mapping (address => mapping (address => uint256)) allowed;
+  function transfer(address _to, uint256 _value) public returns (bool) {
+    balances[msg.sender] = balances[msg.sender].sub(_value);
+    balances[_to] = balances[_to].add(_value);
+    emit Transfer(msg.sender, _to, _value);
+    return true;
+  }
+  function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+    uint256 _allowance = allowed[_from][msg.sender];
+    balances[_to] = balances[_to].add(_value);
+    balances[_from] = balances[_from].sub(_value);
+    allowed[_from][msg.sender] = _allowance.sub(_value);
+    emit Transfer(_from, _to, _value);
+    return true;
+  }
+  function approve(address _spender, uint256 _value) public returns (bool) {
+    require((_value == 0) || (allowed[msg.sender][_spender] == 0));
+    allowed[msg.sender][_spender] = _value;
+    emit Approval(msg.sender, _spender, _value);
+    return true;
+  }
+  function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+    return allowed[_owner][_spender];
+  }
+}
+
+================
+File: contracts/MatryxToken/UpgradeableToken.sol
+================
+pragma solidity ^0.5.0;
+import './StandardToken.sol';
+import "./ownership/UpgradeAgent.sol";
+contract UpgradeableToken is StandardToken {
+  address public upgradeMaster;
+  UpgradeAgent public upgradeAgent;
+  uint256 public totalUpgraded;
+  enum UpgradeState {Unknown, NotAllowed, WaitingForAgent, ReadyToUpgrade, Upgrading}
+  event Upgrade(address indexed _from, address indexed _to, uint256 _value);
+  event UpgradeAgentSet(address agent);
+  constructor(address _upgradeMaster) public {
+    upgradeMaster = _upgradeMaster;
+  }
+  function upgrade(uint256 value) public {
+      UpgradeState state = getUpgradeState();
+      require(state == UpgradeState.ReadyToUpgrade || state == UpgradeState.Upgrading);
+      require(value != 0);
+      balances[msg.sender] = balances[msg.sender].sub(value);
+      totalSupply = totalSupply.sub(value);
+      totalUpgraded = totalUpgraded.add(value);
+      upgradeAgent.upgradeFrom(msg.sender, value);
+      emit Upgrade(msg.sender, address(upgradeAgent), value);
+  }
+  function setUpgradeAgent(address agent) external {
+      require(agent != address(0));
+      require(msg.sender == upgradeMaster);
+      require(getUpgradeState() != UpgradeState.Upgrading);
+      upgradeAgent = UpgradeAgent(agent);
+      require(upgradeAgent.isUpgradeAgent());
+      require(upgradeAgent.originalSupply() == totalSupply);
+      emit UpgradeAgentSet(address(upgradeAgent));
+  }
+  function getUpgradeState() public view returns(UpgradeState) {
+    if(address(upgradeAgent) == address(0x00)) return UpgradeState.WaitingForAgent;
+    else if(totalUpgraded == 0) return UpgradeState.ReadyToUpgrade;
+    else return UpgradeState.Upgrading;
+  }
+  function setUpgradeMaster(address master) public {
+      require(master != address(0));
+      require(msg.sender == upgradeMaster);
+      upgradeMaster = master;
+  }
+}
+
+================
+File: contracts/MatryxTournament.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "./MatryxForwarder.sol";
+import "./LibTournament.sol";
+contract MatryxTournament is MatryxForwarder {
+    constructor (uint256 _version, address _system) MatryxForwarder(_version, _system) public {}
+}
+interface IMatryxTournament {
+    event TournamentUpdated(address indexed tournament);
+    event TournamentBountyAdded(address indexed tournament, address indexed donor, uint256 amount);
+    event RoundCreated(address indexed tournament, uint256 roundIndex);
+    event RoundUpdated(address indexed tournament, uint256 roundIndex);
+    event RoundWinnersSelected(address indexed tournament, uint256 roundIndex);
+    event SubmissionCreated(address indexed tournament, bytes32 submissionHash, address indexed creator);
+    event SubmissionRewarded(address indexed tournament, bytes32 submissionHash);
+    function getInfo() external view returns (LibTournament.TournamentInfo memory);
+    function getDetails() external view returns (LibTournament.TournamentDetails memory);
+    function getBalance() external view returns (uint256);
+    function getState() external view returns (uint256);
+    function getRoundState(uint256 roundIndex) external view returns (uint256);
+    function getCurrentRoundIndex() external view returns (uint256);
+    function getRoundInfo(uint256 roundIndex) external view returns (LibTournament.RoundInfo memory);
+    function getRoundDetails(uint256 roundIndex) external view returns (LibTournament.RoundDetails memory);
+    function getSubmissionCount() external view returns (uint256);
+    function getEntryFeePaid(address user) external view returns (uint256);
+    function isEntrant(address user) external view returns (bool);
+    function enter() external;
+    function exit() external;
+    function createSubmission(string calldata content, bytes32 commitHash) external;
+    function updateDetails(LibTournament.TournamentDetails calldata tournamentDetails) external;
+    function addToBounty(uint256 amount) external;
+    function transferToRound(uint256 amount) external;
+    function selectWinners(LibTournament.WinnersData calldata winnersData, LibTournament.RoundDetails calldata roundDetails) external;
+    function updateNextRound(LibTournament.RoundDetails calldata roundDetails) external;
+    function startNextRound() external;
+    function closeTournament() external;
+    function withdrawFromAbandoned() external;
+    function recoverBounty() external;
+}
+
+================
+File: contracts/Migrations.sol
+================
+pragma solidity ^0.5.7;
+contract Migrations {
+  address public owner;
+  uint public last_completed_migration;
+  modifier restricted() {
+    if (msg.sender == owner) _;
+  }
+  constructor() public {
+    owner = msg.sender;
+  }
+  function setCompleted(uint completed) public restricted {
+    last_completed_migration = completed;
+  }
+  function upgrade(address new_address) public restricted {
+    Migrations upgraded = Migrations(new_address);
+    upgraded.setCompleted(last_completed_migration);
+  }
+}
+
+================
+File: contracts/Ownable.sol
+================
+pragma solidity ^0.5.7;
+contract Ownable {
+    address public owner;
+    address pendingOwner;
+    constructor() public
+    {
+        owner = msg.sender;
+    }
+    function getOwner() public view returns (address _owner)
+    {
+        return owner;
+    }
+    function isOwner(address _sender) public view returns (bool _isOwner)
+    {
+        bool senderIsOwner = (owner == _sender);
+        return senderIsOwner;
+    }
+    modifier onlyOwner()
+    {
+        require(msg.sender == owner);
+        _;
+    }
+    function transferOwnership(address newOwner) public onlyOwner
+    {
+        require(newOwner != address(0));
+        pendingOwner = newOwner;
+    }
+    function acceptOwnership() public
+    {
+        require(msg.sender == pendingOwner, "Must be the pending owner");
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+}
+
+================
+File: contracts/SafeMath.sol
+================
+pragma solidity ^0.5.7;
+library SafeMath {
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        }
+        uint256 c = a * b;
+        require(c / a == b);
+        return c;
+    }
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0);
+        uint256 c = a / b;
+        return c;
+    }
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b <= a);
+        uint256 c = a - b;
+        return c;
+    }
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a);
+        return c;
+    }
+    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b != 0);
+        return a % b;
+    }
+}
+
+================
+File: contracts/test-contracts/ICommitUpgradeTransition.sol
+================
+interface ICommitUpgradeTransition {
+    function upgradeCommitAndAncestry(bytes32 commitHash) external;
+}
+
+================
+File: contracts/test-contracts/LibCommit2.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "../MatryxPlatform.sol";
+interface ICommit2 {
+    function getAvailableRewardForUser(bytes32, address) external pure returns (uint256);
+}
+library LibCommit2 {
+    function getAvailableRewardForUser(address self, address, MatryxPlatform.Data storage, bytes32 commitHash, address user) public pure returns (uint256) {
+        return 42;
+    }
+}
+
+================
+File: contracts/test-contracts/LibCommitUpgradeTransition.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "../MatryxSystem.sol";
+import "../MatryxPlatform.sol";
+library LibCommitUpgradeTransition {
+    struct NewCommit
+    {
+        address owner;
+        uint256 timestamp;
+        bytes32 groupHash;
+        bytes32 commitHash;
+        string content;
+        uint256 value;
+        uint256 ownerTotalValue;
+        uint256 totalValue;
+        uint256 height;
+        bytes32 parentHash;
+        bytes32[] children;
+        uint256 upgradeVersion;
+    }
+    function upgradeCommitAndAncestry(address self, address sender, MatryxPlatform.Data storage data, bytes32 commitHash) public {
+        LibCommit.Commit storage commit = data.commits[commitHash];
+        require(sender == commit.owner, "Must own commit to upgrade");
+        bytes32 loopHash = commitHash;
+        for (uint256 i = commit.height; i > 0; i--) {
+            LibCommit.Commit storage commit = data.commits[loopHash];
+            assembly { sstore(add(commit_slot, 11), 1) }
+            loopHash = data.commits[loopHash].parentHash;
+        }
+    }
+}
+
+================
+File: contracts/test-contracts/LibPlatform2.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "../MatryxSystem.sol";
+import "../MatryxPlatform.sol";
+import "../MatryxTournament.sol";
+import "./LibTournament2.sol";
+interface IPlatform2 {
+    function getInfo() external view returns (MatryxPlatform.Info memory);
+    function setToken(address token) external;
+    function getTwo() external pure returns (uint256);
+    function isTournament(address) external view returns (bool);
+    function getTournamentCount() external pure returns (uint256);
+    function createTournament() external returns (address);
+    function getTournaments() external pure returns (address[] memory);
+}
+library LibPlatform2 {
+    function getInfo(address, address, MatryxPlatform.Info storage info) public view returns (MatryxPlatform.Info memory) {
+        return info;
+    }
+    function setToken(address, address, MatryxPlatform.Info storage info, address token) public
+    {
+        info.token = token;
+    }
+    function getTwo(address, address, MatryxPlatform.Info storage) public pure returns (uint256 number) {
+        return 2;
+    }
+    function getTournamentCount(address, address, MatryxPlatform.Data storage) public pure returns (uint256 count) {
+        return 99;
+    }
+    function isTournament(address, address, MatryxPlatform.Data storage data, address tAddress) public view returns (bool) {
+        return data.tournaments[tAddress].info.owner != address(0);
+    }
+    function getTournaments(address, address, MatryxPlatform.Data storage data) public view returns (address[] memory) {
+        return data.allTournaments;
+    }
+    function createTournament(address, address sender, MatryxPlatform.Info storage info, MatryxPlatform.Data storage data) public returns (address) {
+        uint256 version = IMatryxSystem(info.system).getVersion();
+        address tAddress = address(new MatryxTournament(version, info.system));
+        IMatryxSystem(info.system).setContractType(tAddress, uint256(LibSystem.ContractType.Tournament));
+        data.allTournaments.push(tAddress);
+        LibTournament.TournamentData storage tournament = data.tournaments[tAddress];
+        tournament.info.version = version;
+        tournament.info.owner = sender;
+        data.totalBalance = data.totalBalance + 12345;
+        data.tournamentBalance[tAddress] = 12345;
+        LibTournament2.createRound(tAddress, address(this), info, data);
+        return tAddress;
+    }
+}
+
+================
+File: contracts/test-contracts/LibTournament2.sol
+================
+pragma solidity ^0.5.7;
+pragma experimental ABIEncoderV2;
+import "../MatryxPlatform.sol";
+import "../LibTournament.sol";
+interface ITournament2 {
+    function getInfo() external pure returns (LibTournament.TournamentInfo memory);
+    function getRounds() external view returns (LibTournament.RoundDetails memory);
+    function getBalance() external pure returns (uint256);
+    function createRound() external returns (uint256);
+}
+library LibTournament2 {
+    function getInfo(address self, address, MatryxPlatform.Data storage data) public view returns (LibTournament.TournamentInfo memory) {
+        return data.tournaments[self].info;
+    }
+    function getRounds(address self, address, MatryxPlatform.Data storage data) public view returns (LibTournament.RoundDetails memory) {
+        return data.tournaments[self].rounds[0].details;
+    }
+    function getBalance(address self, address, MatryxPlatform.Data storage) public pure returns (uint256) {
+        return 99000000000000000000;
+    }
+    function createRound(address self, address sender, MatryxPlatform.Info storage info, MatryxPlatform.Data storage data) public returns (uint256) {
+        LibTournament.RoundData memory round;
+        round.details.start = 12345;
+        round.details.duration = 12345;
+        round.details.review = 12345;
+        round.details.bounty = 12345;
+        data.tournaments[self].rounds.push(round);
+        return 0;
+    }
+}
+
+================
+File: ganache-local.sh
+================
+ganache-cli -l 8e6 -i 3 -m "fix tired congress gold type flight access jeans payment echo chef host"
+
+================
+File: gas-parser/index.js
+================
+const spawn = require('child_process').spawn
+const chalk = require('chalk')
+const ethers = require('ethers')
+const selectors = require('../generate-setup/selectors.json')
+const ganache = spawn('../ganache-local.sh')
+const tx = /Transaction: (0x[0-9a-f]+)/
+const ready = /Listening on/
+const commaSep = num => num.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1,')
+let provider
+let totalGas = 0
+ganache.stdout.on('data', data => {
+  const lines = data.toString().split('\n')
+  lines.forEach(async line => {
+    if (!provider && ready.test(line)) {
+      provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+    }
+    const match = tx.exec(line)
+    if (match) {
+      const hash = match[1]
+      const tx = await provider.getTransaction(hash)
+      const rcpt = await provider.getTransactionReceipt(hash)
+      if (!rcpt) return
+      const gas = +rcpt.gasUsed
+      const color = gas < 1e6 ? 'green' : gas < 2e6 ? 'yellow' : 'red'
+      const gasUsage = chalk`{${color} ${gas.toString().padStart(7, ' ')}}`
+      const method = selectors[tx.data.substr(0, 10)]
+      let fnCall = ''
+      if (method) {
+        const [contract, method] = selectors[tx.data.substr(0, 10)].split('.')
+        fnCall = chalk`{cyan ${contract}}.{yellow ${method}}`
+      }
+      const revert = !rcpt.status
+      const hashMsg = chalk`{${revert ? 'red' : 'grey'} ${hash}}`
+      console.log(`${hashMsg} ${gasUsage} ${fnCall}`)
+      totalGas += gas
+    }
+  })
+})
+process.on('SIGINT', () => {
+  console.log(chalk`\ntotal gas: {cyan ${commaSep(totalGas)}}`)
+})
+
+================
+File: generate-setup/generate.js
+================
+const fs = require('fs')
+module.exports = function(version) {
+  let template = fs.readFileSync('./setup-template', 'utf-8')
+  let commands = fs.readFileSync('./setup-commands', 'utf-8').split('\n')
+  commands = commands.map(l => {
+    if (!l || l.substr(0, 2) === '//') return l
+    return `q.push("${l}")`
+  })
+  template = template.replace(/\$VERSION/g, version)
+  template = template.replace('$COMMANDS', commands.join('\n'))
+  fs.writeFileSync('../setup', template)
+}
+
+================
+File: generate-setup/parse.js
+================
+const fs = require('fs')
+const sha3 = require('solidity-sha3').default
+const generate = require('./generate')
+const version = process.argv[3] || 1
+const batch = process.argv[2] === 'true'
+const st = Date.now()
+const files = fs.readdirSync('../contracts')
+const contracts = files
+  .filter(f => f.includes('.sol'))
+  .filter(f => f.includes('Matryx') || f.includes('Lib'))
+  .map(f => fs.readFileSync(`../contracts/${f}`, 'utf-8'))
+const source = contracts.join('\n')
+const interfaceReg = /interface (\w+)\s+\{(.+?)^\}/gms
+const libAndContractReg = /(?:library|contract) (\w+).+?\{(.+?)^\}/gms
+const libReg = /library (\w+)\s+\{(.+?)^\}/gms
+const structReg = /struct (\w+?)\s+\{(.+?)\}/gs
+const membersReg = /^\s+(\S+)\s+\w+;/gm
+const dynTypesReg = /.*\[\].*|^(?!address|bool|bytes\d+|u?int\d*)/
+const fnReg = /function (\w+)\(([\s\S]*?)\)[\s\S]*?[{;]/gm
+const wordTypesReg = /^(address|bool|bytes\d+|u?int\d*)$/
+const arrayType = /\[(\d*)\]/
+const slots = {
+  'MatryxPlatform.Info': 0,
+  'MatryxPlatform.Data': 3
+}
+const structs = {}
+const selectors = {}
+const setup = []
+const methods = []
+const sizeof = type => {
+  if (structs[type] !== undefined) {
+    return structs[type].words
+  }
+  if (wordTypesReg.test(type)) return 1
+  if (type.includes('mapping')) return 1
+  let match = arrayType.exec(type)
+  if (!match) throw new Error('wtf happened: ' + type)
+  return +match[1] || 1
+}
+const flattenStruct = structName => {
+  const struct = structs[structName]
+  let members = struct.tuple.replace(/^\(|\)$/g, '').split(',')
+  members = members.map(member => {
+    if (structs[member] !== undefined) {
+      return flattenStruct(member)
+    } else return member
+  })
+  return members.join(',')
+}
+let match
+// parse all the structs in the libraries
+while ((match = libAndContractReg.exec(source))) {
+  const [, libName, libContent] = match
+  while ((match = structReg.exec(libContent))) {
+    const [, name, members] = match
+    let isDyn = false
+    let types = []
+    while ((match = membersReg.exec(members))) {
+      const type = match[1]
+      types.push(type)
+      isDyn |= !!dynTypesReg.test(type)
+    }
+    structs[`${libName}.${name}`] = {
+      dynamic: !!isDyn,
+      tuple: `(${types.join(',')})`
+    }
+  }
+}
+// calculate all the struct sizes
+for (const structName of Object.keys(structs)) {
+  const struct = structs[structName]
+  if (struct.dynamic) {
+    struct.words = 1
+    continue
+  }
+  const basicTypes = flattenStruct(structName).split(',')
+  struct.words = basicTypes.map(sizeof).reduce((a, x) => a + x, 0)
+}
+console.log(JSON.stringify(structs, 0, 2))
+console.log(' ')
+// parse all interfaces to build selector->name lookup
+while ((match = interfaceReg.exec(source))) {
+  const [, interfaceName, interfaceContent] = match
+  while ((match = fnReg.exec(interfaceContent))) {
+    const [, fnName, fnArgs] = match
+    if (match[0].includes(' view ')) continue
+    const argTypes = (fnArgs || '')
+      .split(/, ?/)
+      .map(p => p.split(' ')[0])
+      .map(type => {
+        const s = structs[type]
+        return s !== undefined ? s.tuple : type
+      })
+    const contractCall = `${interfaceName.replace('IMatryx', '')}.${fnName}`
+    const call = `${fnName}(${argTypes.join(',')})`
+    const selector = sha3(call).substr(0, 10)
+    selectors[selector] = contractCall
+  }
+}
+libReg.lastIndex = 0
+while ((match = libReg.exec(source))) {
+  const [, libName, libContent] = match
+  while ((match = fnReg.exec(libContent))) {
+    if (match[0].includes('internal')) continue
+    let [, fnName, fnArgs] = match
+    if (!fnArgs) fnArgs = ''
+    fnArgs = fnArgs.replace(/\s{2,}/g, ' ').trim()
+    const params = fnArgs.split(/, ?/).map(p => p.split(' '))
+    const injParams = params.filter(p => p.includes('storage')).map(p => slots[p[0]])
+    const numInject = injParams.length
+    const toParams = params.map(p => {
+      if (p[1] == 'storage') return `${p[0]} ${p[1]}`
+      else return p[0]
+    })
+    const toSig = `${fnName}(${toParams.join(',')})`
+    const toSel = sha3(toSig).substr(0, 10)
+    const nonStorage = toParams.slice(2).filter(p => !p.includes('storage'))
+    const fromParams = nonStorage.map(type => {
+      const s = structs[type]
+      return s !== undefined ? s.tuple : type
+    })
+    const fromSig = `${fnName}(${fromParams.join(',')})`
+    const fromSel = sha3(fromSig).substr(0, 10)
+    let i = 0
+    const dynParams = []
+    const numDyn = nonStorage.reduce((c, type) => {
+      if (!dynTypesReg.test(type)) {
+        i += sizeof(type)
+        return c
+      }
+      if (type && structs[type] !== undefined) {
+        if (!structs[type].dynamic) {
+          i += structs[type].words
+          return c
+        }
+      }
+      dynParams.push(i)
+      i++
+      return c + 1
+    }, 0)
+    console.log(`${libName}.${fnName}: inject ${numInject}, dynamic ${numDyn}${numDyn ? ` at ${dynParams.join(' ')}` : ''}`)
+    console.log(fromSel, fromSig)
+    console.log(toSel, toSig)
+    console.log(' ')
+    if (!batch) {
+      const comment = `// ${libName.replace('Lib', 'Matryx')}.${fnName}`
+      const fnData = `['${toSel}', [${injParams}], [${dynParams}]]`
+      const call = `system.addContractMethod(${version}, stringToBytes('${libName}'), '${fromSel}', ${fnData})`
+      setup.push(comment)
+      setup.push(call)
+    } else {
+      methods.push({ libName, fromSel, toSel, injParams, dynParams })
+    }
+  }
+  if (!batch) setup.push('')
+}
+if (batch) {
+  // sort / group methods
+  methods.sort((a, b) => {
+    let dir = 0
+    if (!dir && a.libName != b.libName) dir = a.libName > b.libName ? 1 : -1
+    if (!dir && a.injParams != b.injParams) dir = a.injParams > b.injParams ? 1 : -1
+    if (!dir && a.dynParams != b.dynParams) dir = a.dynParams > b.dynParams ? 1 : -1
+    return dir
+  })
+  // split methods by group
+  groups = []
+  for (let m of methods) {
+    let pushed = false
+    for (let g of groups) {
+      if (g[0].libName !== m.libName) continue
+      if (g[0].injParams.toString() !== m.injParams.toString()) continue
+      if (g[0].dynParams.toString() !== m.dynParams.toString()) continue
+      g.push(m)
+      pushed = true
+    }
+    if (!pushed) groups.push([m])
+  }
+  for (let g of groups) {
+    const fromSels = g.map(m => `'${m.fromSel}'`)
+    const toSels = g.map(m => `'${m.toSel}'`)
+    const m = g[0]
+    const fnData = `['0x00', [${m.injParams}], [${m.dynParams}]]`
+    const command = `system.addContractMethods(${version}, stb('${m.libName}'), [${fromSels}], [${toSels}], ${fnData}, { gasLimit: 3e6 })`
+    setup.push(command)
+  }
+}
+fs.writeFileSync('./setup-commands', setup.join('\n'))
+fs.writeFileSync('./selectors.json', JSON.stringify(selectors, 0, 2))
+console.log(`completed in ${Date.now() - st} ms`)
+generate(version)
+
+================
+File: generate-setup/setup-commands
+================
+system.addContractMethods(1, stb('LibCommit'), ['0x2cd23d7a'], ['0x0b1ddb95'], ['0x00', [0,3], [3]], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibCommit'), ['0xa99fa3e2','0x1c7cf44c','0xb66f39ad'], ['0x19b0cda0','0x9f596981','0xa9a983a3'], ['0x00', [0,3], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibCommit'), ['0x85db66e8'], ['0x4a1482dc'], ['0x00', [0,3], [1]], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibCommit'), ['0x777cfd5f'], ['0x1c4f0048'], ['0x00', [0,3], [1,5]], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibCommit'), ['0x29735a89','0xd1587a18','0x6c052cd8','0x8784ea96','0x8e739461'], ['0xa0c41de2','0x4f4abca8','0x2e44a1db','0x2d548a40','0xcbfd9f70'], ['0x00', [3], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibCommit'), ['0x2c9d9e9e'], ['0x1c7997d7'], ['0x00', [3], [0]], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibPlatform'), ['0x5a9b0b89'], ['0x2c27d013'], ['0x00', [0], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibPlatform'), ['0xbddb7c83'], ['0x0841f3f7'], ['0x00', [0,3], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibPlatform'), ['0xc8dfd591'], ['0x2ba215d8'], ['0x00', [0,3], [0]], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibPlatform'), ['0xb786ed91','0xe10f1b06','0x12b58349','0x078c51f0','0xf7f20cb3','0x756dd3a4','0x52c7c9e4'], ['0xf76c668e','0xcda2084d','0x7f279bd0','0x54b73af5','0x275111eb','0x348785e9','0xc71db8ba'], ['0x00', [3], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibTournament'), ['0x542fe6c2','0x4dc958e1','0xe1226bb1','0xe9fad8ee','0xe97dcb62','0xb554d538'], ['0xf7230424','0x32bbc3ae','0x13f957a0','0x22fb9c1e','0x19fe07db','0xcb80ac36'], ['0x00', [0,3], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibTournament'), ['0x9e4ce509','0xe7528e1f'], ['0x429f6bc5','0x9a0a9b66'], ['0x00', [0,3], [0]], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibTournament'), ['0x9999d2ae','0x88c3ffb0','0x66383d32','0xc642e7bf','0xb6b12e61','0xa84fa137','0x12065fe0','0x6c87da28','0x3c3ccc44','0x5a9b0b89','0x52c01fab','0x39900857','0xdca0f3ef','0xfbbf93a0','0x1865c57d'], ['0xed7c9de9','0xbf98435e','0xf064d1ae','0x98093da0','0x457ec7c4','0xc40137b1','0x8a1250dd','0x125ab97d','0xfab2d488','0xd8bf2551','0xb419874a','0xc28cd1fb','0x8a57f372','0xba90b857','0xb5413d67'], ['0x00', [3], []], { gasLimit: 3e6 })
+system.addContractMethods(1, stb('LibTournament'), ['0xb48e492c'], ['0x4f18a63e'], ['0x00', [3], [0]], { gasLimit: 3e6 })
+
+================
+File: generate-setup/setup-template
+================
+q = []
+
+q.push("system = contract(MatryxSystem.address, MatryxSystem)")
+q.push("system.createVersion($VERSION)")
+q.push("system.setVersion($VERSION)")
+
+q.push("system.setContract($VERSION, stb('MatryxPlatform'), MatryxPlatform.address)")
+q.push("system.setContractType(MatryxPlatform.address, 1)")
+
+q.push("system.setContract($VERSION, stb('MatryxCommit'), MatryxCommit.address)")
+q.push("system.setContractType(MatryxCommit.address, 2)")
+
+q.push("system.setContract($VERSION, stb('LibPlatform'), LibPlatform.address)")
+q.push("system.setContract($VERSION, stb('LibCommit'), LibCommit.address)")
+q.push("system.setContract($VERSION, stb('LibTournament'), LibTournament.address)")
+
+q.push("system.setLibraryName(0, stb('LibPlatform'))")
+q.push("system.setLibraryName(1, stb('LibPlatform'))")
+q.push("system.setLibraryName(2, stb('LibCommit'))")
+q.push("system.setLibraryName(3, stb('LibTournament'))")
+
+$COMMANDS
+
+q.push("c = contract(MatryxCommit.address, IMatryxCommit)")
+q.push("p = contract(MatryxPlatform.address, IMatryxPlatform)")
+
+q.push("token = contract(network.tokenAddress, MatryxToken)")
+q.push("token.setReleaseAgent(network.accounts[0])")
+q.push("token.releaseTokenTransfer()")
+q.push("token.mint(network.accounts[0], toWei(1e4))")
+q.push("token.mint(network.accounts[1], toWei(1e4))")
+q.push("token.mint(network.accounts[2], toWei(1e4))")
+q.push("token.mint(network.accounts[3], toWei(1e4))")
+q.push("token.mint(network.accounts[4], toWei(1e4))")
+
+;(async () => { for (let cmd of q) try { await eval(cmd) } catch (err) { console.log(err) } })()
+
+================
+File: migrations/1_initial_migration.js
+================
+const Migrations = artifacts.require('./Migrations.sol')
+module.exports = function(deployer) {
+  deployer.deploy(Migrations, { gas: 7e6, overwrite: false })
+}
+
+================
+File: migrations/2_deployToken.js
+================
+const MatryxToken = artifacts.require('MatryxToken')
+const network = require('../truffle/network')
+module.exports = function (deployer) {
+  if (['develop', 'ganache'].includes(network.network)) {
+    deployer.deploy(MatryxToken, { gas: 7e6, overwrite: false })
+  }
+}
+
+================
+File: migrations/2_migrate_system.js
+================
+const MatryxSystem = artifacts.require('MatryxSystem')
+module.exports = function(deployer) {
+  deployer.deploy(MatryxSystem, { gas: 7e6, overwrite: false })
+}
+
+================
+File: migrations/3_migrate_contracts.js
+================
+const MatryxSystem = artifacts.require('MatryxSystem')
+const MatryxPlatform = artifacts.require('MatryxPlatform')
+const MatryxCommit = artifacts.require('MatryxCommit')
+const network = require('../truffle/network')
+module.exports = function(deployer) {
+  deployer.deploy(MatryxPlatform, MatryxSystem.address, network.tokenAddress, { gas: 7e6, overwrite: false })
+  deployer.deploy(MatryxCommit, '1', MatryxSystem.address, { gas: 7e6, overwrite: false })
+}
+
+================
+File: migrations/4_migrate_libraries.js
+================
+const LibPlatform = artifacts.require('LibPlatform')
+const LibCommit = artifacts.require('LibCommit')
+const LibTournament = artifacts.require('LibTournament')
+module.exports = function (deployer) {
+  deployer.deploy(LibTournament, { gas: 7e6, overwrite: false })
+  deployer.link(LibTournament, LibPlatform)
+  deployer.deploy(LibPlatform, { gas: 7e6, overwrite: false })
+  deployer.link(LibTournament, LibCommit)
+  deployer.deploy(LibCommit, { gas: 7e6, overwrite: false })
+}
+
+================
+File: migrations/5_migrate_testing.js
+================
+const network = require('../truffle/network')
+const LibPlatform2 = artifacts.require('LibPlatform2')
+const LibCommit2 = artifacts.require('LibCommit2')
+const LibTournament2 = artifacts.require('LibTournament2')
+module.exports = function (deployer) {
+  if (['develop', 'ganache'].includes(network.network)) {
+    deployer.deploy(LibTournament2, {gas: 8e6, overwrite: false})
+    deployer.link(LibTournament2, LibPlatform2)
+    deployer.deploy(LibPlatform2, {gas: 8e6, overwrite: false})
+    deployer.link(LibTournament2, LibCommit2)
+    deployer.deploy(LibCommit2, {gas: 8e6, overwrite: false})
+  }
+}
+
+================
+File: truffle-config.js
+================
+const fs = require('fs')
+const Web3 = require('web3')
+const HDWalletProvider = require("truffle-hdwallet-provider")
+ethers = require('ethers')
+network = require('./truffle/network')
+const utils = require('./truffle/utils')
+getMinedTx = utils.getMinedTx
+bts = bytesToString = utils.bytesToString
+ntb = numberToBytes = utils.numberToBytes
+stb = stringToBytes = utils.stringToBytes
+contract = utils.Contract
+keccak = str => '0x' + ethUtil.keccak(str).hexSlice(0)
+selector = signature => keccak(signature).substr(0, 10)
+gt = getTx = hash => wallet.provider.getTransaction(hash)
+gtr = getTxR = hash => wallet.provider.getTransactionReceipt(hash)
+hex = dec => '0x' + dec.toString(16)
+dec = hex => parseInt(hex, 16)
+fromWei = wei => +ethers.utils.formatEther(wei.toString())
+toWei = eth => ethers.utils.parseEther(eth.toString())
+network.setNetwork('develop')
+module.exports = {
+  networks: {
+    development: {
+      host: "localhost",
+      port: 8545,
+      provider: function () {
+        network.setNetwork('ganache')
+        wallet = new ethers.Wallet(network.privateKeys[0], network.provider)
+        return new HDWalletProvider(network.mnemonic, "http://localhost:8545")
+      },
+      network_id: "*",
+      gas: 8e6,
+      gasPrice: 5e9,
+      skipDryRun: true
+    },
+    ropsten: {
+      provider: function () {
+        network.setNetwork('ropsten')
+        wallet = new ethers.Wallet(network.privateKeys[0], network.provider)
+        return new HDWalletProvider(network.mnemonic, "https://ropsten.infura.io/metamask")
+      },
+      network_id: 3,
+      gas: 8e6,
+      gasPrice: 5e9
+    },
+    kovan: {
+      provider: function () {
+        network.setNetwork('kovan')
+        wallet = new ethers.Wallet(network.privateKeys[0], network.provider)
+        return new HDWalletProvider(network.mnemonic, "https://kovan.infura.io/metamask")
+      },
+      network_id: 42,
+      gas: 8e6,
+      gasPrice: 5e9
+    },
+    testing: {
+      host: "localhost",
+      port: 8545,
+      network_id: "*",
+      gas: 8e6,
+      gasPrice: 5e9
+    },
+    coverage: {
+      host: "localhost",
+      network_id: "*",
+      port: 8545,
+      gas: 9000000000,
+      gasPrice: 100000
+    }
+  },
+  mocha: {
+    enableTimeouts: false
+  },
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
+  }
+}
+
+================
+File: truffle/benchmark.js
+================
+const fs = require('fs')
+const chalk = require('chalk')
+const { setup, genId, genAddress, getMinedTx, sleep, stringToBytes32, stringToBytes, Contract } = require('./utils')
+const toWei = n => web3.utils.toWei(n.toString())
+web3.toWei = toWei
+let MatryxTournament, MatryxRound, MatryxSubmission, platform, token, wallet
+let IMatryxTournament, IMatryxRound, IMatryxSubmission
+let timeouts = []
+const init = async () => {
+  const data = await setup(artifacts, web3, 0)
+  MatryxTournament = data.MatryxTournament
+  IMatryxTournament = data.IMatryxTournament
+  MatryxRound = data.MatryxRound
+  IMatryxRound = data.IMatryxRound
+  MatryxSubmission = data.MatryxSubmission
+  IMatryxSubmission = data.IMatryxSubmission
+  wallet = data.wallet
+  platform = data.platform
+  token = data.token
+}
+let benchmarkReport = ''
+const report = msg => {
+  console.log(msg)
+  benchmarkReport += msg + '\n'
+}
+const createTournament = async (accountNumber) => {
+  const tournamentData = {
+    title: stringToBytes32('Benchmark Tournament', 3),
+    descHash: stringToBytes32('QmWmuZsJUdRdoFJYLsDBYUzm12edfW7NTv2CzAgaboj6ke', 2),
+    fileHash: stringToBytes32('QmeNv8oumYobEWKQsu4pQJfPfdKq9fexP2nh12quGjThRT', 2),
+    bounty: web3.toWei(10),
+    entryFee: web3.toWei(2)
+  }
+  const start = Math.floor(new Date() / 1000)
+  const roundData = {
+    start,
+    end: start + 600,
+    review: 600,
+    bounty: web3.toWei(5)
+  }
+  const tx = await platform.createTournament(tournamentData, roundData)
+  const txr = await getMinedTx(tx.hash)
+  return txr
+}
+let refs = []
+const createSubmission = async (tournament, accountNumber, numContribs, numRefs) => {
+  tournament.accountNumber = accountNumber
+  platform.accountNumber = accountNumber
+  const account = tournament.wallet.address
+  const isEntrant = await tournament.isEntrant(account)
+  if (!isEntrant) {
+    let allowance = +await token.allowance(account, platform.address)
+    if (!allowance) {
+      let entryFee = await tournament.getEntryFee()
+      token.accountNumber = accountNumber
+      let { hash } = await token.approve(platform.address, entryFee)
+      await getMinedTx(hash)
+    }
+    let { hash } = await tournament.enter()
+    await getMinedTx(hash)
+  }
+  const submissionData = {
+    title: stringToBytes32('Benchmark Submission', 3),
+    descHash: stringToBytes32('QmZVK8L7nFhbL9F1Ayv5NmieWAnHDm9J1AXeHh1A3EBDqK', 2),
+    fileHash: stringToBytes32('QmfFHfg4NEjhZYg8WWYAzzrPZrCMNDJwtnhh72rfq3ob8g', 2),
+    distribution: new Array(numContribs + 1).fill(0).map((_, i) => 1),
+    contributors: new Array(numContribs).fill(0).map(r => genAddress()),
+    references: refs.slice(0, numRefs)
+  }
+  const tx = await tournament.createSubmission(submissionData)
+  const txr = await getMinedTx(tx.hash)
+  const [_, roundAddress] = await tournament.getCurrentRound()
+  const round = Contract(roundAddress, IMatryxRound)
+  const submissionAddress = (await round.getSubmissions(0,0)).pop()
+  refs.push(submissionAddress)
+  return txr
+}
+const benchmarkTournaments = async () => {
+  await setup(artifacts, web3, 0, true)
+  const gasUsed = []
+  for (let i = 0; i < 10; i++) {
+    const txr = await createTournament(0)
+    gasUsed.push(+txr.gasUsed)
+  }
+  const first = gasUsed.shift()
+  const average = gasUsed.reduce((a, x) => a + x) / gasUsed.length
+  report(`first tournament: ${first}`)
+  report(`average tournament: ${average}\n`)
+}
+const benchmarkSubmissions = async () => {
+  await setup(artifacts, web3, 1, true)
+  let gasUsed
+  const tAddress = (await platform.getTournaments(0, 0)).pop()
+  const t = Contract(tAddress, IMatryxTournament)
+  gasUsed = []
+  for (let i = 0; i < 10; i++) {
+    const txr = await createSubmission(t, '0x00',  false, 1, 0, 0)
+    gasUsed.push(+txr.gasUsed)
+  }
+  let first = gasUsed.shift()
+  let average = gasUsed.reduce((a, x) => a + x) / gasUsed.length
+  report(`first submission (0 contribs, 0 refs): ${first}`)
+  report(`average submission (0 contribs, 0 refs): ${average}`)
+  gasUsed = []
+  for (let i = 0; i < 5; i++) {
+    const txr = await createSubmission(t, '0x00',  false, 1, 5, 0)
+    gasUsed.push(+txr.gasUsed)
+  }
+  average = gasUsed.reduce((a, x) => a + x) / gasUsed.length
+  report(`average submission (5 contribs, 0 refs): ${average}`)
+  gasUsed = []
+  for (let i = 0; i < 5; i++) {
+    const txr = await createSubmission(t, '0x00',  false, 1, 0, 5)
+    gasUsed.push(+txr.gasUsed)
+  }
+  average = gasUsed.reduce((a, x) => a + x) / gasUsed.length
+  report(`average submission (0 contribs, 5 refs): ${average}`)
+  gasUsed = []
+  for (let i = 0; i < 5; i++) {
+    const txr = await createSubmission(t, '0x00',  false, 1, 5, 5)
+    gasUsed.push(+txr.gasUsed)
+  }
+  average = gasUsed.reduce((a, x) => a + x) / gasUsed.length
+  report(`average submission (5 contribs, 5 refs): ${average}`)
+}
+module.exports = async exit => {
+  try {
+    await init()
+    await benchmarkTournaments()
+    await benchmarkSubmissions()
+    const dateStr = new Date().toLocaleString().replace(/:\d\d$/, '')
+    const reportFile = `./truffle/benchmarks/benchmark ${dateStr}.txt`
+    fs.writeFileSync(reportFile, benchmarkReport)
+  } catch (err) {
+    console.log(err.message)
+  } finally {
+    timeouts.forEach(t => clearTimeout(t))
+    exit()
+  }
+}
+
+================
+File: truffle/leAutomatedPreload.js
+================
+const chalk = require('chalk')
+const { setup, getMinedTx, sleep, stringToBytes32, stringToBytes, Contract } = require('./utils')
+let MatryxTournament, MatryxRound, MatryxSubmission, platform, token, wallet
+let timeouts = []
+const genId = length => new Array(length).fill(0).map(() => Math.floor(36 * Math.random()).toString(36)).join('')
+const genAddress = () => '0x' + new Array(40).fill(0).map(() => Math.floor(16 * Math.random()).toString(16)).join('')
+const init = async () => {
+  const data = await setup(artifacts, web3, 0)
+  MatryxTournament = data.MatryxTournament
+  MatryxRound = data.MatryxRound
+  MatryxSubmission = data.MatryxSubmission
+  wallet = data.wallet
+  platform = data.platform
+  token = data.token
+}
+const createTournament = async (bounty, roundData, accountNumber) => {
+  const { platform } = await setup(artifacts, web3, accountNumber)
+  let account = platform.wallet.address
+  let count = +await platform.tournamentCount()
+  console.log('Platform using account', platform.wallet.address)
+  console.log(`Currently ${count} Tournaments on Platform`)
+  const suffix = ('0' + (count + 1)).substr(-2)
+  const title = stringToBytes32('Test Tournament ' + suffix, 3)
+  const descriptionHash = stringToBytes32('QmWmuZsJUdRdoFJYLsDBYUzm12edfW7NTv2CzAgaboj6ke', 2)
+  const fileHash = stringToBytes32('QmeNv8oumYobEWKQsu4pQJfPfdKq9fexP2nh12quGjThRT', 2)
+  const tournamentData = {
+    title,
+    descriptionHash,
+    fileHash,
+    initialBounty: bounty,
+    entryFee: web3.toWei(2)
+  }
+  let tx = await platform.createTournament(tournamentData, roundData)
+  await getMinedTx(tx.hash)
+  const address = await platform.allTournaments(count)
+  const tournament = Contract(address, MatryxTournament, accountNumber)
+  console.log(chalk`Tournament created: {green ${address}}`)
+  let [_, roundAddress] = await tournament.currentRound()
+  let round = Contract(roundAddress, MatryxRound, accountNumber)
+  console.log(chalk`Current round: {green ${roundAddress}}\n`)
+  let startTime = +await round.getStartTime()
+  let endTime = +await round.getEndTime()
+  let reviewEnd = endTime + roundData.reviewPeriodDuration
+  let now = Date.now()
+  let timeTilStart = startTime * 1000 - now
+  let timeTilEnd = endTime * 1000 - now
+  let timeTilReviewEnd = reviewEnd * 1000 - now
+  timeouts.push(setTimeout(() => console.log(chalk`{grey [Tournament round started]}`), timeTilStart))
+  timeouts.push(setTimeout(() => console.log(chalk`{grey [Tournament round ended]}`), timeTilEnd))
+  timeouts.push(setTimeout(() => console.log(chalk`{grey [Tournament round review ended]}`), timeTilReviewEnd))
+  return tournament
+}
+const createSubmission = async (tournament, accountNumber) => {
+  await setup(artifacts, web3, accountNumber)
+  tournament.accountNumber = accountNumber
+  platform.accountNumber = accountNumber
+  const account = tournament.wallet.address
+  const isEntrant = await tournament.isEntrant(account)
+  if (!isEntrant) {
+    let { hash } = await platform.enterTournament(tournament.address)
+    await getMinedTx(hash)
+  }
+  const title = stringToBytes32('A submission ' + genId(6), 3)
+  const descriptionHash = stringToBytes32('QmZVK8L7nFhbL9F1Ayv5NmieWAnHDm9J1AXeHh1A3EBDqK', 2)
+  const fileHash = stringToBytes32('QmfFHfg4NEjhZYg8WWYAzzrPZrCMNDJwtnhh72rfq3ob8g', 2)
+  const submissionData = {
+    title,
+    descriptionHash,
+    fileHash,
+    timeSubmitted: 0,
+    timeUpdated: 0
+  }
+  const contribsAndRefs = {
+    contributors: new Array(0).fill(0).map(r => genAddress()),
+    contributorRewardDistribution: new Array(0).fill(1),
+    references: new Array(0).fill(0).map(r => genAddress())
+  }
+  let tx = await tournament.createSubmission(submissionData, contribsAndRefs)
+  await getMinedTx(tx.hash)
+  const [_, roundAddress] = await tournament.currentRound()
+  const round = Contract(roundAddress, MatryxRound)
+  const submissions = await round.getSubmissions()
+  const submissionAddress = submissions.pop()
+  const submission = Contract(submissionAddress, MatryxSubmission, accountNumber)
+  console.log(chalk`Submission created: {green ${submission.address}}\n`)
+  return submission
+}
+const updateSubmission = async submission => {
+  const modData = {
+    title: stringToBytes32('AAAAAA', 3),
+    descriptionHash: stringToBytes32('BBBBBB', 2),
+    fileHash: stringToBytes32('CCCCCC', 2)
+  }
+  let tx
+  tx = await submission.updateData(modData)
+  await getMinedTx(tx.hash)
+  const conModData = {
+    contributorsToAdd: new Array(3).fill(0).map(() => genAddress()),
+    contributorRewardDistribution: new Array(3).fill(1),
+    contributorsToRemove: []
+  }
+  tx = await submission.updateContributors(conModData)
+  await getMinedTx(tx.hash)
+  const refModData = {
+    referencesToAdd: new Array(3).fill(0).map(() => genAddress()),
+    referencesToRemove: []
+  }
+  tx = await submission.updateReferences(refModData)
+  await getMinedTx(tx.hash)
+}
+const logSubmissions = async tournament => {
+  const [_, roundAddress] = await tournament.currentRound();
+  console.log(chalk`Current round: {green ${roundAddress}}`)
+  const round = Contract(roundAddress, MatryxRound)
+  const submissions = await round.getSubmissions()
+  submissions.forEach((s, i) => {
+    console.log(chalk`Submission ${i + 1}: {green ${s}}`)
+  })
+  return submissions
+}
+const waitUntilClose = async (tournament) => {
+  const [_, roundAddress] = await tournament.currentRound();
+  const round = Contract(roundAddress, MatryxRound)
+  const roundEndTime = +await round.getEndTime()
+  const reviewPeriodDuration = +await round.getReviewPeriodDuration()
+  const timeTilClose = Math.max(0, roundEndTime + reviewPeriodDuration - Date.now() / 1000)
+  console.log(chalk`{grey [Waiting ${~~timeTilClose}s until current round over]}`)
+  await sleep(timeTilClose * 1000)
+}
+const selectWinnersWhenInReview = async (tournament, accountNumber, winners, rewardDistribution, roundData, selectWinnerAction) => {
+  tournament.accountNumber = accountNumber
+  const [_, roundAddress] = await tournament.currentRound()
+  const round = Contract(roundAddress, MatryxRound, accountNumber)
+  const roundEndTime = await round.getEndTime()
+  let timeTilRoundInReview = roundEndTime - Date.now() / 1000
+  timeTilRoundInReview = timeTilRoundInReview > 0 ? timeTilRoundInReview : 0
+  console.log(chalk`{grey [Waiting ${~~timeTilRoundInReview}s until review period]}`)
+  await sleep(timeTilRoundInReview * 1000)
+  const tx = await tournament.selectWinners([winners, rewardDistribution, selectWinnerAction, 0], roundData)
+  await getMinedTx(tx.hash)
+}
+module.exports = async exit => {
+  try {
+    await init()
+    const tournamentCreator = 0
+    let RoundNotYetOpen = {
+      start: Math.floor(Date.now() / 1000) + 999999,
+      end: Math.floor(Date.now() / 1000) + 9999999,
+      reviewPeriodDuration: 12345678,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_a = await createTournament(web3.toWei(10), RoundNotYetOpen, tournamentCreator)
+    let RoundUnfunded = {
+      start: Math.floor(Date.now() / 1000) + 60,
+      end: Math.floor(Date.now() / 1000) + 999999,
+      reviewPeriodDuration: 12345678,
+      bounty: 0,
+      closed: false
+    }
+    const tournament_b = await createTournament(web3.toWei(10), RoundUnfunded, tournamentCreator)
+    let RoundOpenWithZero = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 999999,
+      reviewPeriodDuration: 12345678,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_c = await createTournament(web3.toWei(10), RoundOpenWithZero, tournamentCreator)
+    let RoundOpenWithThree = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 999999,
+      reviewPeriodDuration: 12345678,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_d = await createTournament(web3.toWei(10), RoundOpenWithThree, tournamentCreator)
+    submission = await createSubmission(tournament_d, 1)
+    await updateSubmission(submission)
+    await createSubmission(tournament_d, 2)
+    await createSubmission(tournament_d, 3)
+    let RoundHasWinnersWithThree = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 300,
+      reviewPeriodDuration: 12345678,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_e = await createTournament(web3.toWei(10), RoundHasWinnersWithThree, tournamentCreator)
+    await createSubmission(tournament_e, 1)
+    await createSubmission(tournament_e, 2)
+    await createSubmission(tournament_e, 3)
+    submissions_e = await logSubmissions(tournament_e)
+    await selectWinnersWhenInReview(tournament_e, tournamentCreator, submissions_e, submissions_e.map(s => 1), RoundHasWinnersWithThree, 0)
+    let RoundInReviewWithZero = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 300,
+      reviewPeriodDuration: 999999,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_f = await createTournament(web3.toWei(10), RoundInReviewWithZero, tournamentCreator)
+    let RoundInReviewWithThree = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 300,
+      reviewPeriodDuration: 999999,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_g = await createTournament(web3.toWei(10), RoundInReviewWithThree, tournamentCreator)
+    await createSubmission(tournament_g, 1)
+    await createSubmission(tournament_g, 2)
+    await createSubmission(tournament_g, 3)
+    submissions_g = await logSubmissions(tournament_g)
+    await selectWinnersWhenInReview(tournament_g, tournamentCreator, submissions_g, submissions_g.map(s => 1), RoundHasWinnersWithThree, 0)
+    let RoundClosedWithThree = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 300,
+      reviewPeriodDuration: 120,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_h = await createTournament(web3.toWei(10), RoundClosedWithThree, tournamentCreator)
+    await createSubmission(tournament_h, 1)
+    await createSubmission(tournament_h, 2)
+    await createSubmission(tournament_h, 3)
+    submissions_h = await logSubmissions(tournament_h)
+    await selectWinnersWhenInReview(tournament_h, tournamentCreator, submissions_h, submissions_h.map(s => 1), RoundHasWinnersWithThree, 0)
+    let RoundAbandonedWithZero = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 300,
+      reviewPeriodDuration: 1,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_i = await createTournament(web3.toWei(10), RoundAbandonedWithZero, tournamentCreator)
+    let RoundAbandonedWithThree = {
+      start: Math.floor(Date.now() / 1000),
+      end: Math.floor(Date.now() / 1000) + 300,
+      reviewPeriodDuration: 1,
+      bounty: web3.toWei(3),
+      closed: false
+    }
+    const tournament_j = await createTournament(web3.toWei(10), RoundAbandonedWithThree, tournamentCreator)
+    await createSubmission(tournament_j, 1)
+    await createSubmission(tournament_j, 2)
+    await createSubmission(tournament_j, 3)
+  } catch (err) {
+    console.log(err.message)
+  } finally {
+    timeouts.forEach(t => clearTimeout(t))
+    exit()
+  }
+}
+
+================
+File: truffle/network.js
+================
+const fs = require('fs')
+const path = require('path')
+const ethers = require('ethers')
+const mnemonicHelper = require('mnemonichelper')
+let accounts, privateKeys, mnemonic, provider, tokenAddress, network
+const setNetwork = id => {
+    if (network === id) return
+    network = id
+    mnemonic = "fix tired congress gold type flight access jeans payment echo chef host"
+    if (network === 'ganache') {
+        provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+        tokenAddress = '0x0c484097e2f000aadaef0450ab35aa00652481a1'
+    }
+    else if (network === 'develop') {
+        provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:9545')
+        tokenAddress = '0x0c484097e2f000aadaef0450ab35aa00652481a1'
+    }
+    else if (network == 'coverage') {
+        provider = new ethers.providers.JsonRpcProvider('')
+        tokenAddress = '0x0c484097e2f000aadaef0450ab35aa00652481a1'
+    }
+    else if (['kovan', 'ropsten'].includes(network)) {
+        provider = new ethers.providers.InfuraProvider(network, 'metamask')
+        tokenAddress = '0xf35a0f92848bdfdb2250b60344e87b176b499a8f'
+        const mnemonicPath = path.join(__dirname, '../../keys/ropsten_mnemonic.txt')
+        mnemonic = fs.readFileSync(mnemonicPath, 'utf8').trim().replace(/(\n|\r|\t|\u2028|\u2029|)/gm, '')
+    }
+    else console.log('bro check yo network')
+    const accs = mnemonicHelper.getAccounts(mnemonic, 0, 10)
+    accounts = accs.map(acc => ethers.utils.getAddress(acc[0]))
+    privateKeys = accs.map(acc => acc[1])
+}
+module.exports = {
+    setNetwork,
+    get network() { return network },
+    get accounts() { return accounts },
+    get privateKeys() { return privateKeys },
+    get provider() { return provider },
+    get tokenAddress() { return tokenAddress },
+    get mnemonic() { return mnemonic }
+}
+
+================
+File: truffle/README
+================
+To use, start truffle console and run "exec truffle/test.js"
+
+================
+File: truffle/test.js
+================
+const Web3 = require('web3')
+const web3 = new Web3('taco')
+const { setupContracts, createTournament, createSubmission, selectWinnersWhenInReview } = require('../test/helpers')(artifacts, web3)
+const { Contract } = require('./utils')
+Contract.logLevel = 2
+let platform, commit
+const toWei = n => web3.utils.toWei(n.toString())
+web3.toWei = toWei
+module.exports = async exit => {
+  try {
+    let data = await setupContracts()
+    platform = data.platform
+    commit = data.commit
+    roundData = {
+      start: 0,
+      duration: 10,
+      review: 10,
+      bounty: toWei(5)
+    }
+    t = await createTournament('tournament', toWei(10), roundData, 0)
+    let roundIndex = await t.getCurrentRoundIndex()
+    s = await createSubmission(t, '0x00', toWei(1), 1)
+    commitHash = (await platform.getSubmission(s)).commitHash
+    await selectWinnersWhenInReview(t, [s], [1], [0, 0, 0, 0], 2)
+    commit.accountNumber = 1
+    await commit.withdrawAvailableReward(commitHash)
+    commit.accountNumber = 0
+  } catch (err) {
+    console.log(err.message)
+  } finally {
+    exit()
+  }
+}
+
+================
+File: truffle/utils.js
+================
+const ethers = require('ethers')
+const chalk = require('chalk')
+const network = require('./network')
+const genId = length => new Array(length).fill(0).map(() => Math.floor(36 * Math.random()).toString(36)).join('')
+const genAddress = () => '0x' + new Array(40).fill(0).map(() => Math.floor(16 * Math.random()).toString(16)).join('')
+function getMinedTx(hash) {
+  return new Promise((resolve, reject) => {
+    (async function checkTx() {
+      const txr = await network.provider.getTransactionReceipt(hash)
+      if (txr) {
+        if (!txr.status) return reject({ message: 'revert' })
+        resolve(txr)
+      } else setTimeout(checkTx, 1000)
+    })()
+  })
+}
+const nonces = {}
+function Contract(address, artifact, accountNumber = 0) {
+  const name = artifact.contractName.replace(/I?Matryx/g, '')
+  let data = {
+    name,
+    accountNumber,
+    contract: {},
+    logLevel: Contract.logLevel || 2, // 0 none, 1 reverts, 2 completion, 3 verbose
+    wallet: {},
+    resetNonce,
+  }
+  let noncePromise = Promise.resolve()
+  function resetNonce() {
+    noncePromise = new Promise(async resolve => {
+      const nonce = await data.wallet.getTransactionCount()
+      nonces[data.accountNumber] = nonce
+      resolve()
+    })
+  }
+  const fnWrapper = fnName => async function () {
+    // wait for nonce reset, if not done yet
+    await noncePromise
+    const fn = data.contract[fnName]
+    const constant = artifact.abi.find(fn => fn.name === fnName).constant
+    const prefix = chalk`{grey       * }`
+    let nonce
+    if (!constant && nonces[data.accountNumber] !== undefined) {
+      const realNonce = await data.wallet.getTransactionCount()
+      if (realNonce > nonces[data.accountNumber]) {
+        // if nonce on chain is higher, replace saved nonce
+        nonces[data.accountNumber] = realNonce
+      }
+      nonce = nonces[data.accountNumber]
+      nonces[data.accountNumber]++
+    }
+    try {
+      let config = { nonce }
+      const args = [...arguments]
+      const last = args[args.length - 1]
+      const configKeys = ['gasLimit', 'gasPrice', 'from', 'gas']
+      if (typeof last === "object" && Object.keys(last).some(key => configKeys.includes(key))) {
+        args.pop()
+        config = { ...last, ...config }
+      }
+      const res = await fn.apply(null, [...args, config])
+      if (data.logLevel >= 3 && !constant) {
+        console.log(chalk`${prefix}{grey Waiting for {cyan ${name}}.{yellow ${fnName}} ({cyan ${res.hash}})...}`)
+      }
+      if (data.logLevel >= 2 && !constant) {
+        getMinedTx(res.hash).then(txr => {
+          const status = chalk`{${txr.status ? 'green completed' : 'red failed'}}`
+          const gas = +txr.gasUsed
+          const color = gas < 1e6 ? 'green' : gas < 2e6 ? 'yellow' : 'red'
+          const gasUsed = chalk`{grey (used {${color} ${gas}} gas)}`
+          console.log(chalk`${prefix}{cyan ${name}}.{yellow ${fnName}} ${status} ${gasUsed}`)
+        })
+      }
+      return res
+    } catch (err) {
+      let message = ''
+      if (err.message.includes('revert')) message = 'revert'
+      if (err.message.includes('out of gas')) message = 'out of gas'
+      if (data.logLevel >= 1 && message) {
+        console.log(chalk`${prefix}{cyan ${name}}.{yellow ${fnName}} {red ${message}}`)
+      }
+      else if (!err.message.includes('VM') && !constant) {
+        // if error before even firing tx, decrement nonce
+        nonces[data.accountNumber]--
+      }
+      throw err
+    }
+  }
+  let proxy = new Proxy(data, {
+    set(obj, prop, val) {
+      if (['acc', 'accountNumber'].includes(prop)) {
+        obj.accountNumber = val
+        obj.wallet = new ethers.Wallet(network.privateKeys[obj.accountNumber], network.provider)
+        obj.contract = new ethers.Contract(address, artifact.abi, obj.wallet)
+        obj.c = obj.contract
+        resetNonce()
+      } else if (prop === 'wallet') {
+        obj.accountNumber = -1
+        obj.wallet = val
+        obj.contract = new ethers.Contract(address, artifact.abi, obj.wallet)
+        obj.c = obj.contract
+        resetNonce()
+      } else if (prop === 'logLevel') {
+        obj.logLevel = val
+      }
+    },
+    get(obj, prop) {
+      if (obj.hasOwnProperty(prop)) return obj[prop]
+      else if (prop === 'nonce') {
+        return nonces[obj.accountNumber]
+      } else {
+        if (typeof obj.contract[prop] === 'function') return fnWrapper(prop)
+        else return obj.contract[prop]
+      }
+    }
+  })
+  proxy.accountNumber = accountNumber
+  return proxy
+}
+async function setup(artifacts, web3, accountNum, silent) {
+  const MatryxSystem = artifacts.require('MatryxSystem')
+  const IMatryxSystem = artifacts.require('IMatryxSystem')
+  const MatryxPlatform = artifacts.require('MatryxPlatform')
+  const IMatryxPlatform = artifacts.require('IMatryxPlatform')
+  const MatryxToken = artifacts.require('MatryxToken')
+  const MatryxCommit = artifacts.require('MatryxCommit')
+  const IMatryxCommit = artifacts.require('IMatryxCommit')
+  const MatryxTournament = artifacts.require('MatryxTournament')
+  const IMatryxTournament = artifacts.require('IMatryxTournament')
+  const account = network.accounts[accountNum]
+  const platform = Contract(MatryxPlatform.address, IMatryxPlatform, accountNum)
+  const commit = Contract(MatryxCommit.address, IMatryxCommit)
+  const token = Contract(network.tokenAddress, MatryxToken)
+  const system = Contract(MatryxSystem.address, IMatryxSystem)
+  const log = silent ? () => { } : console.log
+  log(chalk`\nSetup {yellow ${account}}`)
+  const tokenReleaseAgent = await token.releaseAgent()
+  if (tokenReleaseAgent === '0x0000000000000000000000000000000000000000') {
+    let { hash } = await token.setReleaseAgent(account)
+    await this.getMinedTx(hash)
+    await token.releaseTokenTransfer()
+    log('Token release agent set to: ' + account)
+  }
+  const balance = await token.balanceOf(account) / 1e18 | 0
+  log('Balance: ' + balance + ' MTX')
+  let tokens = web3.toWei(1e5)
+  if (balance == 0) {
+    let { hash } = await token.mint(account, tokens)
+    await this.getMinedTx(hash)
+  }
+  const allowance = await token.allowance(account, platform.address) / 1e18 | 0
+  log('Allowance: ' + allowance + ' MTX')
+  if (allowance == 0) {
+    token.accountNumber = accountNum
+    let { hash } = await token.approve(MatryxPlatform.address, tokens)
+    await this.getMinedTx(hash)
+  }
+  log(`Account ${accountNum} setup complete!\n`)
+  return {
+    MatryxPlatform,
+    MatryxToken,
+    MatryxTournament,
+    IMatryxTournament,
+    system,
+    platform,
+    commit,
+    token
+  }
+}
+module.exports = {
+  Contract,
+  genId,
+  genAddress,
+  getMinedTx,
+  setup,
+  async now() {
+    await network.provider.send("evm_mine")
+    const block = await network.provider.getBlock()
+    return +block.timestamp
+  },
+  sleep(ms) {
+    return new Promise(done => setTimeout(done, ms))
+  },
+  async timetravel(seconds) {
+    await network.provider.send("evm_increaseTime", [seconds])
+    await network.provider.send("evm_mine")
+  },
+  bytesToString(bytes) {
+    if (bytes.length && !bytes.map) bytes = [bytes]
+    let arr = bytes.map(b => Array.from(ethers.utils.arrayify(b)))
+    let utf8 = [].concat(...arr).filter(x => x)
+    return ethers.utils.toUtf8String(utf8)
+  },
+  numberToBytes(number) {
+    let bytes = ethers.utils.hexlify(number)
+    return '0x' + ('0'.repeat(64) + bytes.substr(2)).substr(-64)
+  },
+  stringToBytes(text, len = 0) {
+    text = text || ''
+    let data = ethers.utils.toUtf8Bytes(text)
+    let padding = 64 - ((data.length * 2) % 64)
+    data = ethers.utils.hexlify(data)
+    data = data + '0'.repeat(padding)
+    if (len <= 0) return data
+    data = data.substring(2)
+    data = data.match(/.{1,64}/g)
+    data = data.map(v => '0x' + v)
+    while (data.length < len) {
+      data.push('0x00')
+    }
+    return data
+  }
+}
+
+
+
+
+
+================================================================
+End of Codebase
+================================================================

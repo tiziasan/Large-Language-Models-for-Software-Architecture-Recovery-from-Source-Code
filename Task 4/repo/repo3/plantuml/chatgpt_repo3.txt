@@ -1,0 +1,93 @@
+@startuml
+skinparam componentStyle rectangle
+hide stereotypes
+
+package "zswag (project)" {
+
+  package "Python API (zswag)" {
+    [OAServer\n(connexion/Flask integration)] as ZSWAG_SERVER
+    [OpenAPI Schema Generator\n(zswag.gen)] as ZSWAG_GEN
+    [Reflection & Request Serialization\n(zswag.reflect)] as ZSWAG_REFLECT
+    [Doc Extraction\n(zswag.doc)] as ZSWAG_DOC
+  }
+
+  package "Python/C++ Bridge (pyzswagcl)" {
+    [pyzswagcl Module\n(pybind11 bindings)] as PY_BIND
+    [PyOpenApiClient\n(Python wrapper)] as PY_OA_CLIENT
+  }
+
+  package "C++ OpenAPI Client Runtime (zswagcl)" {
+    [OAClient\n(zserio IServiceClient)] as OA_CLIENT
+    [OpenAPIClient\n(request execution)] as OPENAPI_CLIENT
+    [OpenAPI Parser\n(YAML -> config)] as OPENAPI_PARSER
+    [OpenAPI Config Model\n(servers, paths, params, security)] as OPENAPI_CONFIG
+    [Parameter Mapping\n(value formatting, styles)] as PARAM_HELPER
+    [Security Handling\n(Auth registry)] as SECURITY
+    [OAuth2 Client Credentials\n(token mint/refresh)] as OAUTH2
+    [Base64 Codec] as BASE64
+  }
+
+  package "HTTP Support Library (httpcl)" {
+    [IHttpClient / HttpLibHttpClient] as HTTP_CLIENT
+    [HTTP Settings\n(YAML config + env)] as HTTP_SETTINGS
+    [Secret Store\n(keychain integration)] as HTTP_SECRET
+    [URI Parser/Builder] as HTTP_URI
+    [OAuth1 Signature\n(HMAC-SHA256)] as HTTP_OAUTH1
+    [Logging\n(spdlog)] as HTTP_LOG
+  }
+
+  package "External Dependencies" {
+    [zserio runtime & type info] as EXT_ZSERIO
+    [cpp-httplib] as EXT_HTTPLIB
+    [yaml-cpp] as EXT_YAML_CPP
+    [OpenSSL] as EXT_OPENSSL
+    [pybind11] as EXT_PYBIND11
+    [connexion / Flask] as EXT_CONNEXION
+  }
+
+  '--- High-level flows / dominant interactions ---
+
+  ' Python server-side integration
+  ZSWAG_SERVER --> ZSWAG_GEN : auto-generate\nOpenAPI spec (optional)
+  ZSWAG_SERVER --> PY_BIND : uses parsing/config\nfrom native module
+  ZSWAG_SERVER --> ZSWAG_REFLECT : build request blobs\nfrom HTTP params
+
+  ' Python client-side integration (PyOpenApiClient)
+  PY_BIND --> PY_OA_CLIENT : exposes OAClient\nwrapper API
+  PY_OA_CLIENT --> OPENAPI_PARSER : parse/fetch OpenAPI\n(spec URL or file)
+  PY_OA_CLIENT --> OPENAPI_CLIENT : invoke method calls\nby operationId
+
+  ' C++ zserio client integration
+  OA_CLIENT --> OPENAPI_CLIENT : invoke method calls\nwith zserio request data
+  OA_CLIENT --> EXT_ZSERIO : reflectable access\n(type info required)
+
+  ' OpenAPI runtime core
+  OPENAPI_CLIENT --> OPENAPI_CONFIG : resolve method,\nparams, servers
+  OPENAPI_CLIENT --> PARAM_HELPER : serialize params\n(path/query/header/body)
+  OPENAPI_CLIENT --> HTTP_SETTINGS : load & merge\nHTTP config per URL
+  OPENAPI_CLIENT --> SECURITY : satisfy security\nrequirements
+  OPENAPI_CLIENT --> HTTP_CLIENT : execute HTTP\n(GET/POST/PUT/PATCH/DELETE)
+  OPENAPI_PARSER --> OPENAPI_CONFIG : build config model
+
+  ' Security / OAuth
+  SECURITY --> OAUTH2 : OAuth2 client-credentials\nsupport
+  OAUTH2 --> HTTP_CLIENT : token mint/refresh\nHTTP calls
+  OAUTH2 --> HTTP_SECRET : load secrets\n(optional)
+  OAUTH2 --> HTTP_OAUTH1 : optional OAuth1 signature\nfor token endpoint auth
+  OAUTH2 --> BASE64 : basic auth encoding\n(client_id:secret)
+
+  ' HTTP support relationships
+  HTTP_CLIENT --> HTTP_URI : parse/build request URIs
+  HTTP_CLIENT --> HTTP_SETTINGS : apply headers/proxy/auth\nand query params
+  HTTP_SETTINGS --> HTTP_SECRET : load/store/remove secrets\n(optional)
+  HTTP_OAUTH1 --> EXT_OPENSSL : HMAC/crypto RNG
+  HTTP_CLIENT --> EXT_HTTPLIB : HTTP transport
+  HTTP_SETTINGS --> EXT_YAML_CPP : YAML parsing/storage
+  HTTP_LOG --> HTTP_CLIENT : request logging
+  HTTP_LOG --> HTTP_SETTINGS : config logging
+  HTTP_LOG --> OPENAPI_CLIENT : runtime logging
+  PY_BIND --> EXT_PYBIND11 : native bindings
+  ZSWAG_SERVER --> EXT_CONNEXION : REST framework
+}
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+title HomeSensorHub — High-Level Architecture
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Operator / OS Service" as Operator
+
+component "Application Runtime\n(HomeSensorHub Orchestrator)" as App
+component "Application Entry Point" as Entry
+
+package "Sensors Subsystem" as Sensors {
+  component "Sensor Discovery / Probing\n(Probe Framework + Sensor-Specific Probes)" as Probing
+  component "Sensor Runtime\n(Asynchronous & Polled Sensor Types)" as SensorRuntime
+  component "Measurement Payload\n(Value + Metadata)" as Payload
+}
+
+package "Messaging Subsystem" as Messaging {
+  component "MQTT Publisher\n(Sender)" as Publisher
+  component "MQTT Subscriber\n(Property Updates)" as Subscriber
+  component "MQTT Client Wrapper\n(Singleton Bus Adapter)" as MQTT
+}
+
+package "External / Platform" as Platform {
+  node "I2C / Sensor Drivers\n(External Libraries)" as I2CDrivers
+  node "GPIO / Motion Sensor Driver\n(External Library)" as GPIODriver
+  cloud "MQTT Broker" as Broker
+  component "Logging Facility" as Log
+}
+
+' Lifecycle
+Operator --> Entry
+Entry --> App
+
+' Orchestration
+App --> Probing : discover available sensors
+App --> Publisher : configure message publishing
+App --> Subscriber : configure property subscriptions
+
+' Sensor acquisition & payload creation
+Probing --> I2CDrivers : access I2C sensors
+Probing --> GPIODriver : access GPIO motion sensor
+Probing --> SensorRuntime : instantiate sensor types
+
+SensorRuntime --> Payload : create measurement payloads
+SensorRuntime --> Publisher : emit payloads via callback
+
+' Messaging
+Publisher --> MQTT : publish payloads
+Subscriber --> MQTT : subscribe to property topics
+MQTT --> Broker : MQTT publish/subscribe
+
+Subscriber --> SensorRuntime : apply property updates\n(e.g., polling configuration)
+
+' Cross-cutting
+App --> Log
+Sensors --> Log
+Messaging --> Log
+
+@enduml

@@ -1,0 +1,74 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title High-Level Architecture: Matryx Platform
+
+package "External Actors" {
+    actor "User / Creator" as User
+}
+
+package "Asset Layer" {
+    component "MatryxToken (MTX)" as Token <<ERC20>>
+}
+
+package "System Kernel (Registry & Upgrades)" {
+    component "MatryxSystem" as System <<Registry>>
+    note bottom of System
+        Acts as the "System of Record".
+        Maps versions, contract names,
+        and function selectors to
+        implementation addresses.
+    end note
+}
+
+package "Service Layer (Proxies & State)" {
+    note "These components hold state (Data structs)\nbut delegate execution logic." as ProxyNote
+    
+    component "MatryxPlatform" as Platform <<Hub>>
+    component "MatryxTournament" as Tournament <<Entity>>
+    component "MatryxCommit" as CommitService <<Service>>
+    
+    Platform .d.> ProxyNote
+}
+
+package "Business Logic Layer (Implementation)" {
+    component "LibPlatform" as LibPlat <<Library>>
+    component "LibTournament" as LibTourn <<Library>>
+    component "LibCommit" as LibComm <<Library>>
+    component "LibGlobals" as LibGlob <<Shared Types>>
+    
+    LibPlat .u.> LibGlob : uses
+    LibTourn .u.> LibGlob : uses
+    LibComm .u.> LibGlob : uses
+}
+
+' Interactions
+User --> Platform : 1. Create Tournament
+User --> CommitService : 2. Create Commit/Work
+User --> Tournament : 3. Enter & Submit
+User --> Token : 4. Approve/Transfer
+
+' System Dependencies (Resolution)
+Platform -r-> System : Query Implementation
+Tournament -u-> System : Query Implementation
+CommitService -u-> System : Query Implementation
+
+' Delegation (Execution)
+Platform ..> LibPlat : DelegateCall (Logic)
+Tournament ..> LibTourn : DelegateCall (Logic)
+CommitService ..> LibComm : DelegateCall (Logic)
+
+' Domain Flows
+Platform --> Tournament : Deploys New Instance
+Tournament --> Token : Manages Bounties/Fees
+Tournament --> CommitService : Links Submissions to Commits
+CommitService --> Token : Distributes Rewards
+
+' Library Dependencies
+LibPlat --> Token : Checks Balance/Allowance
+LibTourn --> Token : Transfers Funds
+LibTourn --> LibComm : Validates Commits
+
+@enduml

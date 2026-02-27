@@ -1,0 +1,46 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+package "zswag Library (Python)" {
+    [Service Definition & Server SDK] as PythonSDK
+    [Reflection & Generator Utils] as GenUtils
+}
+
+package "Native Extension (C++/Python)" {
+    [Python Client Bindings (pyzswagcl)] as PyBindings
+}
+
+package "Core Libraries (C++)" {
+    [OpenAPI Client Engine (zswagcl)] as OAEngine
+    [HTTP Transport Foundation (httpcl)] as HttpFoundation
+}
+
+package "External Ecosystem" {
+    [Zserio Framework] as Zserio
+    [Connexion / Flask] as WebFramework
+    [Remote Services] as Network
+}
+
+' Python Layer relationships
+PythonSDK --> WebFramework : Integrates for Server Mode
+PythonSDK --> Zserio : Serialization/Type Handling
+PythonSDK --> GenUtils : Uses for Spec Generation
+PythonSDK --> PyBindings : Imports Client & Config
+
+' Generator validation path
+GenUtils --> PyBindings : Validates Generated Specs
+GenUtils --> Zserio : Reflects Types
+
+' Binding Layer relationships
+PyBindings --> OAEngine : Exposes C++ API
+PyBindings --> HttpFoundation : Exposes Settings/Config
+
+' C++ Core relationships
+OAEngine --> HttpFoundation : Uses for Network I/O
+OAEngine --> Zserio : Handles Blob Data
+
+' Transport Layer relationships
+HttpFoundation --> Network : HTTP/HTTPS Requests
+
+@enduml

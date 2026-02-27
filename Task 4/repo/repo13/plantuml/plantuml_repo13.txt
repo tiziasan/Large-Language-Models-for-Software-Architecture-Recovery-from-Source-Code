@@ -1,0 +1,60 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+title ffunc (FastCGI Function Router) - High-Level Architecture
+
+package "Client / Edge" as edge {
+  component "HTTP Client\n(e.g., curl/browser)" as client
+  component "NGINX\n(reverse proxy)" as nginx
+  component "NGINX Config\n(fastcgi_param FN_HANDLER,\nfastcgi_pass ...)" as nginx_conf
+}
+
+package "Function Service Process\n(ffunc runtime)" as runtime {
+  component "ffunc Master/Worker Launcher\n(process supervision & restart)" as launcher
+  component "FastCGI Acceptor\n(FCGX_OpenSocket/Accept_r)" as fcgi_accept
+  component "Thread Pool\n(pthread workers)" as threadpool
+  component "Request Dispatcher\n(FN_HANDLER routing)" as dispatcher
+  component "Handler Registry\n(dynamic lookup)" as registry
+  component "Session & Memory Pool\n(ffunc_session_t + pool allocator)" as session_pool
+  component "Body Reader\n(limit / no-limit)" as body_reader
+  component "Signal/Crash Handler\n(backtrace on fatal)" as crash_handler
+}
+
+package "User Application\n(function handlers)" as app {
+  component "User Handlers\n(FFUNC functions)\ngetProfile / postProfile / postError / ...\n(+ optional ffunc_direct_consume)" as handlers
+  component "Optional App Init Handler\n(app_init_handler / name)\n(e.g., logger init)" as app_init
+}
+
+database "Process Environment\n(FCGI params/envp)" as env
+
+cloud "FastCGI Library\n(libfcgi / fcgiapp)" as libfcgi
+cloud "Dynamic Symbol Resolver\n(dlopen/dlsym or GetProcAddress)" as dynload
+
+client --> nginx : HTTP request
+nginx --> nginx_conf : applies FastCGI routing rules
+nginx --> fcgi_accept : FastCGI request\n(via fastcgi_pass)\nsets FN_HANDLER
+nginx_conf --> env : defines FN_HANDLER\n& passes QUERY_STRING, CONTENT_LENGTH, ...
+
+launcher --> crash_handler : installs signal handlers
+launcher --> fcgi_accept : starts service\n(master/worker)
+launcher --> app_init : invokes once per worker\n(if configured)
+
+fcgi_accept --> libfcgi : FCGX_Init / OpenSocket / Accept_r
+fcgi_accept --> threadpool : dispatch accepted requests\nto workers
+
+threadpool --> dispatcher : per-request handling
+dispatcher --> registry : resolve handler by FN_HANDLER
+registry --> dynload : lookup handler symbols\n(dlsym / GetProcAddress)
+dynload --> handlers : binds function pointers
+
+dispatcher --> session_pool : create session\n+ per-request pool
+dispatcher --> env : read FN_HANDLER,\nQUERY_STRING, CONTENT_LENGTH
+dispatcher --> body_reader : read request body\n(optional size cap)
+body_reader --> libfcgi : reads from request->in
+dispatcher --> handlers : invoke resolved handler\n(or direct consume/default)
+handlers --> libfcgi : writes response\n(FCGX_FPrintF)
+
+@enduml

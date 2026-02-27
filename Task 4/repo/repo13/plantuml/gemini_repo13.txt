@@ -1,0 +1,59 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+title High-Level Architecture: FFunc (FastCGI Function Framework)
+
+package "External Environment" {
+    component "Web Server / Reverse Proxy\n(e.g., Nginx)" as WebServer
+}
+
+package "FFunc System Process" {
+
+    package "Core Framework (Infrastructure)" {
+        component "Lifecycle & Process Manager" as Lifecycle
+        component "FastCGI Adapter\n(Worker Threads)" as Adapter
+        component "Dynamic Dispatcher" as Dispatcher
+        
+        package "Runtime Support" {
+             component "Memory Pool Allocator" as MemPool
+             component "I/O Utilities" as IO
+        }
+    }
+
+    package "User Service Layer" {
+        component "Service Configuration\n(ffunc_main)" as UserConfig
+        component "Business Logic Handlers\n(e.g., getProfile, postError)" as UserHandlers
+    }
+}
+
+' -- Boot Sequence / Configuration --
+Lifecycle -> UserConfig : 1. Invoke Entry Point
+UserConfig ..> Lifecycle : Return Config\n(Port, Threads, Function Map)
+Lifecycle -> Adapter : 2. Initialize Socket & Spawn Threads
+
+' -- Request Flow --
+WebServer =down=> Adapter : FastCGI Request\n(TCP/Unix Socket)
+Adapter -> Dispatcher : 3. Pass Request Context
+
+' -- Dispatching --
+Dispatcher ..> UserHandlers : 4. Resolve & Invoke Handler\n(Based on FN_HANDLER param)
+
+' -- Runtime Interaction --
+UserHandlers --> IO : Read Input / Write Output
+UserHandlers --> MemPool : Allocate Request-Scoped Memory
+IO -down-> Adapter : Stream Response
+
+note right of Dispatcher
+  Maps string identifiers to 
+  function symbols dynamically
+  (dlsym / GetProcAddress)
+end note
+
+note left of Lifecycle
+  Handles Master/Worker model,
+  Signal handling, and 
+  Platform specifics (Linux/Win)
+end note
+
+@enduml

@@ -1,0 +1,84 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam ranksep 50
+skinparam nodesep 50
+
+title High-Level Architectural View: Lyrics Mood Classification System
+
+actor "End User" as User
+
+package "Presentation Layer (Container)" {
+    component "Frontend Application" as Frontend {
+        [React SPA]
+    }
+}
+
+package "Application Layer (Container)" {
+    component "Backend Service" as Backend {
+        port "HTTP/8000" as Port8000
+        
+        component "API Controller" as Controller
+        note right of Controller: Orchestrates search, scraping,\nclassification, and storage flows
+        
+        component "NLP Preprocessor" as NLP
+        note bottom of NLP: Spacy-based tokenization,\nlemmatization, cleaning
+        
+        component "Mood Classifier" as Classifier
+        note bottom of Classifier: TensorFlow/CNN Model\n(Predicts Mood)
+        
+        component "Similarity Engine" as Recommender
+        note bottom of Recommender: Sklearn/TF-IDF/SVD\n(Finds similar songs)
+        
+        component "Persistence Adapter" as DBClient
+        note bottom of DBClient: ElasticSearch Client Wrapper
+        
+        component "Scraping Client" as Scraper
+    }
+
+    file "Model Artifacts" as Artifacts {
+        [CNN Model]
+        [Tokenizer]
+        [Label Encoder]
+    }
+}
+
+package "Data Layer (Container)" {
+    database "Elasticsearch" as DB {
+        [Lyrics & Mood Index]
+    }
+    
+    component "Data Initializer" as Loader
+    note bottom of Loader: Python Script & Startup Shell\nHydrates DB from CSV on boot
+}
+
+cloud "External API" {
+    [Genius.com API] as ExternalAPI
+}
+
+' Relationships
+User --> Frontend : Interactions (Search Song/Artist)
+Frontend --> Port8000 : REST API (POST /search)
+Port8000 -- Controller
+
+Controller --> DBClient : 1. Check if song exists
+Controller --> Scraper : 2. Fetch lyrics if missing
+Scraper --> ExternalAPI : HTTPS Request
+
+Controller --> NLP : 3. Process raw text
+NLP --> Classifier : Preprocessed tokens
+Classifier ..> Artifacts : Load model/weights
+Classifier --> Controller : Return Mood
+
+Controller --> DBClient : 4. Index new song data
+DBClient <--> DB : Read/Write JSON Documents
+
+Controller --> Recommender : 5. Request similar songs
+Recommender --> DBClient : Fetch songs by mood
+Recommender --> Controller : Return ranked similarity list
+
+Loader --> DB : Hydrates index (Startup)
+
+@enduml

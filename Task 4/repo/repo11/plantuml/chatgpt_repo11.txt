@@ -1,0 +1,112 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "External User / DApp" as User
+actor "Platform Owner" as Owner
+
+package "On-Chain (Solidity)" as OnChain {
+
+  package "Core Registry & Dispatch" as Core {
+    component "MatryxSystem\n(Version & Contract Registry,\nType→Library Mapping,\nMethod Injection Metadata)" as System <<contract>>
+    component "MatryxPlatform\n(Storage + Dispatcher/Fallback)\n(Resolves library by msg.sender/type,\nDelegatecalls library implementation)" as Platform <<contract>>
+  }
+
+  package "Forwarder Proxies" as Proxies {
+    component "MatryxForwarder\n(Generic Call Forwarder)\n(Finds MatryxPlatform by version/system,\nForwards calldata + injected params)" as Forwarder <<contract>>
+    component "MatryxCommit\n(Proxy Facade)\n(Forwards commit-related calls)" as CommitProxy <<contract>>
+    component "MatryxTournament\n(Proxy Facade)\n(Forwards tournament-related calls)" as TournamentProxy <<contract>>
+  }
+
+  package "Library Implementations\n(delegatecall targets)" as Libs {
+    component "LibPlatform\n(Platform API:\ninfo/query/admin,\ncreateTournament)" as LibPlatform <<library>>
+    component "LibCommit\n(Commit API:\nclaim/create commits,\ngroups,\nreward withdrawals)" as LibCommit <<library>>
+    component "LibTournament\n(Tournament API:\nround lifecycle,\nentries/submissions,\nwinners,\nwithdraw/recover)" as LibTournament <<library>>
+    component "LibGlobals\n(Enums & Shared Types)" as LibGlobals <<library>>
+    component "SafeMath\n(Arithmetic Guards)" as SafeMath57 <<library>>
+  }
+
+  package "Token Subsystem (ERC20 + Upgrade/Mint)" as Token {
+    component "MatryxToken\n(ERC20 + Mintable + Upgradeable)" as MatryxToken <<contract>>
+    component "ERC20 / StandardToken\n(Balances/Allowances)" as ERC20Impl <<contract>>
+    component "UpgradeableToken\n(Upgrade Master/Agent)" as Upgradeable <<contract>>
+  }
+
+  package "Ownership / Access Control" as Access {
+    component "Ownable\n(Owner / Pending Owner)" as Ownable57 <<contract>>
+    component "Ownable (Token)\n(Token Owner)" as Ownable50 <<contract>>
+    component "Haltable / Releasable\n(Token Controls)" as TokenControls <<contract>>
+  }
+}
+
+package "Off-Chain Tooling (Node/Truffle)" as OffChain {
+  component "Truffle Migrations\n(deploy system/platform/proxies/libs/token)" as Migrations <<script>>
+  component "Setup Generator\n(parse.sol → selectors &\nSystem.addContractMethods)" as SetupGen <<script>>
+  component "Gas Parser\n(ganache + ethers:\nlogs gas per tx)" as GasParser <<script>>
+  component "Dev/Test Utilities\n(ethers wrappers,\nbenchmarks, local network cfg)" as Utils <<script>>
+  database "Ganache Local Chain\n(dev network)" as Ganache <<devnet>>
+}
+
+' --- Primary user interactions
+User --> CommitProxy : commit-related calls
+User --> TournamentProxy : tournament-related calls
+User --> Platform : platform API (direct)
+
+Owner --> System : manage versions/contracts/types\n(createVersion/setVersion/setContract/\nsetLibraryName/addContractMethods)
+Owner --> Platform : admin actions\n(blacklist, token upgrade,\nwithdraw tokens, ownership transfer)
+
+' --- Forwarding / dispatch flow
+CommitProxy -down-|> Forwarder
+TournamentProxy -down-|> Forwarder
+
+Forwarder --> System : getContract(version,"MatryxPlatform")
+Forwarder --> Platform : forward calldata\n(+ caller + version injection)
+
+Platform --> System : getVersion()/getLibraryName(msg.sender)\ngetContract(version, libName)\ngetContractMethod(version,cName,selector)
+Platform --> LibPlatform : delegatecall (selected)
+Platform --> LibCommit : delegatecall (selected)
+Platform --> LibTournament : delegatecall (selected)
+
+' --- Domain-level dependencies
+LibPlatform --> System : getVersion(), setContractType()\n(register new tournament proxy type)
+LibPlatform --> TournamentProxy : deploy new MatryxTournament(version, system)
+LibPlatform --> MatryxToken : transferFrom()\n(bounty funding)
+LibCommit --> MatryxToken : transferFrom()/transfer()\n(commit staking/rewards)
+LibTournament --> MatryxToken : transferFrom()/transfer()\n(entry fees, rewards, withdrawals)
+
+' --- Shared utilities
+LibPlatform ..> LibGlobals
+LibCommit ..> LibGlobals
+LibTournament ..> LibGlobals
+LibPlatform ..> SafeMath57
+LibCommit ..> SafeMath57
+LibTournament ..> SafeMath57
+
+' --- Token internal structure (coarse)
+MatryxToken ..> ERC20Impl
+MatryxToken ..> Upgradeable
+MatryxToken ..> TokenControls
+ERC20Impl ..> Ownable50
+TokenControls ..> Ownable50
+Upgradeable ..> Ownable50
+
+' --- Ownership
+System ..> Ownable57
+Platform ..> SafeMath57
+
+' --- Off-chain toolchain relationships
+Migrations --> Ganache : deploy
+Migrations --> System
+Migrations --> Platform
+Migrations --> CommitProxy
+Migrations --> MatryxToken
+Migrations --> LibPlatform
+Migrations --> LibCommit
+Migrations --> LibTournament
+
+SetupGen --> System : generate & execute\naddContractMethods/addContractMethod(s)
+GasParser --> Ganache : watch transactions\n(JsonRpcProvider)
+Utils --> Ganache : client interactions\n(ethers/web3 wrappers)
+Utils --> Platform : invoke flows\n(setup/bench/test)
+
+@enduml

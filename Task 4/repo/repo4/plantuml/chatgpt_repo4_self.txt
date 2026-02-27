@@ -1,0 +1,52 @@
+@startuml
+title ModelBank — High-Level Architecture (Revised)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+package "Entry Points" {
+  [CLI Bootstrap\n(main.go)] as CLI
+  [gRPC API Server\n(server/modelbank_server.go)] as GRPCServer
+}
+
+package "Interface Adapters (Providers)" {
+  [ModelBank Controller Adapter\n(providers/modelbankController.go)] as Controller
+  [DB Provider / Repository Adapter\n(providers/dbProvider.go)] as DbProvider
+  [gRPC Contract (Proto + Generated Stubs)\n(providers/modelbank.proto + modelbank.pb.go)] as GrpcContract
+}
+
+package "Application Layer (Use Cases)" {
+  [ModelBank Use Case Interactor\n(usecases/modelbankUsecase.go)] as Usecase
+  interface "ModelBankUsecaseInputPort" as IUsecaseIn
+  interface "ModelBankUsecaseOutputPort" as IUsecaseOut
+  interface "ModelBankEntityGateway" as IEntityGateway
+}
+
+package "Domain Model" {
+  [Domain Entities\n(entities/*)] as DomainEntities
+}
+
+package "Infrastructure" {
+  [PostgreSQL\n(go-pg)] as Postgres
+}
+
+' ---- Dominant interactions evidenced in code ----
+CLI --> DbProvider : setup schema / seed\n(ModelbankDB_Model)
+CLI --> Controller : invoke application use cases
+
+GRPCServer --> GrpcContract : uses service definition
+GRPCServer --> Controller : delegates CreateConsent flow
+
+Controller --> IUsecaseIn : calls application services
+Usecase ..|> IUsecaseIn
+Usecase ..|> IUsecaseOut
+
+Usecase --> IEntityGateway : persistence operations
+DbProvider ..|> IEntityGateway
+DbProvider --> Postgres : connect / CRUD
+
+Usecase --> DomainEntities : creates/reads domain objects
+DbProvider --> DomainEntities : stores/loads domain objects
+
+@enduml

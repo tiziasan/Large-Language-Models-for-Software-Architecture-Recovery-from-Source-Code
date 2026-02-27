@@ -1,0 +1,79 @@
+@startuml
+top to bottom direction
+skinparam componentStyle uml2
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+title Documentation & Developer Portal Architecture
+
+package "Content Sources" as Sources {
+    package "Code Examples" {
+        component "Quickstarts\n(Go, JS, Python)" as Quickstarts
+        component "Tutorials\n(TypeScript)" as Tutorials
+        component "Samples" as Samples
+    }
+
+    package "Platform Definitions" {
+        component "GraphQL Schemas\n(.graphql files)" as GQLSource
+    }
+
+    package "Site Assets" {
+        component "Hugo Theme\n(themes/book)" as Theme
+        component "Diagram Sources\n(.plantuml)" as Diagrams
+        component "Configuration\n(netlify.toml)" as Config
+    }
+}
+
+package "Preprocessing Pipeline" as Preprocess {
+    component "Snippet Extractor\n(extract.js)" as Extractor
+    note right of Extractor
+        Parses code files for
+        CODE:BEGIN/END tags
+    end note
+
+    component "Schema Processor\n(graphql.js)" as SchemaProc
+    note right of SchemaProc
+        Converts GraphQL SDL
+        to JSON representation
+    end note
+
+    component "Diagram Renderer\n(render.sh)" as Renderer
+}
+
+package "Site Generation" as Generation {
+    file "Data Models (JSON)" as JsonData
+    component "Hugo Static Site Generator" as Hugo
+}
+
+package "Distribution" as Dist {
+    component "Netlify Build System" as Netlify
+    artifact "Public Website\n(HTML/CSS/JS)" as Artifacts
+}
+
+' Relationships
+
+' Code Extraction Flow
+Quickstarts --> Extractor : "Source Input"
+Tutorials --> Extractor : "Source Input"
+Samples --> Extractor : "Source Input"
+Extractor --> JsonData : "Generates\nexamples.json"
+
+' Schema Processing Flow
+GQLSource --> SchemaProc : "Source Input"
+SchemaProc --> JsonData : "Generates\ngraphql.json"
+
+' Diagram Flow
+Diagrams --> Renderer
+Renderer --> Theme : "Outputs PNGs to\nstatic assets"
+
+' Build Orchestration
+Config ..> Netlify : "Configures"
+Netlify --> Extractor : "Triggers npm run extract"
+Netlify --> Hugo : "Triggers hugo build"
+
+' Site Generation
+JsonData --> Hugo : "Injects Data"
+Theme --> Hugo : "Provides Layout/Styles"
+Hugo --> Artifacts : "Compiles"
+
+@enduml

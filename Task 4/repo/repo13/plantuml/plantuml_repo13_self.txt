@@ -1,0 +1,60 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+title ffunc - High-Level Architecture (from provided code)
+
+package "External Runtime Context" as ext {
+  component "Web Server / FastCGI Frontend\n(e.g., nginx in DockerExample)\nsets FN_HANDLER and forwards request" as web
+  component "FastCGI Library\n(libfcgi / fcgiapp)" as fcgi
+  component "Process Environment\n(FCGI envp params)\nFN_HANDLER, QUERY_STRING,\nCONTENT_LENGTH, ..." as env
+}
+
+package "ffunc Runtime (single binary)" as rt {
+  component "Master/Worker Bootstrap\n(env marker + execve/spawn)\n+ optional daemonize (POSIX)" as boot
+  component "Request Socket Hook\n(FCGX_OpenSocket)\nport or socket string" as socket
+  component "Accept Synchronization\n(mutex around Accept_r)" as accept_mutex
+  component "Worker Thread Pool\n(pthreads / Win threads)" as threads
+  component "Request Handling Pipeline\n(per request)" as pipeline
+  component "Handler Resolution\n(dlsym/GetProcAddress)\nfrom ffunc_nmap_func" as resolve
+  component "Dispatch by FN_HANDLER\n(or direct consume/default)" as dispatch
+  component "Session + Memory Pool\n(ffunc_session_t + pool alloc)" as session
+  component "Body Read Strategy\n(limit vs no-limit)" as bodyread
+  component "Response Output\n(FCGX_FPrintF wrappers)" as out
+  component "Fatal Signal Handler\n(backtrace on crash)\n(POSIX only)" as crash
+}
+
+package "User Application (linked into same binary)" as app {
+  component "User Handlers\nFFUNC functions registered via\nffunc_parse_function(...)\n(e.g., getProfile/postProfile/postError)" as handlers
+  component "Optional Direct Consume\nffunc_direct_consume (if present)\nelse default message" as direct
+  component "Optional App Init\nconf->app_init_handler\nor app_init_handler_name (Win)" as init
+  component "User Configuration Entry\nffunc_main(argc, argv, conf)\nsets sock/backlog/threads/daemon\nand registers handler names" as user_entry
+}
+
+web --> socket : FastCGI connection
+socket --> fcgi : FCGX_Init / OpenSocket
+threads --> fcgi : FCGX_Accept_r / Finish_r
+fcgi --> pipeline : accepted request
+
+pipeline --> session : create session + pool
+pipeline --> env : read FN_HANDLER / QUERY_STRING / CONTENT_LENGTH
+pipeline --> bodyread : read body (ffunc_read_body)
+bodyread --> fcgi : read from request->in
+pipeline --> resolve : resolve handler symbols at startup
+resolve --> handlers : bind function pointers
+pipeline --> dispatch : select by FN_HANDLER
+dispatch --> handlers : call matched handler
+dispatch --> direct : call ffunc_direct_consume\nif FN_HANDLER missing/unmatched
+handlers --> out : write response
+direct --> out : write response
+out --> fcgi : FCGX_FPrintF
+
+boot --> user_entry : invokes ffunc_main\nto configure runtime
+user_entry --> init : provides optional init hook
+boot --> init : invokes init in worker (if set)
+boot --> socket : starts hook/loop
+boot --> crash : installs signal handlers (POSIX)
+
+@enduml

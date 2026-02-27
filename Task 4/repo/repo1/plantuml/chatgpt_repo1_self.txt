@@ -1,0 +1,48 @@
+@startuml
+skinparam componentStyle rectangle
+
+actor User
+
+package "Frontend (React)" {
+  [Web UI]
+}
+
+package "Backend (FastAPI)" {
+  [API Service]
+  [Lyrics Normalization & NLP Preprocessing]
+  [Mood Classification (TensorFlow/Keras CNN)]
+  [Similarity Computation (TF-IDF + SVD + Cosine)]
+  [Elasticsearch Access]
+}
+
+database "Elasticsearch (lyrics_mood_classification index)" as ES
+
+cloud "Genius Lyrics API" as Genius
+
+package "Model Artifacts (local files)" {
+  [CNN Model Directory]
+  [Tokenizer (pickle)]
+  [Label Encoder (npy)]
+}
+
+User --> [Web UI]
+
+[Web UI] --> [API Service] : HTTP POST /search
+
+[API Service] --> [Elasticsearch Access] : get stored lyrics/mood\n(if present)
+[Elasticsearch Access] --> ES : search/index documents
+
+[API Service] --> Genius : fetch lyrics\n(if not stored)
+
+[API Service] --> [Lyrics Normalization & NLP Preprocessing] : normalize + preprocess lyrics
+[API Service] --> [Mood Classification (TensorFlow/Keras CNN)] : predict mood
+[Mood Classification (TensorFlow/Keras CNN)] --> [CNN Model Directory] : load model
+[Mood Classification (TensorFlow/Keras CNN)] --> [Tokenizer (pickle)] : load tokenizer
+[Mood Classification (TensorFlow/Keras CNN)] --> [Label Encoder (npy)] : load classes
+
+[API Service] --> [Elasticsearch Access] : store song + lyrics + mood\n(after classification)
+
+[API Service] --> [Similarity Computation (TF-IDF + SVD + Cosine)] : compute top-N similar songs
+[Similarity Computation (TF-IDF + SVD + Cosine)] --> [Elasticsearch Access] : fetch all songs with same mood
+
+@enduml

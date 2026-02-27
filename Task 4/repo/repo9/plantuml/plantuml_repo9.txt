@@ -1,0 +1,81 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+title High-Level Architecture (from provided code subset)
+
+actor "Documentation Consumer" as User
+
+package "Documentation Website (Hugo)" as Site {
+  [Hugo Content Pages] as HugoContent
+  [Book Theme Templates] as HugoTheme
+  [Front-end Enhancements\n(copy buttons, redirects, ToC)] as FrontendJS
+  [Search Index Builder\n(Lunr data template)] as SearchDataTpl
+  [Static Assets\n(fonts, mermaid, drawings)] as StaticAssets
+}
+
+package "Build & Generation Tooling (Node.js)" as Build {
+  [Example Extractor\nextract.js] as Extractor
+  [GraphQL Schema JSON Generator\ngraphql.js] as SchemaGen
+  [Site Build\n(Hugo)] as HugoBuild
+  [Netlify Build/Deploy\n(netlify.toml)] as Netlify
+  [Diagram Renderer\n(static/drawings/render.sh)] as PlantumlRender
+}
+
+package "Examples & Tutorials (Source Inputs)" as Examples {
+  [Quickstarts\nGo / JavaScript / Python] as Quickstarts
+  [Tutorials\n(TypeScript)] as Tutorials
+  [Bundler Config\n(webpack.prod.js)] as Bundler
+  [Generated gRPC Client Stubs\n(Go protobuf)] as GoPB
+}
+
+package "Generated Data (Build Outputs)" as Data {
+  file "data/examples.json" as ExamplesJSON
+  file "data/eos/graphql.json" as GraphQLJSON
+  folder "public/ (deploy artifact)" as PublicSite
+  file "static/drawings/*.png" as DrawingsPNG
+}
+
+package "External Services (Referenced by Examples)" as External {
+  cloud "Auth Service\n(auth.eosnation.io)" as AuthSvc
+  cloud "dfuse GraphQL over gRPC\n(eos.dfuse.eosnation.io:9000)" as GraphQLGrpc
+  cloud "dfuse REST Endpoint\n(client.endpoints.restUrl)" as DfuseREST
+}
+
+' --- Build pipeline ---
+Netlify --> Extractor : runs "npm run extract"
+Netlify --> HugoBuild : runs "hugo --gc --minify"
+Extractor --> ExamplesJSON : writes extracted code sections
+SchemaGen --> GraphQLJSON : writes JSON schema data
+PlantumlRender --> DrawingsPNG : renders PlantUML to PNG
+
+HugoBuild --> PublicSite : produces deployable site
+HugoBuild --> Site
+
+HugoContent --> HugoBuild
+HugoTheme --> HugoBuild
+FrontendJS --> HugoBuild
+SearchDataTpl --> HugoBuild
+StaticAssets --> HugoBuild
+
+ExamplesJSON --> HugoBuild : consumed as site data
+GraphQLJSON --> HugoBuild : consumed as site data
+DrawingsPNG --> HugoBuild : served as static images
+
+' --- Source relationships ---
+Quickstarts --> Extractor : CODE:BEGIN/END blocks
+Tutorials --> Extractor : CODE:BEGIN/END blocks
+Bundler --> Quickstarts : bundles browser quickstart
+GoPB --> Quickstarts : used by Go quickstart client
+
+' --- Runtime (examples) interactions ---
+Quickstarts --> AuthSvc : obtain API token
+Quickstarts --> GraphQLGrpc : execute GraphQL subscription/query
+Tutorials --> DfuseREST : push transaction via eosjs
+Tutorials --> AuthSvc : token via dfuse client
+
+' --- Site consumption ---
+User --> PublicSite : browse documentation site
+
+@enduml

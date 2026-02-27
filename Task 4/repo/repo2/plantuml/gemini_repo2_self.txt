@@ -1,0 +1,63 @@
+@startuml
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+skinparam package {
+  BackgroundColor WhiteSmoke
+  BorderColor Gray
+}
+skinparam databaseBackgroundColor White
+
+title High-Level Architecture: HomeSensorHub
+
+package "HomeSensorHub System" {
+
+    component [Main Controller] as Main <<Entry Point>>
+    note top of Main : Orchestrates startup, shutdown,\nand component wiring
+    
+    package "Sensing Subsystem" {
+        component [Sensor Discovery] as Probes <<Factory>>
+        note left of Probes : Scans I2C/GPIO\nto identify hardware
+        
+        component [Active Sensors] as Sensors <<Threads & Callbacks>>
+        note bottom of Sensors : Polling loops (Timer)\n& Interrupt handling
+        
+        component [Hardware Drivers] as Drivers <<IO Interface>>
+    }
+
+    package "Routing Subsystem" {
+        component [Data Sender] as Sender <<Telemetry>>
+        component [Command Subscriber] as Subscriber <<Configuration>>
+        component [MQTT Client] as MQTT <<Shared Gateway>>
+        note right of MQTT : Singleton Wrapper\n(Paho MQTT)
+    }
+}
+
+cloud "MQTT Broker" as Cloud
+
+' Lifecycle & Initialization
+Main --> Probes : 1. Triggers Scan
+Probes ..> Sensors : 2. Instantiates
+Main --> Sender : Initializes
+Main --> Subscriber : Initializes
+Main --> Sensors : Manages Lifecycle (Start/Stop)
+
+' Hardware Interaction
+Probes --> Drivers : Probes Hardware
+Sensors --> Drivers : Reads Values
+
+' Data Path (Telemetry)
+Sensors --> Sender : Pushes Data (via Callback)
+Sender --> MQTT : Publishes (JSON/Simple)
+
+' Control Path (Configuration)
+Subscriber --> MQTT : Subscribes to Topics
+Subscriber --> Sensors : Updates Properties (e.g. pollrate)
+
+' External Connectivity
+MQTT <--> Cloud : Network IO
+
+@enduml

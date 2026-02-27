@@ -1,0 +1,2213 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/*.png, **/*.jpg, **/*.jpeg, **/*.gif, **/*.svg, **/*.pdf, **/*.jar, **/*.exe, **/*.dll, **/*.txt, **/*.json, **/*.md, **/*.html, **/*.css, **/*.npy, **/*.pickle, **/*.pb, **/*.index, **/*.cfg, **/*.toml, node_modules/**/*, build/**/*, dist/**/*, docs/**/*, tests/**/*, **/*/cnn/**/*
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+.flake8
+.flake8rc
+.gitignore
+homesensorhub/__init__.py
+homesensorhub/__main__.py
+homesensorhub/homesensorhub.py
+homesensorhub/routing/__init__.py
+homesensorhub/routing/data_sender.py
+homesensorhub/routing/mqtt_sender.py
+homesensorhub/routing/mqtt_subscriber.py
+homesensorhub/routing/mqtt.py
+homesensorhub/routing/payload.py
+homesensorhub/routing/sensor_sink.py
+homesensorhub/sensors/__init__.py
+homesensorhub/sensors/BoschBME/BoschBME280/__init__.py
+homesensorhub/sensors/BoschBME/BoschBME280/probe.py
+homesensorhub/sensors/BoschBME/BoschBME280/type.py
+homesensorhub/sensors/BoschBME/BoschBME680/__init__.py
+homesensorhub/sensors/BoschBME/BoschBME680/probe.py
+homesensorhub/sensors/BoschBME/BoschBME680/type.py
+homesensorhub/sensors/BoschBME/probe.py
+homesensorhub/sensors/probe.py
+homesensorhub/sensors/RCWL0515/driver.py
+homesensorhub/sensors/RCWL0515/probe.py
+homesensorhub/sensors/sensor_types.py
+homesensorhub/sensors/TSL258x/__init__.py
+homesensorhub/sensors/TSL258x/driver.py
+homesensorhub/sensors/TSL258x/probe.py
+homesensorhub/sensors/TSL258x/type.py
+homesensorhub/utils/__init__.py
+homesensorhub/utils/logging.py
+Jenkinsfile
+kubepods.yaml
+LICENSE
+run.sh
+
+================================================================
+Files
+================================================================
+
+================
+File: .flake8
+================
+[flake8]
+max-line-length = 99
+
+================
+File: .flake8rc
+================
+.flake8
+
+================
+File: .gitignore
+================
+# Created by https://www.toptal.com/developers/gitignore/api/python,emacs,visualstudiocode,linux
+# Edit at https://www.toptal.com/developers/gitignore?templates=python,emacs,visualstudiocode,linux
+
+### Emacs ###
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# AUCTeX auto folder
+/auto/
+
+# cask packages
+.cask/
+dist/
+
+# Flycheck
+flycheck_*.el
+
+# server auth directory
+/server/
+
+# projectiles files
+.projectile
+
+# directory configuration
+.dir-locals.el
+
+# network security
+/network-security.data
+
+
+### Linux ###
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   For a library or package, you might want to ignore these files since the code is
+#   intended to run in multiple environments; otherwise, check them in:
+# .python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# poetry
+#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
+#poetry.lock
+
+# pdm
+#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
+#pdm.lock
+#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
+#   in version control.
+#   https://pdm.fming.dev/#use-with-ide
+.pdm.toml
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
+
+### Python Patch ###
+# Poetry local configuration file - https://python-poetry.org/docs/configuration/#local-configuration
+poetry.toml
+
+
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
+# End of https://www.toptal.com/developers/gitignore/api/python,emacs,visualstudiocode,linux
+
+================
+File: homesensorhub/__init__.py
+================
+
+
+================
+File: homesensorhub/__main__.py
+================
+from homesensorhub.homesensorhub import main
+main()
+
+================
+File: homesensorhub/homesensorhub.py
+================
+import sys
+from threading import Event
+from signal import signal, SIGINT, SIGTERM
+from homesensorhub.routing.mqtt_sender import MQTTSender
+from homesensorhub.routing.mqtt_subscriber import MQTTSubscriber
+from homesensorhub.sensors.BoschBME.BoschBME280.probe import ProbeBoschBME280
+from homesensorhub.sensors.BoschBME.BoschBME680.probe import ProbeBoschBME680
+from homesensorhub.sensors.TSL258x.probe import ProbeTSL258x
+from homesensorhub.sensors.RCWL0515.probe import ProbeRCWL0515
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+print(sys.path)
+class HomeSensorHub:
+    def __init__(self):
+        logger.success("Starting HomeSensorHub ...")
+        self.initialize_stop()
+        self.__mqtt_subscriber = MQTTSubscriber()
+        probe_functions = self.find_probe_functions()
+        self.__senders = self.find_senders()
+        self.__sensors = self.find_sensors(probe_functions)
+        self.__mqtt_subscriber.subscribe_to_sensor_properties(self.__sensors)
+    def initialize_stop(self):
+        self.event = Event()
+        signal(SIGINT, self.stop_everything)
+        signal(SIGTERM, self.stop_everything)
+    def stop_everything(self, signal_received, frame) -> None:
+        self.event.set()
+    def run(self):
+        logger.success("Running HomeSensorHub ...")
+        self.event.wait()
+        logger.notice("QUIT signal received !")
+        for sensor in self.__sensors:
+            sensor.stop()
+        logger.notice("Quitting gracefully !")
+    def find_probe_functions(self):
+        probe_functions = []
+        probe_functions.append(ProbeBoschBME280.probe)
+        probe_functions.append(ProbeBoschBME680.probe)
+        probe_functions.append(ProbeTSL258x.probe)
+        probe_functions.append(ProbeRCWL0515.probe)
+        return probe_functions
+    def find_senders(self):
+        senders = []
+        logger.info("Configuring senders ...")
+        senders.append(MQTTSender())
+        return senders
+    def find_sensors(self, probe_functions):
+        sensors = []
+        mqtt_sender = self.__senders[0]
+        logger.info("Searching attached sensors ...")
+        for function in probe_functions:
+            try:
+                sensor_list = function(mqtt_sender.send_payload)
+                sensors += sensor_list
+            except Exception as e:
+                logger.error(e)
+        return sensors
+def main():
+    homesensorhub = HomeSensorHub()
+    homesensorhub.run()
+if __name__ == "__main__":
+    main()
+
+================
+File: homesensorhub/routing/__init__.py
+================
+
+
+================
+File: homesensorhub/routing/data_sender.py
+================
+class DataSender:
+    def connect(self, retry):
+        raise NotImplementedError("The child sender must implement the connect function.")
+    def send(self, data):
+        raise NotImplementedError("The child sender must implement the send function.")
+
+================
+File: homesensorhub/routing/mqtt_sender.py
+================
+from homesensorhub.routing.data_sender import DataSender
+from homesensorhub.routing.mqtt import MQTT
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class MQTTSender(DataSender):
+    def __init__(self, broker_url="mqtt.tinker.haus", broker_port=1883):
+        self.__mqtt = MQTT(broker_url, broker_port)
+    def send(self, data):
+        for payload in data:
+            self.send_payload(payload)
+    def send_payload(self, payload):
+        self.__send_json_payload(payload)
+        self.__send_simple_values(payload)
+    def __send_json_payload(self, payload):
+        json_payload = payload.get_json_payload()
+        type = "/" + payload.get_str_type()
+        topic_base = self.__mqtt.get_topic_base()
+        topic = "{}{}".format(topic_base, type)
+        self.__mqtt.publish(topic, json_payload)
+    def __send_simple_values(self, payload):
+        payload_attributes = payload.get_string_payload()
+        for attribute, collected in payload_attributes.items():
+            type = "/" + payload.get_str_type()
+            attribute = "/" + attribute
+            topic_base = self.__mqtt.get_topic_base()
+            topic = "{}{}{}".format(topic_base, type, attribute)
+            self.__mqtt.publish(topic, collected)
+
+================
+File: homesensorhub/routing/mqtt_subscriber.py
+================
+from homesensorhub.routing.mqtt import MQTT
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class MQTTSubscriber():
+    def __init__(self, broker_url="mqtt.tinker.haus", broker_port=1883):
+        self.__mqtt = MQTT(broker_url, broker_port)
+        self.__topics = []
+        self.__mqtt.set_message_callback(self.on_message)
+        self.__sensors = None
+    def subscribe_to_sensor_properties(self, sensors):
+        self.set_sensors(sensors)
+        self.set_sensors_subscribe_topics()
+        self.__mqtt.subscribe(self.__topics)
+    def set_sensors(self, sensors):
+        self.__sensors = sensors
+    def on_message(self, client, userdata, message):
+        logger.debug("Topic {}.\n Payload {}".format(message.topic, message.payload))
+        type, property = self.get_type_and_property(message.topic)
+        for sensor in self.__sensors:
+            if sensor.get_type() == type:
+                self.set_property(sensor, property, message.payload)
+    def set_property(self, sensor, property, payload):
+        sensor_properties = sensor.get_properties()
+        for sp in sensor_properties:
+            if sp == property:
+                sensor_properties[sp].setter(payload)
+    def get_type_and_property(self, topic) -> tuple:
+        baseless_topic = topic.replace(self.__mqtt.get_topic_base(), '')
+        split_topic = baseless_topic.split(sep='/')
+        type = split_topic[1]
+        property = split_topic[2]
+        return type, property
+    def set_sensors_subscribe_topics(self):
+        """Extract type and propetries from each sensor and build their subscribe topics."""
+        for sensor in self.__sensors:
+            type = sensor.get_type()
+            self.__set_sensor_subscribe_topic(type=type, sensor_properties=sensor.get_properties())
+        logger.info("Generated subscribed topics:")
+        for t, v in self.__topics:
+            logger.info("    {}".format(t))
+    def __set_sensor_subscribe_topic(self, type, sensor_properties):
+        """
+        Build a sensor's subscribe topic based on its properties and type.
+        One topic will have the following structure:
+        /developer/hostname/sensor_type/property
+        /babycakes/sensors-office/temperature/pollrate
+        By calling mqtt publish for one of the sensor's build topics, one can send messages as
+        follows:
+        /user/hostname/sensor_type/property 10
+
+================
+File: homesensorhub/routing/mqtt.py
+================
+import paho.mqtt.client as mqtt
+import socket
+import os
+import getpass
+import time
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+class MQTT(metaclass=Singleton):
+    QOS = 0
+    def __init__(self, broker_url="mqtt.tinker.haus", broker_port=1883):
+        self.__client = mqtt.Client()
+        self.__client.enable_logger()
+        self.__client.on_connect = self.on_connect
+        self.__broker_url = broker_url
+        self.__broker_port = broker_port
+        self.__hostname = socket.gethostname()
+        self.__dev = getpass.getuser() + "/"
+        if os.getuid() == 0:
+            self.__dev = ""
+        self.__topic_base = self.__dev + self.__hostname
+        self.connect()
+    def connect(self):
+        try:
+            # connect_async has to be used instead of connect
+            # otherwise it will not reconnect on server reboot
+            connection = self.__client.connect_async(self.__broker_url,
+                                                     self.__broker_port)
+            if connection == 0:
+                logger.success("MQTT connected succesfully to {}"
+                               .format(self.__broker_url))
+            else:
+                logger.error("MQTT connection failed to {} with error code: {}"
+                             .format(self.__broker_url, connection))
+            self.__client.loop_start()
+            return True
+        except ConnectionRefusedError as error:
+            logger.error("MQTT connect refused: {}".format(error))
+            return False
+    def set_message_callback(self, callback):
+        self.__client.on_message = callback
+    def subscribe(self, topics):
+        """Stop the mqtt subscribe loop to add the sensors properties subscribe topics."""
+        self.__client.loop_stop()
+        logger.info("Setting MQTT subscribers.")
+        self.__client.subscribe(topics)
+        self.__client.loop_start()
+    def publish(self, topic, payload):
+        result = (mqtt.MQTT_ERR_AGAIN, 0)
+        while result[0] != mqtt.MQTT_ERR_SUCCESS:
+            result = self.__client.publish(topic=topic,
+                                           payload=payload,
+                                           qos=0,
+                                           retain=False)
+            if (result[0] == mqtt.MQTT_ERR_NO_CONN):
+                logger.warn("MQTT bus unresponsive, reconnecting...")
+                self.connect()
+                time.sleep(1)
+    def on_connect(self, client, userdata, flags, rc):
+        logger.info("MQTT connect callback called with rc = {}".format(rc))
+    def get_topic_base(self):
+        """Return topic base used for publish."""
+        return self.__topic_base
+    def get_client(self):
+        return self.__client
+    def get_broker_url(self):
+        return self.__broker_url
+    def get_qos(self):
+        return MQTT.QOS
+
+================
+File: homesensorhub/routing/payload.py
+================
+import json
+class Payload:
+    def __init__(self, type, name, value, timestamp, measurement):
+        self.__type = type
+        self.__name = name
+        self.__value = value
+        self.__timestamp = timestamp
+        self.__measurement = measurement
+    def get_string_payload(self) -> dict:
+        payload = {'type': self.get_str_type(),
+                   'name': self.get_str_name(),
+                   'value': self.get_str_value(),
+                   'timestamp': self.get_str_timestamp(),
+                   'measurement': self.get_str_measurement()}
+        return payload
+    def get_json_payload(self) -> json.dumps:
+        json_payload = json.dumps(self.get_string_payload(),
+                                  indent=4)
+        return json_payload
+    def get_str_type(self) -> str:
+        return str(self.__type)
+    def get_str_name(self) -> str:
+        return str(self.__name)
+    def get_str_value(self) -> str:
+        return "{}".format(round(self.__value, 2))
+    def get_value(self):
+        return self.__value
+    def get_str_timestamp(self) -> str:
+        return str(self.__timestamp)
+    def get_str_measurement(self) -> str:
+        return str(self.__measurement)
+
+================
+File: homesensorhub/routing/sensor_sink.py
+================
+from utils import logging
+logger = logging.getLogger(__name__)
+class SourceAndSink:
+    def __init__(self, type_sensors: list, senders: list) -> None:
+        self.__sensors = type_sensors
+        self.__senders = senders
+        self.initialize_stop()
+    def sink(self) -> list:
+        logger.debug("Collecting data ...")
+        collected = []
+        for type_sensor in self.__sensors:
+            data = type_sensor.get_payload()
+            collected.append(data)
+        return collected
+
+================
+File: homesensorhub/sensors/__init__.py
+================
+
+
+================
+File: homesensorhub/sensors/BoschBME/BoschBME280/__init__.py
+================
+
+
+================
+File: homesensorhub/sensors/BoschBME/BoschBME280/probe.py
+================
+from homesensorhub.sensors.BoschBME.BoschBME280.type import TemperatureBoschBME280
+from homesensorhub.sensors.BoschBME.BoschBME280.type import AltitudeBoschBME280
+from homesensorhub.sensors.BoschBME.BoschBME280.type import HumidityBoschBME280
+from homesensorhub.sensors.BoschBME.BoschBME280.type import PressureBoschBME280
+from homesensorhub.sensors.BoschBME.probe import ProbeBoschBME
+from adafruit_bme280 import basic as adafruit_bme280
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class ProbeBoschBME280(ProbeBoschBME):
+    @staticmethod
+    def get_sensor_probe_function():
+        return adafruit_bme280.Adafruit_BME280_I2C
+    @staticmethod
+    def get_sensor_name():
+        return "BoschBME280"
+    @staticmethod
+    def generate_sensor_types(sensor, send_payload_callback, lock):
+        return [TemperatureBoschBME280(sensor, send_payload_callback, lock),
+                AltitudeBoschBME280(sensor, send_payload_callback, lock),
+                HumidityBoschBME280(sensor, send_payload_callback, lock),
+                PressureBoschBME280(sensor, send_payload_callback, lock)]
+
+================
+File: homesensorhub/sensors/BoschBME/BoschBME280/type.py
+================
+from homesensorhub.sensors.sensor_types import Humidity, Pressure, Altitude, Temperature, deadline
+from threading import Lock
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+lock = Lock()
+class BoschBME280Type:
+    SENSOR_NAME = 'BoschBME280'
+    def __init__(self, sensor):
+        self._sensor = sensor
+    def get_sensor_name(self):
+        return self.SENSOR_NAME
+    def get_sensor_value(self):
+        raise NotImplementedError(
+            "The value read for this sensor must be implemented.")
+    def get_sensor_measure(self):
+        raise NotImplementedError(
+            "The measurement unit must be implemented by the child sensor.")
+class HumidityBoschBME280(BoschBME280Type, Humidity):
+    MEASURE = '% RH'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME280Type.__init__(self, sensor)
+        Humidity.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> int:
+        with lock:
+            logger.spam("Getting sensor humidity value")
+            h = self._sensor.humidity
+            logger.spam("Get sensor humidity value done")
+        return h
+    def get_sensor_measure(self) -> str:
+        return HumidityBoschBME280.MEASURE
+class PressureBoschBME280(BoschBME280Type, Pressure):
+    MEASURE = 'Celsius'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME280Type.__init__(self, sensor)
+        Pressure.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> float:
+        with lock:
+            logger.spam("Getting sensor pressure value")
+            p = self._sensor.pressure
+            logger.spam("Get sensor pressure value done")
+        return p
+    def get_sensor_measure(self) -> str:
+        return PressureBoschBME280.MEASURE
+class AltitudeBoschBME280(BoschBME280Type, Altitude):
+    MEASURE = 'Meters'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME280Type.__init__(self, sensor)
+        Altitude.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> int:
+        with lock:
+            logger.spam("Getting sensor altitude value")
+            a = self._sensor.altitude
+            logger.spam("Get sensor altitude value done")
+        return a
+    def get_sensor_measure(self) -> str:
+        return AltitudeBoschBME280.MEASURE
+class TemperatureBoschBME280(BoschBME280Type, Temperature):
+    MEASURE = 'Celsius'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME280Type.__init__(self, sensor)
+        Temperature.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> float:
+        with lock:
+            logger.spam("Getting sensor temperature value")
+            t = self._sensor.temperature
+            logger.spam("Get sensor temperature value done")
+        return t
+    def get_sensor_measure(self) -> str:
+        return TemperatureBoschBME280.MEASURE
+
+================
+File: homesensorhub/sensors/BoschBME/BoschBME680/__init__.py
+================
+
+
+================
+File: homesensorhub/sensors/BoschBME/BoschBME680/probe.py
+================
+from homesensorhub.sensors.BoschBME.BoschBME680.type import TemperatureBoschBME680
+from homesensorhub.sensors.BoschBME.BoschBME680.type import AltitudeBoschBME680
+from homesensorhub.sensors.BoschBME.BoschBME680.type import HumidityBoschBME680
+from homesensorhub.sensors.BoschBME.BoschBME680.type import PressureBoschBME680
+from homesensorhub.sensors.BoschBME.BoschBME680.type import GasBoschBME680
+from homesensorhub.sensors.BoschBME.probe import ProbeBoschBME
+import adafruit_bme680
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class ProbeBoschBME680(ProbeBoschBME):
+    @staticmethod
+    def get_sensor_probe_function():
+        return adafruit_bme680.Adafruit_BME680_I2C
+    @staticmethod
+    def get_sensor_name():
+        return "BoschBME680"
+    @staticmethod
+    def generate_sensor_types(sensor, send_payload_callback, lock):
+        return [TemperatureBoschBME680(sensor, send_payload_callback, lock),
+                AltitudeBoschBME680(sensor, send_payload_callback, lock),
+                HumidityBoschBME680(sensor, send_payload_callback, lock),
+                PressureBoschBME680(sensor, send_payload_callback, lock),
+                GasBoschBME680(sensor, send_payload_callback, lock)]
+
+================
+File: homesensorhub/sensors/BoschBME/BoschBME680/type.py
+================
+from homesensorhub.sensors.sensor_types import \
+    Humidity, Pressure, Altitude, Temperature, Gas, deadline
+from threading import Lock
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+thread_lock = Lock()
+class BoschBME680Type:
+    SENSOR_NAME = 'BoschBME680'
+    def __init__(self, sensor):
+        self._sensor = sensor
+    def get_sensor_name(self):
+        return self.SENSOR_NAME
+    def get_sensor_value(self):
+        raise NotImplementedError(
+            "The value read for this sensor must be implemented.")
+    def get_sensor_measure(self):
+        raise NotImplementedError(
+            "The measurement unit must be implemented by the child sensor.")
+class HumidityBoschBME680(BoschBME680Type, Humidity):
+    MEASURE = '% RH'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME680Type.__init__(self, sensor)
+        Humidity.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> int:
+        with thread_lock:
+            logger.spam("Getting sensor humidity value")
+            h = self._sensor.humidity
+            logger.spam("Got sensor humidity value done")
+        return h
+    def get_sensor_measure(self) -> str:
+        return HumidityBoschBME680.MEASURE
+class PressureBoschBME680(BoschBME680Type, Pressure):
+    MEASURE = 'Celsius'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME680Type.__init__(self, sensor)
+        Pressure.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> float:
+        with thread_lock:
+            logger.spam("Getting sensor pressure value")
+            p = self._sensor.pressure
+            logger.spam("Got sensor pressure value done")
+        return p
+    def get_sensor_measure(self) -> str:
+        return PressureBoschBME680.MEASURE
+class AltitudeBoschBME680(BoschBME680Type, Altitude):
+    MEASURE = 'Meters'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME680Type.__init__(self, sensor)
+        Altitude.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> int:
+        with thread_lock:
+            logger.spam("Getting sensor altitude value")
+            a = self._sensor.altitude
+            logger.spam("Got sensor altitude value done")
+        return a
+    def get_sensor_measure(self) -> str:
+        return AltitudeBoschBME680.MEASURE
+class TemperatureBoschBME680(BoschBME680Type, Temperature):
+    MEASURE = 'Celsius'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME680Type.__init__(self, sensor)
+        Temperature.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> float:
+        with thread_lock:
+            logger.spam("Getting sensor temperature value")
+            t = self._sensor.temperature
+            logger.spam("Got sensor temperature value done")
+        return t
+    def get_sensor_measure(self) -> str:
+        return TemperatureBoschBME680.MEASURE
+class GasBoschBME680(BoschBME680Type, Gas):
+    MEASURE = 'gas resistance in ohms'
+    def __init__(self, sensor, send_payload_callback, lock):
+        BoschBME680Type.__init__(self, sensor)
+        Gas.__init__(self, send_payload_callback, lock)
+    @deadline(5)
+    def get_sensor_value(self) -> float:
+        with thread_lock:
+            logger.spam("Getting sensor gas value")
+            g = self._sensor.gas
+            logger.spam("Got sensor gas value done")
+        return g
+    def get_sensor_measure(self) -> str:
+        return GasBoschBME680.MEASURE
+
+================
+File: homesensorhub/sensors/BoschBME/probe.py
+================
+import busio
+import board
+from homesensorhub.sensors.probe import Probe
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class ProbeBoschBME(Probe):
+    ADDRESSES = [0x77, 0x76]
+    I2C = busio.I2C(board.SCL, board.SDA)
+    @staticmethod
+    def functional_probe(cls, send_payload_callback=None, lock=None):
+        for address in cls.ADDRESSES:
+            try:
+                sensor = cls.get_sensor_probe_function()(cls.I2C, address)
+                logger.success("{} found at {}".format(cls.get_sensor_name(), hex(address)))
+                sensor.temperature
+                sensor.humidity
+                sensor.pressure
+                return cls.generate_sensor_types(sensor, send_payload_callback, lock)
+            except ValueError:
+                logger.verbose("Found no {} sensor at address {}."
+                               .format(cls.get_sensor_name(), hex(address)))
+            except RuntimeError:
+                logger.verbose("The chip found at {} address has a different ID than {}."
+                               .format(hex(address), cls.get_sensor_name()))
+                logger.verbose("These are not the sensors you're looking for.")
+
+================
+File: homesensorhub/sensors/probe.py
+================
+from filelock import FileLock
+import os
+class Probe:
+    @classmethod
+    def probe(cls, send_payload_callback=None) -> list:
+        lock_file = "/tmp/hsh_" + cls.get_sensor_name() + ".lock"
+        lock = FileLock(lock_file)
+        with lock:
+            try:
+                os.chmod(lock_file, 0o777)
+            except PermissionError:
+                pass
+            return cls.functional_probe(cls, send_payload_callback, lock)
+
+================
+File: homesensorhub/sensors/RCWL0515/driver.py
+================
+import RPi.GPIO as GPIO
+from homesensorhub.sensors.sensor_types import Motion
+from homesensorhub.utils import logging
+class MotionSensorRCWL0515(Motion):
+    ms_dict = {}
+    def __init__(self, gpio, callback=None):
+        self.logger = logging.getLogger(__name__)
+        self.MOTION_GPIO = gpio
+        self.motion = None
+        self.initialize_gpio()
+        Motion.__init__(self, send_payload_callback=callback)
+        self.__motionChanged(self.MOTION_GPIO)
+        self.install_callback()
+    def get_sensor_name(self):
+        return "RCWL-0515"
+    def __get_gpio_value(self):
+        if GPIO.input(self.MOTION_GPIO):
+            motion = True
+        else:
+            motion = False
+        return motion
+    def get_sensor_value(self):
+        self.logger.debug("Motion value polled")
+        next_motion = self.__get_gpio_value()
+        if next_motion:
+            self.logger.debug("Motion is in progress")
+        else:
+            self.logger.debug("Motion is not happening")
+        if (next_motion != self.motion):
+            self.logger.error("Motion from {} to {} (IRQ skip detected because of race condition)"
+                              .format(self.motion, next_motion))
+        self.motion = next_motion
+        return self.motion
+    def get_sensor_measure(self):
+        return "None"
+    def get(self):
+        return self.get_sensor_value()
+    def initialize_gpio(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.MOTION_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    def install_callback(self):
+        MotionSensorRCWL0515.ms_dict[self.MOTION_GPIO] = self
+        GPIO.remove_event_detect(self.MOTION_GPIO)
+        GPIO.add_event_detect(self.MOTION_GPIO, GPIO.BOTH,
+                              callback=MotionSensorRCWL0515.__motionChangedStatic)
+    def __motionChangedStatic(gpio):
+        MotionSensorRCWL0515.ms_dict[gpio].__motionChanged(gpio)
+    def __motionChanged(self, gpio):
+        self.logger.debug("Motion Changed IRQ at GPIO %d" % gpio)
+        next_motion = self.__get_gpio_value()
+        if next_motion:
+            self.logger.debug("Motion Started")
+        else:
+            self.logger.debug("Motion Ended")
+        if (next_motion == self.motion):
+            self.logger.error("Motion from {} to {} (IRQ skipped)"
+                              .format(self.motion, next_motion))
+        self.motion = next_motion
+        if (self.send_payload_callback is not None):
+            self.logger.debug("Will poll again from asynchronous callback : ....")
+            self.send_payload_callback(self.get_payload())
+
+================
+File: homesensorhub/sensors/RCWL0515/probe.py
+================
+from homesensorhub.sensors.probe import Probe
+from homesensorhub.sensors.RCWL0515.driver import MotionSensorRCWL0515
+class ProbeRCWL0515(Probe):
+    GPIO = 4
+    @classmethod
+    def probe(cls, send_payload_callback=None) -> list:
+        return [MotionSensorRCWL0515(gpio=cls.GPIO, pollrate=1, callback=send_payload_callback)]
+
+================
+File: homesensorhub/sensors/sensor_types.py
+================
+from homesensorhub.routing.payload import Payload
+import datetime
+from threading import Thread, Event, Timer
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class TimedOutExc(Exception):
+    pass
+def deadline(timeout, *args):
+    def decorate(f):
+        def handler():
+            logger.critical("Function deadline {}s: {}".format(timeout, f))
+            raise TimedOutExc()
+        def new_f(*args):
+            alarm_timer = Timer(timeout, handler)
+            alarm_timer.start()
+            rv = f(*args)
+            alarm_timer.cancel()
+            return rv
+        new_f.__name__ = f.__name__
+        return new_f
+    return decorate
+class SensorType:
+    def get_properties(self) -> dict:
+        return NotImplementedError("Proprieties function must be implemented by the child class.")
+    def get_type(self) -> str:
+        return self.TYPE
+    def get_payload(self) -> Payload:
+        payload = Payload(self.TYPE,
+                          self.get_sensor_name(),
+                          self.get_sensor_value(),
+                          datetime.datetime.now(),
+                          self.get_sensor_measure())
+        return payload
+class SensorTypePolled(Thread, SensorType):
+    def __init__(self, pollrate=60, send_payload_callback=None, lock=None):
+        Thread.__init__(self)
+        SensorType.__init__(self)
+        self.__pollrate = pollrate
+        self.send_payload_callback = send_payload_callback
+        self._lock = lock
+        self.__stopped = Event()
+        self.start()
+    def run(self):
+        while not self.__stopped.wait(self.__pollrate):
+            if self._lock:
+                self._lock.acquire()
+            try:
+                payload = self.get_payload()
+            finally:
+                if self._lock:
+                    self._lock.release()
+            if self.send_payload_callback:
+                self.send_payload_callback(payload)
+        logger.success("{} thread stopped.".format(self.get_type()))
+    def stop(self):
+        logger.notice("{} thread stopping.".format(self.get_type()))
+        self.__stopped.set()
+    def get_properties(self):
+        return {
+            'pollrate': CallbackPair(self.set_pollrate,
+                                     self.get_pollrate)
+        }
+    def set_pollrate(self, pollrate):
+        pollrate = pollrate.decode('utf-8')
+        try:
+            pollrate = float(pollrate)
+            self.__pollrate = pollrate
+            logger.info("Set the pollrate to the {} sensor to {}".format(self.TYPE,
+                                                                         self.__pollrate))
+        except ValueError:
+            logger.info("Cannot convert pollrate to integer. The value is not an integer.")
+            return
+    def get_pollrate(self):
+        return self.__pollrate
+class SensorTypeAsynchronous(SensorType):
+    def __init__(self):
+        SensorType.__init__(self)
+    def stop(self):
+        pass
+    def get_properties(self):
+        return {}
+class SensorTypeAsyncAndPolled(SensorTypeAsynchronous, SensorTypePolled):
+    def __init__(self, pollrate, send_payload_callback=None):
+        SensorTypeAsynchronous.__init__(self)
+        SensorTypePolled.__init__(self, pollrate, send_payload_callback)
+    def stop(self):
+        SensorTypeAsynchronous.stop(self)
+        SensorTypePolled.stop(self)
+    def get_properties(self):
+        prop = {}
+        prop.update(SensorTypeAsynchronous.get_properties(self))
+        prop.update(SensorTypePolled.get_properties(self))
+        return prop
+class Gas(SensorTypePolled):
+    TYPE = 'gas'
+    def __init__(self, send_payload_callback, lock, pollrate=60):
+        super().__init__(pollrate=pollrate, send_payload_callback=send_payload_callback, lock=lock)
+class Humidity(SensorTypePolled):
+    TYPE = 'humidity'
+    def __init__(self, send_payload_callback, lock, pollrate=60):
+        super().__init__(pollrate=pollrate, send_payload_callback=send_payload_callback, lock=lock)
+class Light(SensorTypePolled):
+    TYPE = 'light'
+    def __init__(self, send_payload_callback, lock, pollrate=1):
+        super().__init__(pollrate=pollrate, send_payload_callback=send_payload_callback, lock=lock)
+class Pressure(SensorTypePolled):
+    TYPE = 'pressure'
+    def __init__(self, send_payload_callback, lock, pollrate=60):
+        super().__init__(pollrate=pollrate, send_payload_callback=send_payload_callback, lock=lock)
+class Altitude(SensorTypePolled):
+    TYPE = 'altitude'
+    def __init__(self, send_payload_callback, lock, pollrate=600):
+        super().__init__(pollrate=pollrate, send_payload_callback=send_payload_callback, lock=lock)
+class Temperature(SensorTypePolled):
+    TYPE = 'temperature'
+    def __init__(self, send_payload_callback, lock, pollrate=60):
+        super().__init__(pollrate=pollrate, send_payload_callback=send_payload_callback, lock=lock)
+class Motion(SensorTypeAsyncAndPolled):
+    TYPE = 'motion'
+    def __init__(self, send_payload_callback, pollrate=1):
+        SensorTypeAsyncAndPolled.__init__(self,
+                                          pollrate=pollrate,
+                                          send_payload_callback=send_payload_callback)
+class CallbackPair:
+    def __init__(self, setter, getter):
+        self.setter = setter
+        self.getter = getter
+
+================
+File: homesensorhub/sensors/TSL258x/__init__.py
+================
+
+
+================
+File: homesensorhub/sensors/TSL258x/driver.py
+================
+import smbus
+import logging
+logger = logging.getLogger(__name__)
+class TSL258x:
+    addr = 0x39
+    COMMAND_CMD = 0x80
+    TRANSACTION = 0x40
+    CONTROL = 0x00
+    TIMING = 0x01
+    INTERRUPT = 0X02
+    THLLOW = 0x03
+    THLHIGH = 0X04
+    THHLOW = 0x05
+    THHHIGH = 0X06
+    ANALOG = 0X07
+    ADC_EN = 0X02
+    CONTROL_POWERON = 0x01
+    CONTROL_POWEROFF = 0x00
+    INTR_TEST_MODE = 0X30
+    INTR_INTER_MODE = 0X1F
+    INTEGRATIONTIME_Manual = 0x00
+    INTEGRATIONTIME_2Z7MS = 0xFF
+    INTEGRATIONTIME_5Z4MS = 0xFE
+    INTEGRATIONTIME_51Z3MS = 0xED
+    INTEGRATIONTIME_100MS = 0xDB
+    INTEGRATIONTIME_200MS = 0xB6
+    INTEGRATIONTIME_400MS = 0x6C
+    INTEGRATIONTIME_688MS = 0x01
+    GAIN_1X = 0x00
+    GAIN_8X = 0x01
+    GAIN_16X = 0x02
+    GAIN_111X = 0x03
+    REG_ID = 0x12
+    DATA0LOW = 0X14
+    DATA0HIGH = 0X15
+    DATA1LOW = 0X16
+    DATA1HIGH = 0X17
+    NOMINAL_INTEGRATION_CYCLES = 148
+    CH_SCALE = 16
+    LUX_SCALE = 16
+    RATIO_SCALE = 9
+    CH0GAIN128X = 107
+    CH1GAIN128X = 115
+    K1C = 0x009A
+    B1C = 0x2148
+    M1C = 0x3d71
+    K2C = 0x00c3
+    B2C = 0x2a37
+    M2C = 0x5b30
+    K3C = 0x00e6
+    B3C = 0x18ef
+    M3C = 0x2db9
+    K4C = 0x0114
+    B4C = 0x0fdf
+    M4C = 0x199a
+    K5C = 0x0114
+    B5C = 0x0000
+    M5C = 0x0000
+    bus = smbus.SMBus(1)
+    def __init__(self):
+        self.gain_map = {1: self.GAIN_1X,
+                         8: self.GAIN_8X,
+                         16: self.GAIN_16X,
+                         111: self.GAIN_111X}
+        self.integration_map = {1: self.INTEGRATIONTIME_2Z7MS,
+                                2: self.INTEGRATIONTIME_5Z4MS,
+                                19: self.INTEGRATIONTIME_51Z3MS,
+                                37: self.INTEGRATIONTIME_100MS,
+                                74: self.INTEGRATIONTIME_200MS,
+                                148: self.INTEGRATIONTIME_400MS,
+                                255: self.INTEGRATIONTIME_688MS}
+    def probe():
+        tsl = TSL258x()
+        try:
+            (part_no, rev_no) = tsl.readID()
+            return tsl
+        except OSError:
+            return None
+    def readID(self):
+        REG_REQUEST = self.REG_ID | self.COMMAND_CMD | self.TRANSACTION
+        (rawread, constant) = self.bus.read_i2c_block_data(self.addr, REG_REQUEST, 2)
+        part_no = (rawread >> 4) & 0xF
+        rev_no = (rawread >> 0) & 0xF
+        return (part_no, rev_no)
+    @property
+    def part_no(self):
+        (part_no, rev_no) = self.readID()
+        return part_no
+    @property
+    def rev_no(self):
+        (part_no, rev_no) = self.readID()
+        return rev_no
+    def read(self):
+        (data0low, ) = self.bus.read_i2c_block_data(
+            self.addr, self.COMMAND_CMD | self.TRANSACTION | self.DATA0LOW, 1)
+        (data0high, ) = self.bus.read_i2c_block_data(
+            self.addr, self.COMMAND_CMD | self.TRANSACTION | self.DATA0HIGH, 1)
+        (data1low, ) = self.bus.read_i2c_block_data(
+            self.addr, self.COMMAND_CMD | self.TRANSACTION | self.DATA1LOW, 1)
+        (data1high, ) = self.bus.read_i2c_block_data(
+            self.addr, self.COMMAND_CMD | self.TRANSACTION | self.DATA1HIGH, 1)
+        ch0 = ch0 = data0high * 256 + data0low
+        ch1 = ch1 = data1high * 256 + data1low
+        logger.debug("Channel ALL value: 0x%x " % ch0)
+        logger.debug("Channel  IR value: 0x%x " % ch1)
+        Lux = self.calculateLux(ch0, ch1)
+        logger.debug("Light: %d lux" % Lux)
+        return Lux
+    def power_on(self):
+        self.bus.write_byte_data(
+            self.COMMAND_CMD | self.CONTROL, self.CONTROL_POWERON)
+    def config(self, gain=16, integration_cycles=NOMINAL_INTEGRATION_CYCLES):
+        self.integration_cycles = integration_cycles
+        timing_value = self.integration_map[integration_cycles]
+        self.bus.write_byte_data(
+            self.addr, self.COMMAND_CMD | self.TIMING, timing_value)
+        self.bus.write_byte_data(
+            self.addr,
+            self.COMMAND_CMD | self.CONTROL, self.ADC_EN | self.CONTROL_POWERON)
+        self.bus.write_byte_data(
+            self.addr, self.COMMAND_CMD | self.INTERRUPT, self.INTR_INTER_MODE)
+        self.gain = gain
+        gain_value = self.gain_map[self.gain]
+        self.bus.write_byte_data(self.addr, self.COMMAND_CMD | self.ANALOG, gain_value)
+    def calculateLux(self, ch0, ch1):
+        chScale0 = 0
+        chScale1 = 0
+        channel1 = 0
+        channel0 = 0
+        temp = 0
+        ratio1 = 0
+        ratio = 0
+        lux_temp = 0
+        b = 0
+        m = 0
+        if (self.integration_cycles == self.NOMINAL_INTEGRATION_CYCLES):
+            chScale0 = 65536
+        else:
+            chScale0 = (self.NOMINAL_INTEGRATION_CYCLES << self.CH_SCALE) / self.tIntCycles
+        if (self.gain == 1):
+            chScale1 = chScale0
+        elif (self.gain == 8):
+            chScale0 = chScale0 >> 3
+            chScale1 = chScale0
+        elif (self.gain == 16):
+            chScale0 = chScale0 >> 4
+            chScale1 = chScale0
+        elif (self.gain == 111):
+            chScale1 = chScale0 / self.CH1GAIN128X
+            chScale0 = chScale0 / self.CH0GAIN128X
+        channel0 = (ch0 * chScale0) >> self.CH_SCALE
+        channel1 = (ch1 * chScale1) >> self.CH_SCALE
+        if (channel0 != 0):
+            ratio1 = (channel1 << (self.RATIO_SCALE + 1)) / channel0
+        ratio = (ratio1 + 1) / 2
+        if ((ratio >= 0) and (ratio <= self.K1C)):
+            b = self.B1C
+            m = self.M1C
+        elif (ratio <= self.K2C):
+            b = self.B2C
+            m = self.M2C
+        elif (ratio <= self.K3C):
+            b = self.B3C
+            m = self.M3C
+        elif (ratio <= self.K4C):
+            b = self.B4C
+            m = self.M4C
+        elif (ratio > self.K5C):
+            b = self.B5C
+            m = self.M5C
+        temp = ((channel0 * b) - (channel1 * m))
+        temp = temp + 32768
+        lux_temp = temp >> self.LUX_SCALE
+        return (lux_temp)
+
+================
+File: homesensorhub/sensors/TSL258x/probe.py
+================
+from homesensorhub.sensors.TSL258x.driver import TSL258x
+from homesensorhub.sensors.TSL258x.type import LightTSL258x
+from homesensorhub.sensors.probe import Probe
+from homesensorhub.utils import logging
+logger = logging.getLogger(__name__)
+class ProbeTSL258x(Probe):
+    SENSOR_NAME = 'TSL258x'
+    @staticmethod
+    def functional_probe(cls, send_payload_callback=None, lock=None):
+        sensor = TSL258x.probe()
+        if not sensor:
+            return
+        logger.debug("Found {} sensor.".format(cls.get_sensor_name()))
+        sensor.config()
+        return cls.generate_sensor_types(sensor, send_payload_callback, lock)
+    @staticmethod
+    def get_sensor_name():
+        return 'TSL258x'
+    def generate_sensor_types(sensor, send_payload_callback, lock):
+        return [LightTSL258x(sensor, send_payload_callback, lock)]
+
+================
+File: homesensorhub/sensors/TSL258x/type.py
+================
+from homesensorhub.sensors.sensor_types import Light
+class TSL258xType:
+    SENSOR_NAME = 'TSL258x'
+    def __init__(self, sensor):
+        self._sensor = sensor
+    def get_sensor_name(self):
+        return self.SENSOR_NAME
+    def get_sensor_value(self):
+        raise NotImplementedError("The value read for this sensor must be implemented.")
+    def get_sensor_measure(self):
+        raise NotImplementedError("The measurement unit must be implemented by the child sensor.")
+class LightTSL258x(TSL258xType, Light):
+    MEASURE = 'Lux'
+    def __init__(self, sensor, send_payload_callback, lock):
+        TSL258xType.__init__(self, sensor)
+        Light.__init__(self, send_payload_callback, lock)
+    def get_sensor_value(self) -> int:
+        return self._sensor.read()
+    def get_sensor_measure(self) -> str:
+        return LightTSL258x.MEASURE
+
+================
+File: homesensorhub/utils/__init__.py
+================
+
+
+================
+File: homesensorhub/utils/logging.py
+================
+import coloredlogs
+import verboselogs
+def initialize_logger():
+    dateformat = "%H:%M:%S"
+    coloredlogs.install(level='SPAM', milliseconds=True, datefmt=dateformat)
+def getLogger(name):
+    logger = verboselogs.VerboseLogger(name)
+    return logger
+initialize_logger()
+
+================
+File: Jenkinsfile
+================
+#!/usr/bin/env groovy
+
+String daily_cron_string = BRANCH_NAME == "master" ? "@daily" : ""
+
+pipeline {
+    agent {
+        kubernetes {
+            yamlFile 'kubepods.yaml'
+            defaultContainer 'python'
+        }
+    }
+    options {
+        timeout(time: 10, unit: 'MINUTES')
+    }
+
+    triggers { cron(daily_cron_string) }
+
+    stages {
+        stage('flake8') {
+            steps{
+                container('flake8') {
+                    sh "flake8"
+                }
+            }
+        }
+
+        stage('pylint duplication') {
+            steps{
+                container('pylint') {
+                    sh "pylint --disable=all --enable=duplicate-code homesensorhub"
+                }
+            }
+        }
+
+        stage('Testing') {
+            parallel {
+                stage('Local Test') {
+                    environment {
+                        PATH = "$HOME/.local/bin:$PATH"
+                    }
+                    steps {
+                        ansiColor('xterm') {
+                            sh "env"
+                            sh "pip install -r requirements.txt"
+                            sh "pip install -r tests/requirements.txt"
+                            echo '... Testing ...'
+                            sh "nose2 --with-coverage --junit-xml"
+                        }
+                    }
+                    post {
+                        always {
+                            junit 'nose2-junit.xml'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+================
+File: kubepods.yaml
+================
+apiVersion: v1
+kind: Pod
+metadata:
+  label: pythontest
+  namespace: jenkins
+spec:
+  containers:
+  - name: python
+    image: python:latest
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - infinity
+  - name: flake8
+    image: alpine/flake8
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - infinity
+  - name: pylint
+    image: cytopia/pylint
+    imagePullPolicy: Always
+    command:
+    - sleep
+    args:
+    - infinity
+
+================
+File: LICENSE
+================
+GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+                            Preamble
+
+  The GNU General Public License is a free, copyleft license for
+software and other kinds of works.
+
+  The licenses for most software and other practical works are designed
+to take away your freedom to share and change the works.  By contrast,
+the GNU General Public License is intended to guarantee your freedom to
+share and change all versions of a program--to make sure it remains free
+software for all its users.  We, the Free Software Foundation, use the
+GNU General Public License for most of our software; it applies also to
+any other work released this way by its authors.  You can apply it to
+your programs, too.
+
+  When we speak of free software, we are referring to freedom, not
+price.  Our General Public Licenses are designed to make sure that you
+have the freedom to distribute copies of free software (and charge for
+them if you wish), that you receive source code or can get it if you
+want it, that you can change the software or use pieces of it in new
+free programs, and that you know you can do these things.
+
+  To protect your rights, we need to prevent others from denying you
+these rights or asking you to surrender the rights.  Therefore, you have
+certain responsibilities if you distribute copies of the software, or if
+you modify it: responsibilities to respect the freedom of others.
+
+  For example, if you distribute copies of such a program, whether
+gratis or for a fee, you must pass on to the recipients the same
+freedoms that you received.  You must make sure that they, too, receive
+or can get the source code.  And you must show them these terms so they
+know their rights.
+
+  Developers that use the GNU GPL protect your rights with two steps:
+(1) assert copyright on the software, and (2) offer you this License
+giving you legal permission to copy, distribute and/or modify it.
+
+  For the developers' and authors' protection, the GPL clearly explains
+that there is no warranty for this free software.  For both users' and
+authors' sake, the GPL requires that modified versions be marked as
+changed, so that their problems will not be attributed erroneously to
+authors of previous versions.
+
+  Some devices are designed to deny users access to install or run
+modified versions of the software inside them, although the manufacturer
+can do so.  This is fundamentally incompatible with the aim of
+protecting users' freedom to change the software.  The systematic
+pattern of such abuse occurs in the area of products for individuals to
+use, which is precisely where it is most unacceptable.  Therefore, we
+have designed this version of the GPL to prohibit the practice for those
+products.  If such problems arise substantially in other domains, we
+stand ready to extend this provision to those domains in future versions
+of the GPL, as needed to protect the freedom of users.
+
+  Finally, every program is threatened constantly by software patents.
+States should not allow patents to restrict development and use of
+software on general-purpose computers, but in those that do, we wish to
+avoid the special danger that patents applied to a free program could
+make it effectively proprietary.  To prevent this, the GPL assures that
+patents cannot be used to render the program non-free.
+
+  The precise terms and conditions for copying, distribution and
+modification follow.
+
+                       TERMS AND CONDITIONS
+
+  0. Definitions.
+
+  "This License" refers to version 3 of the GNU General Public License.
+
+  "Copyright" also means copyright-like laws that apply to other kinds of
+works, such as semiconductor masks.
+
+  "The Program" refers to any copyrightable work licensed under this
+License.  Each licensee is addressed as "you".  "Licensees" and
+"recipients" may be individuals or organizations.
+
+  To "modify" a work means to copy from or adapt all or part of the work
+in a fashion requiring copyright permission, other than the making of an
+exact copy.  The resulting work is called a "modified version" of the
+earlier work or a work "based on" the earlier work.
+
+  A "covered work" means either the unmodified Program or a work based
+on the Program.
+
+  To "propagate" a work means to do anything with it that, without
+permission, would make you directly or secondarily liable for
+infringement under applicable copyright law, except executing it on a
+computer or modifying a private copy.  Propagation includes copying,
+distribution (with or without modification), making available to the
+public, and in some countries other activities as well.
+
+  To "convey" a work means any kind of propagation that enables other
+parties to make or receive copies.  Mere interaction with a user through
+a computer network, with no transfer of a copy, is not conveying.
+
+  An interactive user interface displays "Appropriate Legal Notices"
+to the extent that it includes a convenient and prominently visible
+feature that (1) displays an appropriate copyright notice, and (2)
+tells the user that there is no warranty for the work (except to the
+extent that warranties are provided), that licensees may convey the
+work under this License, and how to view a copy of this License.  If
+the interface presents a list of user commands or options, such as a
+menu, a prominent item in the list meets this criterion.
+
+  1. Source Code.
+
+  The "source code" for a work means the preferred form of the work
+for making modifications to it.  "Object code" means any non-source
+form of a work.
+
+  A "Standard Interface" means an interface that either is an official
+standard defined by a recognized standards body, or, in the case of
+interfaces specified for a particular programming language, one that
+is widely used among developers working in that language.
+
+  The "System Libraries" of an executable work include anything, other
+than the work as a whole, that (a) is included in the normal form of
+packaging a Major Component, but which is not part of that Major
+Component, and (b) serves only to enable use of the work with that
+Major Component, or to implement a Standard Interface for which an
+implementation is available to the public in source code form.  A
+"Major Component", in this context, means a major essential component
+(kernel, window system, and so on) of the specific operating system
+(if any) on which the executable work runs, or a compiler used to
+produce the work, or an object code interpreter used to run it.
+
+  The "Corresponding Source" for a work in object code form means all
+the source code needed to generate, install, and (for an executable
+work) run the object code and to modify the work, including scripts to
+control those activities.  However, it does not include the work's
+System Libraries, or general-purpose tools or generally available free
+programs which are used unmodified in performing those activities but
+which are not part of the work.  For example, Corresponding Source
+includes interface definition files associated with source files for
+the work, and the source code for shared libraries and dynamically
+linked subprograms that the work is specifically designed to require,
+such as by intimate data communication or control flow between those
+subprograms and other parts of the work.
+
+  The Corresponding Source need not include anything that users
+can regenerate automatically from other parts of the Corresponding
+Source.
+
+  The Corresponding Source for a work in source code form is that
+same work.
+
+  2. Basic Permissions.
+
+  All rights granted under this License are granted for the term of
+copyright on the Program, and are irrevocable provided the stated
+conditions are met.  This License explicitly affirms your unlimited
+permission to run the unmodified Program.  The output from running a
+covered work is covered by this License only if the output, given its
+content, constitutes a covered work.  This License acknowledges your
+rights of fair use or other equivalent, as provided by copyright law.
+
+  You may make, run and propagate covered works that you do not
+convey, without conditions so long as your license otherwise remains
+in force.  You may convey covered works to others for the sole purpose
+of having them make modifications exclusively for you, or provide you
+with facilities for running those works, provided that you comply with
+the terms of this License in conveying all material for which you do
+not control copyright.  Those thus making or running the covered works
+for you must do so exclusively on your behalf, under your direction
+and control, on terms that prohibit them from making any copies of
+your copyrighted material outside their relationship with you.
+
+  Conveying under any other circumstances is permitted solely under
+the conditions stated below.  Sublicensing is not allowed; section 10
+makes it unnecessary.
+
+  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
+
+  No covered work shall be deemed part of an effective technological
+measure under any applicable law fulfilling obligations under article
+11 of the WIPO copyright treaty adopted on 20 December 1996, or
+similar laws prohibiting or restricting circumvention of such
+measures.
+
+  When you convey a covered work, you waive any legal power to forbid
+circumvention of technological measures to the extent such circumvention
+is effected by exercising rights under this License with respect to
+the covered work, and you disclaim any intention to limit operation or
+modification of the work as a means of enforcing, against the work's
+users, your or third parties' legal rights to forbid circumvention of
+technological measures.
+
+  4. Conveying Verbatim Copies.
+
+  You may convey verbatim copies of the Program's source code as you
+receive it, in any medium, provided that you conspicuously and
+appropriately publish on each copy an appropriate copyright notice;
+keep intact all notices stating that this License and any
+non-permissive terms added in accord with section 7 apply to the code;
+keep intact all notices of the absence of any warranty; and give all
+recipients a copy of this License along with the Program.
+
+  You may charge any price or no price for each copy that you convey,
+and you may offer support or warranty protection for a fee.
+
+  5. Conveying Modified Source Versions.
+
+  You may convey a work based on the Program, or the modifications to
+produce it from the Program, in the form of source code under the
+terms of section 4, provided that you also meet all of these conditions:
+
+    a) The work must carry prominent notices stating that you modified
+    it, and giving a relevant date.
+
+    b) The work must carry prominent notices stating that it is
+    released under this License and any conditions added under section
+    7.  This requirement modifies the requirement in section 4 to
+    "keep intact all notices".
+
+    c) You must license the entire work, as a whole, under this
+    License to anyone who comes into possession of a copy.  This
+    License will therefore apply, along with any applicable section 7
+    additional terms, to the whole of the work, and all its parts,
+    regardless of how they are packaged.  This License gives no
+    permission to license the work in any other way, but it does not
+    invalidate such permission if you have separately received it.
+
+    d) If the work has interactive user interfaces, each must display
+    Appropriate Legal Notices; however, if the Program has interactive
+    interfaces that do not display Appropriate Legal Notices, your
+    work need not make them do so.
+
+  A compilation of a covered work with other separate and independent
+works, which are not by their nature extensions of the covered work,
+and which are not combined with it such as to form a larger program,
+in or on a volume of a storage or distribution medium, is called an
+"aggregate" if the compilation and its resulting copyright are not
+used to limit the access or legal rights of the compilation's users
+beyond what the individual works permit.  Inclusion of a covered work
+in an aggregate does not cause this License to apply to the other
+parts of the aggregate.
+
+  6. Conveying Non-Source Forms.
+
+  You may convey a covered work in object code form under the terms
+of sections 4 and 5, provided that you also convey the
+machine-readable Corresponding Source under the terms of this License,
+in one of these ways:
+
+    a) Convey the object code in, or embodied in, a physical product
+    (including a physical distribution medium), accompanied by the
+    Corresponding Source fixed on a durable physical medium
+    customarily used for software interchange.
+
+    b) Convey the object code in, or embodied in, a physical product
+    (including a physical distribution medium), accompanied by a
+    written offer, valid for at least three years and valid for as
+    long as you offer spare parts or customer support for that product
+    model, to give anyone who possesses the object code either (1) a
+    copy of the Corresponding Source for all the software in the
+    product that is covered by this License, on a durable physical
+    medium customarily used for software interchange, for a price no
+    more than your reasonable cost of physically performing this
+    conveying of source, or (2) access to copy the
+    Corresponding Source from a network server at no charge.
+
+    c) Convey individual copies of the object code with a copy of the
+    written offer to provide the Corresponding Source.  This
+    alternative is allowed only occasionally and noncommercially, and
+    only if you received the object code with such an offer, in accord
+    with subsection 6b.
+
+    d) Convey the object code by offering access from a designated
+    place (gratis or for a charge), and offer equivalent access to the
+    Corresponding Source in the same way through the same place at no
+    further charge.  You need not require recipients to copy the
+    Corresponding Source along with the object code.  If the place to
+    copy the object code is a network server, the Corresponding Source
+    may be on a different server (operated by you or a third party)
+    that supports equivalent copying facilities, provided you maintain
+    clear directions next to the object code saying where to find the
+    Corresponding Source.  Regardless of what server hosts the
+    Corresponding Source, you remain obligated to ensure that it is
+    available for as long as needed to satisfy these requirements.
+
+    e) Convey the object code using peer-to-peer transmission, provided
+    you inform other peers where the object code and Corresponding
+    Source of the work are being offered to the general public at no
+    charge under subsection 6d.
+
+  A separable portion of the object code, whose source code is excluded
+from the Corresponding Source as a System Library, need not be
+included in conveying the object code work.
+
+  A "User Product" is either (1) a "consumer product", which means any
+tangible personal property which is normally used for personal, family,
+or household purposes, or (2) anything designed or sold for incorporation
+into a dwelling.  In determining whether a product is a consumer product,
+doubtful cases shall be resolved in favor of coverage.  For a particular
+product received by a particular user, "normally used" refers to a
+typical or common use of that class of product, regardless of the status
+of the particular user or of the way in which the particular user
+actually uses, or expects or is expected to use, the product.  A product
+is a consumer product regardless of whether the product has substantial
+commercial, industrial or non-consumer uses, unless such uses represent
+the only significant mode of use of the product.
+
+  "Installation Information" for a User Product means any methods,
+procedures, authorization keys, or other information required to install
+and execute modified versions of a covered work in that User Product from
+a modified version of its Corresponding Source.  The information must
+suffice to ensure that the continued functioning of the modified object
+code is in no case prevented or interfered with solely because
+modification has been made.
+
+  If you convey an object code work under this section in, or with, or
+specifically for use in, a User Product, and the conveying occurs as
+part of a transaction in which the right of possession and use of the
+User Product is transferred to the recipient in perpetuity or for a
+fixed term (regardless of how the transaction is characterized), the
+Corresponding Source conveyed under this section must be accompanied
+by the Installation Information.  But this requirement does not apply
+if neither you nor any third party retains the ability to install
+modified object code on the User Product (for example, the work has
+been installed in ROM).
+
+  The requirement to provide Installation Information does not include a
+requirement to continue to provide support service, warranty, or updates
+for a work that has been modified or installed by the recipient, or for
+the User Product in which it has been modified or installed.  Access to a
+network may be denied when the modification itself materially and
+adversely affects the operation of the network or violates the rules and
+protocols for communication across the network.
+
+  Corresponding Source conveyed, and Installation Information provided,
+in accord with this section must be in a format that is publicly
+documented (and with an implementation available to the public in
+source code form), and must require no special password or key for
+unpacking, reading or copying.
+
+  7. Additional Terms.
+
+  "Additional permissions" are terms that supplement the terms of this
+License by making exceptions from one or more of its conditions.
+Additional permissions that are applicable to the entire Program shall
+be treated as though they were included in this License, to the extent
+that they are valid under applicable law.  If additional permissions
+apply only to part of the Program, that part may be used separately
+under those permissions, but the entire Program remains governed by
+this License without regard to the additional permissions.
+
+  When you convey a copy of a covered work, you may at your option
+remove any additional permissions from that copy, or from any part of
+it.  (Additional permissions may be written to require their own
+removal in certain cases when you modify the work.)  You may place
+additional permissions on material, added by you to a covered work,
+for which you have or can give appropriate copyright permission.
+
+  Notwithstanding any other provision of this License, for material you
+add to a covered work, you may (if authorized by the copyright holders of
+that material) supplement the terms of this License with terms:
+
+    a) Disclaiming warranty or limiting liability differently from the
+    terms of sections 15 and 16 of this License; or
+
+    b) Requiring preservation of specified reasonable legal notices or
+    author attributions in that material or in the Appropriate Legal
+    Notices displayed by works containing it; or
+
+    c) Prohibiting misrepresentation of the origin of that material, or
+    requiring that modified versions of such material be marked in
+    reasonable ways as different from the original version; or
+
+    d) Limiting the use for publicity purposes of names of licensors or
+    authors of the material; or
+
+    e) Declining to grant rights under trademark law for use of some
+    trade names, trademarks, or service marks; or
+
+    f) Requiring indemnification of licensors and authors of that
+    material by anyone who conveys the material (or modified versions of
+    it) with contractual assumptions of liability to the recipient, for
+    any liability that these contractual assumptions directly impose on
+    those licensors and authors.
+
+  All other non-permissive additional terms are considered "further
+restrictions" within the meaning of section 10.  If the Program as you
+received it, or any part of it, contains a notice stating that it is
+governed by this License along with a term that is a further
+restriction, you may remove that term.  If a license document contains
+a further restriction but permits relicensing or conveying under this
+License, you may add to a covered work material governed by the terms
+of that license document, provided that the further restriction does
+not survive such relicensing or conveying.
+
+  If you add terms to a covered work in accord with this section, you
+must place, in the relevant source files, a statement of the
+additional terms that apply to those files, or a notice indicating
+where to find the applicable terms.
+
+  Additional terms, permissive or non-permissive, may be stated in the
+form of a separately written license, or stated as exceptions;
+the above requirements apply either way.
+
+  8. Termination.
+
+  You may not propagate or modify a covered work except as expressly
+provided under this License.  Any attempt otherwise to propagate or
+modify it is void, and will automatically terminate your rights under
+this License (including any patent licenses granted under the third
+paragraph of section 11).
+
+  However, if you cease all violation of this License, then your
+license from a particular copyright holder is reinstated (a)
+provisionally, unless and until the copyright holder explicitly and
+finally terminates your license, and (b) permanently, if the copyright
+holder fails to notify you of the violation by some reasonable means
+prior to 60 days after the cessation.
+
+  Moreover, your license from a particular copyright holder is
+reinstated permanently if the copyright holder notifies you of the
+violation by some reasonable means, this is the first time you have
+received notice of violation of this License (for any work) from that
+copyright holder, and you cure the violation prior to 30 days after
+your receipt of the notice.
+
+  Termination of your rights under this section does not terminate the
+licenses of parties who have received copies or rights from you under
+this License.  If your rights have been terminated and not permanently
+reinstated, you do not qualify to receive new licenses for the same
+material under section 10.
+
+  9. Acceptance Not Required for Having Copies.
+
+  You are not required to accept this License in order to receive or
+run a copy of the Program.  Ancillary propagation of a covered work
+occurring solely as a consequence of using peer-to-peer transmission
+to receive a copy likewise does not require acceptance.  However,
+nothing other than this License grants you permission to propagate or
+modify any covered work.  These actions infringe copyright if you do
+not accept this License.  Therefore, by modifying or propagating a
+covered work, you indicate your acceptance of this License to do so.
+
+  10. Automatic Licensing of Downstream Recipients.
+
+  Each time you convey a covered work, the recipient automatically
+receives a license from the original licensors, to run, modify and
+propagate that work, subject to this License.  You are not responsible
+for enforcing compliance by third parties with this License.
+
+  An "entity transaction" is a transaction transferring control of an
+organization, or substantially all assets of one, or subdividing an
+organization, or merging organizations.  If propagation of a covered
+work results from an entity transaction, each party to that
+transaction who receives a copy of the work also receives whatever
+licenses to the work the party's predecessor in interest had or could
+give under the previous paragraph, plus a right to possession of the
+Corresponding Source of the work from the predecessor in interest, if
+the predecessor has it or can get it with reasonable efforts.
+
+  You may not impose any further restrictions on the exercise of the
+rights granted or affirmed under this License.  For example, you may
+not impose a license fee, royalty, or other charge for exercise of
+rights granted under this License, and you may not initiate litigation
+(including a cross-claim or counterclaim in a lawsuit) alleging that
+any patent claim is infringed by making, using, selling, offering for
+sale, or importing the Program or any portion of it.
+
+  11. Patents.
+
+  A "contributor" is a copyright holder who authorizes use under this
+License of the Program or a work on which the Program is based.  The
+work thus licensed is called the contributor's "contributor version".
+
+  A contributor's "essential patent claims" are all patent claims
+owned or controlled by the contributor, whether already acquired or
+hereafter acquired, that would be infringed by some manner, permitted
+by this License, of making, using, or selling its contributor version,
+but do not include claims that would be infringed only as a
+consequence of further modification of the contributor version.  For
+purposes of this definition, "control" includes the right to grant
+patent sublicenses in a manner consistent with the requirements of
+this License.
+
+  Each contributor grants you a non-exclusive, worldwide, royalty-free
+patent license under the contributor's essential patent claims, to
+make, use, sell, offer for sale, import and otherwise run, modify and
+propagate the contents of its contributor version.
+
+  In the following three paragraphs, a "patent license" is any express
+agreement or commitment, however denominated, not to enforce a patent
+(such as an express permission to practice a patent or covenant not to
+sue for patent infringement).  To "grant" such a patent license to a
+party means to make such an agreement or commitment not to enforce a
+patent against the party.
+
+  If you convey a covered work, knowingly relying on a patent license,
+and the Corresponding Source of the work is not available for anyone
+to copy, free of charge and under the terms of this License, through a
+publicly available network server or other readily accessible means,
+then you must either (1) cause the Corresponding Source to be so
+available, or (2) arrange to deprive yourself of the benefit of the
+patent license for this particular work, or (3) arrange, in a manner
+consistent with the requirements of this License, to extend the patent
+license to downstream recipients.  "Knowingly relying" means you have
+actual knowledge that, but for the patent license, your conveying the
+covered work in a country, or your recipient's use of the covered work
+in a country, would infringe one or more identifiable patents in that
+country that you have reason to believe are valid.
+
+  If, pursuant to or in connection with a single transaction or
+arrangement, you convey, or propagate by procuring conveyance of, a
+covered work, and grant a patent license to some of the parties
+receiving the covered work authorizing them to use, propagate, modify
+or convey a specific copy of the covered work, then the patent license
+you grant is automatically extended to all recipients of the covered
+work and works based on it.
+
+  A patent license is "discriminatory" if it does not include within
+the scope of its coverage, prohibits the exercise of, or is
+conditioned on the non-exercise of one or more of the rights that are
+specifically granted under this License.  You may not convey a covered
+work if you are a party to an arrangement with a third party that is
+in the business of distributing software, under which you make payment
+to the third party based on the extent of your activity of conveying
+the work, and under which the third party grants, to any of the
+parties who would receive the covered work from you, a discriminatory
+patent license (a) in connection with copies of the covered work
+conveyed by you (or copies made from those copies), or (b) primarily
+for and in connection with specific products or compilations that
+contain the covered work, unless you entered into that arrangement,
+or that patent license was granted, prior to 28 March 2007.
+
+  Nothing in this License shall be construed as excluding or limiting
+any implied license or other defenses to infringement that may
+otherwise be available to you under applicable patent law.
+
+  12. No Surrender of Others' Freedom.
+
+  If conditions are imposed on you (whether by court order, agreement or
+otherwise) that contradict the conditions of this License, they do not
+excuse you from the conditions of this License.  If you cannot convey a
+covered work so as to satisfy simultaneously your obligations under this
+License and any other pertinent obligations, then as a consequence you may
+not convey it at all.  For example, if you agree to terms that obligate you
+to collect a royalty for further conveying from those to whom you convey
+the Program, the only way you could satisfy both those terms and this
+License would be to refrain entirely from conveying the Program.
+
+  13. Use with the GNU Affero General Public License.
+
+  Notwithstanding any other provision of this License, you have
+permission to link or combine any covered work with a work licensed
+under version 3 of the GNU Affero General Public License into a single
+combined work, and to convey the resulting work.  The terms of this
+License will continue to apply to the part which is the covered work,
+but the special requirements of the GNU Affero General Public License,
+section 13, concerning interaction through a network will apply to the
+combination as such.
+
+  14. Revised Versions of this License.
+
+  The Free Software Foundation may publish revised and/or new versions of
+the GNU General Public License from time to time.  Such new versions will
+be similar in spirit to the present version, but may differ in detail to
+address new problems or concerns.
+
+  Each version is given a distinguishing version number.  If the
+Program specifies that a certain numbered version of the GNU General
+Public License "or any later version" applies to it, you have the
+option of following the terms and conditions either of that numbered
+version or of any later version published by the Free Software
+Foundation.  If the Program does not specify a version number of the
+GNU General Public License, you may choose any version ever published
+by the Free Software Foundation.
+
+  If the Program specifies that a proxy can decide which future
+versions of the GNU General Public License can be used, that proxy's
+public statement of acceptance of a version permanently authorizes you
+to choose that version for the Program.
+
+  Later license versions may give you additional or different
+permissions.  However, no additional obligations are imposed on any
+author or copyright holder as a result of your choosing to follow a
+later version.
+
+  15. Disclaimer of Warranty.
+
+  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+  16. Limitation of Liability.
+
+  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
+THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
+DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
+EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
+
+  17. Interpretation of Sections 15 and 16.
+
+  If the disclaimer of warranty and limitation of liability provided
+above cannot be given local legal effect according to their terms,
+reviewing courts shall apply local law that most closely approximates
+an absolute waiver of all civil liability in connection with the
+Program, unless a warranty or assumption of liability accompanies a
+copy of the Program in return for a fee.
+
+                     END OF TERMS AND CONDITIONS
+
+            How to Apply These Terms to Your New Programs
+
+  If you develop a new program, and you want it to be of the greatest
+possible use to the public, the best way to achieve this is to make it
+free software which everyone can redistribute and change under these terms.
+
+  To do so, attach the following notices to the program.  It is safest
+to attach them to the start of each source file to most effectively
+state the exclusion of warranty; and each file should have at least
+the "copyright" line and a pointer to where the full notice is found.
+
+    <one line to give the program's name and a brief idea of what it does.>
+    Copyright (C) <year>  <name of author>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Also add information on how to contact you by electronic and paper mail.
+
+  If the program does terminal interaction, make it output a short
+notice like this when it starts in an interactive mode:
+
+    <program>  Copyright (C) <year>  <name of author>
+    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+    This is free software, and you are welcome to redistribute it
+    under certain conditions; type `show c' for details.
+
+The hypothetical commands `show w' and `show c' should show the appropriate
+parts of the General Public License.  Of course, your program's commands
+might be different; for a GUI interface, you would use an "about box".
+
+  You should also get your employer (if you work as a programmer) or school,
+if any, to sign a "copyright disclaimer" for the program, if necessary.
+For more information on this, and how to apply and follow the GNU GPL, see
+<https://www.gnu.org/licenses/>.
+
+  The GNU General Public License does not permit incorporating your program
+into proprietary programs.  If your program is a subroutine library, you
+may consider it more useful to permit linking proprietary applications with
+the library.  If this is what you want to do, use the GNU Lesser General
+Public License instead of this License.  But first, please read
+<https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+================
+File: run.sh
+================
+HOST=$1
+PROJECT=$(basename $(pwd))
+PACKAGE=$(dirname $(ls */__main__.py))
+rsync -rPv --delete "$(pwd)/" $HOST:~/${PROJECT}/
+case "$2" in
+    "req")
+        ssh -t "${HOST}" pip3 install -r /home/$USER/${PROJECT}/tests/requirements.txt
+        ssh -t "${HOST}" pip3 install -r /home/$USER/${PROJECT}/requirements.txt
+        ;;
+    "main")
+        ssh -t "${HOST}" "cd ${PROJECT} ; python3 -m ${PACKAGE}"
+        ;;
+    "test")
+        ssh -t "${HOST}" "cd ${PROJECT} ; nose2-3 "
+        ;;
+    "install")
+        ssh -t ${HOST} "cd ${PROJECT} ; python3 -m pip install --upgrade --user --verbose ."
+        ;;
+    "copy")
+        echo "Just copy and done"
+        ;;
+    *)
+        exit 4
+        ;;
+esac
+
+
+
+
+
+================================================================
+End of Codebase
+================================================================

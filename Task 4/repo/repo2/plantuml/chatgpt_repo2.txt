@@ -1,0 +1,78 @@
+@startuml
+title HomeSensorHub — High-Level Architecture
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Operator / OS Service Manager" as Operator
+
+component "HomeSensorHub\n(Orchestrator / Runtime)" as App
+component "__main__.py\n(Entry Point)" as Entry
+
+package "Sensors Subsystem" as Sensors {
+  component "Probe Framework\n(Discovery & Locking)" as ProbeFW
+  component "Bosch BME Probes\n(BME280 / BME680)\nI2C discovery + type factory" as BoschProbes
+  component "TSL258x Probe\n(I2C discovery + type factory)" as TSLProbe
+  component "RCWL-0515 Probe\n(GPIO motion sensor)" as MotionProbe
+
+  component "Sensor Types Runtime\n(Threads, Polling, Callbacks,\nProperties)" as SensorRuntime
+  component "Payload Model\n(Measurement DTO)" as Payload
+}
+
+package "Routing / Messaging Subsystem" as Routing {
+  component "MQTTSender\n(Publish payloads)" as Sender
+  component "MQTTSubscriber\n(Subscribe & set sensor properties)" as Subscriber
+  component "MQTT Client Wrapper\n(Singleton over paho-mqtt)" as MQTT
+}
+
+package "Platform / Hardware & External Services" as Platform {
+  database "I2C Bus\n(busio/board + smbus)\n& Sensor Drivers\n(Adafruit BME280/BME680,\nTSL258x driver)" as I2C
+  node "GPIO\n(RPi.GPIO)" as GPIO
+  cloud "MQTT Broker\n(mqtt.tinker.haus:1883)" as Broker
+  component "Logging\n(coloredlogs + verboselogs)" as Log
+}
+
+' Entry / lifecycle
+Operator --> Entry : start python -m homesensorhub
+Entry --> App : main()
+
+' Orchestration
+App --> Subscriber : instantiate\n+ subscribe_to_sensor_properties(sensors)
+App --> Sender : instantiate\n(find_senders)
+App --> Sensors : discover sensors via probes
+
+' Probing / sensor instantiation
+App --> BoschProbes : probe(send_payload_callback)
+App --> TSLProbe : probe(send_payload_callback)
+App --> MotionProbe : probe(send_payload_callback)
+
+BoschProbes --> ProbeFW : lock + functional_probe
+TSLProbe --> ProbeFW : lock + functional_probe
+MotionProbe --> SensorRuntime : create motion sensor type
+
+BoschProbes --> I2C : I2C scan + driver init
+TSLProbe --> I2C : I2C probe + config + read
+MotionProbe --> GPIO : IRQ + polling
+
+BoschProbes --> SensorRuntime : create polled sensor types\n(temp/humidity/pressure/altitude/gas)
+TSLProbe --> SensorRuntime : create polled light sensor type
+SensorRuntime --> Payload : build Payload(type,name,value,\ntimestamp,measurement)
+
+' Messaging flow
+SensorRuntime --> Sender : send_payload_callback(payload)
+Sender --> MQTT : publish(topic, payload)
+MQTT --> Broker : MQTT publish
+
+Subscriber --> MQTT : subscribe(topics)\n+ on_message callback
+MQTT --> Broker : MQTT subscribe
+Broker --> MQTT : incoming messages
+MQTT --> Subscriber : on_message(topic,payload)
+Subscriber --> SensorRuntime : set_property(type, property,\npayload) e.g., pollrate
+
+' Cross-cutting
+App --> Log
+SensorRuntime --> Log
+Routing --> Log
+Sensors --> Log
+
+@enduml

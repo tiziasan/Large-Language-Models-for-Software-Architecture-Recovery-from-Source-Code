@@ -1,0 +1,63 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+
+title High-Level System Architecture: Lyrics Mood Classification
+
+left to right direction
+
+actor "End User" as User
+
+package "Frontend Layer (Docker)" {
+    component "React Application" as ClientApp {
+        [Main Component]
+        [State Management]
+    }
+}
+
+package "Backend Layer (Docker)" {
+    component "FastAPI Service" as BackendService {
+        port "Port 8000" as APIGateway
+        
+        component "API Controller" as Controller
+        component "NLP Processor" as NLP
+        component "Inference Engine" as Inference
+        component "Data Access Layer" as DAL
+    }
+    
+    file "Model Artifacts" as Models {
+        folder "CNN Model (v3)"
+        file "Tokenizer (Pickle)"
+        file "Label Encoder"
+    }
+}
+
+package "Persistence Layer (Docker)" {
+    database "Elasticsearch" as DB {
+        [Lyrics & Mood Index]
+    }
+}
+
+cloud "External Services" {
+    [Genius API] as Genius
+    note right of Genius: Fallback for lyric fetching
+}
+
+' Interactions
+User --> ClientApp : Inputs Song/Artist
+ClientApp --> APIGateway : HTTP POST /search
+APIGateway --> Controller : Routes Request
+
+Controller --> DAL : Check for existing song
+DAL <--> DB : Read/Write Documents (JSON)
+
+Controller --> Genius : Fetch Lyrics (if not in DB)
+
+Controller --> NLP : Raw Lyrics
+NLP --> Inference : Tokenized/Lemmatized Text
+Inference ..> Models : Loads & Uses
+Inference --> Controller : Predicted Mood & Similarity
+
+@enduml

@@ -1,0 +1,75 @@
+@startuml
+title ModelBank — High-Level Architecture
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+package "Entry Points" {
+  [CLI Bootstrap\n(main.go)] as CLI
+  [gRPC API Server\n(server/modelbank_server.go)] as GRPCServer
+}
+
+package "Application Layer (Use Cases)" {
+  [ModelBank Use Case\n(usecases/ModelBankUsecase.go)] as Usecase
+  interface "ModelBankUsecaseInputPort" as IUsecaseIn
+  interface "ModelBankUsecaseOutputPort" as IUsecaseOut
+  interface "ModelBankEntityGateway" as IEntityGateway
+}
+
+package "Interface Adapters" {
+  [ModelBank Controller\n(providers/modelbankController.go)] as Controller
+  interface "ModelBankControllerInputPort" as IControllerIn
+  interface "ModelBankControllerOutputPort" as IControllerOut
+}
+
+package "Infrastructure" {
+  [DB Provider / Repository\n(providers/dbProvider.go)] as DbProvider
+  [PostgreSQL\n(go-pg)] as Postgres
+  [gRPC Contract\n(providers/modelbank.proto/.pb.go)] as GrpcContract
+}
+
+package "Domain Model (Entities)" {
+  [FinancialInstitution] as FinancialInstitution
+  [AccountHolder] as AccountHolder
+  [Account] as Account
+  [Consent] as Consent
+  [PaymentInstruction] as PaymentInstruction
+  [PaymentTransaction] as PaymentTransaction
+  [LedgerEntry] as LedgerEntry
+}
+
+' ---- Ports / Adapters wiring ----
+CLI --> DbProvider : create DB / bootstrap
+CLI --> Controller : invoke Usecase (CreateFi)
+
+GRPCServer --> GrpcContract : uses generated stubs
+GRPCServer --> Controller : delegates requests\n(CreateConsent)
+Controller ..|> IControllerIn
+Controller ..|> IControllerOut
+
+Controller --> IUsecaseIn : calls
+Usecase ..|> IUsecaseIn
+Usecase ..|> IUsecaseOut
+Usecase --> IEntityGateway : persists/queries
+DbProvider ..|> IEntityGateway
+
+DbProvider --> Postgres : connect/CRUD
+
+' ---- Domain usage ----
+Usecase --> Consent : create/read/store
+Usecase --> FinancialInstitution : create/read/store
+Usecase --> AccountHolder
+Usecase --> Account
+
+DbProvider --> FinancialInstitution : ORM mapping
+DbProvider --> AccountHolder : ORM mapping
+DbProvider --> Account : ORM mapping
+DbProvider --> Consent : ORM mapping (stored/queried)
+
+FinancialInstitution --> PaymentInstruction : receives/processes
+PaymentInstruction --> PaymentTransaction : contains
+PaymentTransaction --> Account : creditor/debtor accounts
+Account --> LedgerEntry : ledger entries
+
+@enduml

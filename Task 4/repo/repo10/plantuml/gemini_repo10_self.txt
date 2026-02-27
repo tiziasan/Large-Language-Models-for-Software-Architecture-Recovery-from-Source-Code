@@ -1,0 +1,69 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam linetype ortho
+
+title High-Level Architecture: Security Posture Collection & Analysis
+
+package "Management Host (Local)" {
+    artifact "Cluster Configs" as Configs
+    
+    component "Multi-Cluster Orchestrator" as Orchestrator <<cronjob.py>>
+    component "Ingestion Pipeline" as Pipeline <<Shell Script>>
+    component "Data Transformer" as Transformer <<split_json_for_kibana.py>>
+    
+    note right of Orchestrator
+        Reads config
+        Iterates target clusters
+        Invokes Pipeline per cluster
+    end note
+
+    note right of Pipeline
+        1. Cleans remote env
+        2. Injects Collector (SCP)
+        3. Triggers Execution (SSH)
+        4. Retrieves Data (SCP)
+        5. Uploads to ES (REST)
+    end note
+}
+
+package "Target IBM Spectrum Scale Cluster" {
+    component "Injected Collector" as Collector <<security_posture.py>>
+    interface "GPFS Management CLI" as GPFS_CLI
+    
+    note bottom of Collector
+        Ephemeral agent
+        Executes local system commands
+        (mmlscluster, mmnfs, etc.)
+        Aggregates security state
+    end note
+}
+
+package "Analytics Backend" {
+    database "Elasticsearch" as ES
+    component "Kibana" as Visualization
+}
+
+' Configuration Flow
+Configs --> Orchestrator : defines targets
+
+' Execution Flow
+Orchestrator --> Pipeline : executes with\ncluster credentials
+
+' Remote Interaction (Agent Injection Pattern)
+Pipeline ..> Collector : "Deploys via SCP"
+Pipeline ..> Collector : "Executes via SSH"
+Collector --> GPFS_CLI : polls configuration
+GPFS_CLI --> Collector : returns system state
+Collector ..> Pipeline : "returns JSON via SCP"
+
+' Data Processing & Ingestion
+Pipeline --> Transformer : passes raw JSON
+Transformer --> Pipeline : returns segmented JSONs
+Pipeline --> ES : Ingests Data\n(HTTPS / REST)
+
+' Consumption
+ES <.. Visualization : reads index patterns
+
+@enduml

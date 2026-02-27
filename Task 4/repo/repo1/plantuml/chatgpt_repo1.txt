@@ -1,0 +1,48 @@
+' Source context: :contentReference[oaicite:0]{index=0}
+
+@startuml
+skinparam componentStyle rectangle
+
+actor User
+
+package "Frontend (React)" {
+  [Web UI]
+}
+
+package "Backend (FastAPI)" {
+  [API Service]
+  [Lyrics Processing]
+  [Mood Classification (CNN)]
+  [Similarity Engine (TF-IDF + SVD)]
+}
+
+package "Persistence" {
+  [Elasticsearch]
+}
+
+package "External Services" {
+  [Genius Lyrics API]
+}
+
+package "ML Assets" {
+  [CNN Model Files]
+  [Tokenizer / Label Encoder]
+}
+
+User --> [Web UI]
+
+[Web UI] --> [API Service] : HTTP /search
+
+[API Service] --> [Lyrics Processing]
+[Lyrics Processing] --> [Genius Lyrics API] : fetch lyrics (if missing)
+
+[API Service] --> [Elasticsearch] : read/write songs + moods
+
+[API Service] --> [Mood Classification (CNN)]
+[Mood Classification (CNN)] --> [CNN Model Files]
+[Mood Classification (CNN)] --> [Tokenizer / Label Encoder]
+
+[API Service] --> [Similarity Engine (TF-IDF + SVD)]
+[Similarity Engine (TF-IDF + SVD)] --> [Elasticsearch] : retrieve same-mood songs
+
+@enduml

@@ -1,0 +1,54 @@
+@startuml
+title Security Posture Collection & Elasticsearch Publishing (High-Level Architecture)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "User / Scheduler" as Trigger
+
+node "Scan Orchestrator Host" as Orchestrator {
+  component "cronjob.py\n(Scan Orchestrator)" as Cronjob
+  component "fetch_security_posture_and_upload_to_ES.sh\n(SSH/SCP + ES Upload)" as Pipeline
+  component "split_json_for_kibana.py\n(JSON Splitter)" as Splitter
+
+  artifact "security-posture.conf\n(Elasticsearch URL + credentials)" as ESConf
+  artifact "scale-clusters.conf\n(Target clusters: user/ip/temp-dir)" as ClustersConf
+
+  artifact "output_data.json\n(Collected posture snapshot)" as OutputJson
+  folder "output_dir/\ncluster.json, fs_*.json, export_*.json" as OutputDir
+}
+
+node "Target Cluster Node" as TargetNode {
+  component "collector/security_posture.py\n(Security Posture Collector)" as Collector
+  component "GPFS / mmfs CLI\n(mmlscluster, mmlsmount, mmlsfs, mmnfs, mmsmb, ...)" as GPFSCLI
+  artifact "Remote Temp Dir\n(from scale-clusters.conf)" as RemoteTmp
+}
+
+cloud "Elasticsearch Endpoint" as ES {
+  component "Elasticsearch\n(HTTP API)" as ESApi
+}
+
+Trigger --> Cronjob : run with\n--config-file\n--scale-clusters-config-file
+ClustersConf --> Cronjob : read targets & defaults
+ESConf --> Cronjob : read ES URL + user:pass
+
+Cronjob --> Pipeline : execute per target cluster\n(bash command)
+
+Pipeline --> TargetNode : SSH: create/clean temp dir\nSCP: copy collector
+Pipeline --> Collector : SSH: run python collector\n(--output_file .../output_data.json)
+
+Collector --> GPFSCLI : execute GPFS/mm* commands\n(read posture signals)
+Collector --> RemoteTmp : write posture JSON
+
+Pipeline --> TargetNode : SCP: fetch output_data.json
+Pipeline --> OutputJson : store locally
+
+Pipeline --> Splitter : run splitter\n(--security-posture-json --output-dir)
+Splitter --> OutputDir : write cluster/fs/export JSON docs
+
+Pipeline --> ESApi : curl DELETE\n/scale_cluster, /scale_fs, /scale_export
+Pipeline --> ESApi : curl POST\n/scale_cluster/doc/ (cluster.json)
+Pipeline --> ESApi : curl POST\n/scale_fs/doc/ (fs_*.json)
+Pipeline --> ESApi : curl POST\n/scale_export/doc/ (export_*.json)
+
+@enduml

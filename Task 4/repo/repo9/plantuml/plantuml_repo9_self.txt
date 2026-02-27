@@ -1,0 +1,79 @@
+@startuml
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+title High-Level Architecture (strictly from provided code subset)
+
+actor "Documentation Consumer" as User
+
+package "Build & Deploy" as Build {
+  [Netlify Build Pipeline\n(netlify.toml)] as Netlify
+  [Example Extractor\n(extract.js)] as Extractor
+  [GraphQL Schema JSON Generator\n(graphql.js)] as SchemaGen
+  [Static Diagram Renderer\n(static/drawings/render.sh)] as DiagramRender
+  [Hugo Static Site Generator\n(invoked by Netlify)] as Hugo
+}
+
+package "Documentation Site (Theme + Client Scripts)" as Site {
+  [Hugo Book Theme Config\n(themes/book/theme.toml)] as ThemeCfg
+  [Search Index Template\n(themes/book/assets/search-data.js)] as SearchTpl
+  [Client-side Enhancements\n(static/scripts/main.js)] as ClientJS
+  [Static Drawings Sources\n(static/drawings/*.plantuml)] as PlantumlSources
+  [Theme Static Assets\n(fonts, mermaid.min.js)] as ThemeAssets
+}
+
+package "Examples Content (Inputs to Extractor)" as Examples {
+  [Quickstarts\n(Go / JavaScript / Python)] as Quickstarts
+  [Tutorials\n(TypeScript)] as Tutorials
+  [Bundler Config\n(webpack.prod.js)] as Bundler
+  [Generated gRPC Stub Code\n(quickstarts/go/pb/*.go)] as GoPB
+}
+
+package "Generated Site Data (Artifacts)" as Artifacts {
+  file "data/examples.json" as ExamplesJSON
+  file "data/eos/graphql.json" as GraphQLJSON
+  folder "public/ (site output)" as PublicSite
+  file "static/drawings/*.png (rendered)" as DrawingsPNG
+}
+
+package "External Endpoints Referenced by Examples" as External {
+  cloud "Auth Token Service\n(auth.eosnation.io)" as AuthSvc
+  cloud "GraphQL over gRPC Endpoint\n(eos.dfuse.eosnation.io:9000)" as GraphQLGrpc
+  cloud "REST Endpoint\n(from client.endpoints.restUrl)" as RestEndpoint
+}
+
+' --- Orchestration (as specified in netlify.toml) ---
+Netlify --> Extractor : runs "npm run extract"
+Netlify --> Hugo : runs "hugo --gc --minify"
+
+' --- Data generation (from scripts) ---
+Extractor --> ExamplesJSON : writes extracted CODE:BEGIN/END blocks
+SchemaGen --> GraphQLJSON : writes JSON schema data
+DiagramRender --> DrawingsPNG : runs PlantUML to PNG
+PlantumlSources --> DiagramRender : input diagrams
+
+' --- Site build inputs/outputs ---
+ThemeCfg --> Hugo
+SearchTpl --> Hugo
+ClientJS --> Hugo
+ThemeAssets --> Hugo
+ExamplesJSON --> Hugo
+GraphQLJSON --> Hugo
+DrawingsPNG --> Hugo
+Hugo --> PublicSite : generates deployable site
+
+' --- Example code dependencies (dominant) ---
+Bundler --> Quickstarts : bundles browser quickstart entry
+GoPB --> Quickstarts : used by Go quickstart
+
+' --- Example runtime interactions (explicit in code) ---
+Quickstarts --> AuthSvc : request token using API key
+Quickstarts --> GraphQLGrpc : execute GraphQL subscription via gRPC
+Tutorials --> RestEndpoint : push signed transaction via eosjs JsonRpc
+Tutorials --> AuthSvc : obtain/attach bearer token via dfuse client
+
+' --- Site consumption ---
+User --> PublicSite : browse generated documentation
+
+@enduml

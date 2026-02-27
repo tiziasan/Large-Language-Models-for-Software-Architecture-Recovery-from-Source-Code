@@ -1,0 +1,74 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+
+title High-Level Architecture: Matryx Platform
+
+actor "User" as User
+
+package "Registry & Configuration" {
+    component "MatryxSystem" as System <<System of Record>>
+    note right of System
+        Maintains contract versions,
+        address lookups, and 
+        function selector mappings.
+    end note
+}
+
+package "Satellite Services (Entry Points)" {
+    component "MatryxTournament" as Tournament <<Forwarder>>
+    component "MatryxCommit" as Commit <<Forwarder>>
+    note bottom of Tournament
+        Forward user calls to the Platform
+        to execute logic against shared storage.
+    end note
+}
+
+package "Core Storage & Dispatch" {
+    component "MatryxPlatform" as Platform <<Central Hub>>
+    note bottom of Platform
+        Holds the global state (Data struct).
+        Acts as the execution context.
+        Dispatches calls to Libraries.
+    end note
+}
+
+package "Logic Implementation Layer" {
+    component "LibPlatform" as LibPlat <<Library>>
+    component "LibTournament" as LibTourn <<Library>>
+    component "LibCommit" as LibComm <<Library>>
+}
+
+package "External Assets" {
+    component "MatryxToken (MTX)" as Token <<ERC20>>
+}
+
+' User Interactions
+User --> Platform : Direct Interaction (Admin/Setup)
+User --> Tournament : Participate (Enter, Submit)
+User --> Commit : Manage Work (Create, Claim)
+User --> Token : Approve/Transfer
+
+' System Resolution
+Tournament ..> System : 1. Locate Platform
+Commit ..> System : 1. Locate Platform
+Platform ..> System : 3. Map Caller to Library
+
+' Forwarding Pattern
+Tournament --> Platform : 2. Forward Call
+Commit --> Platform : 2. Forward Call
+
+' Execution Pattern (DelegateCall)
+Platform ..> LibPlat : 4. DelegateCall (Executes Logic)
+Platform ..> LibTourn : 4. DelegateCall (Executes Logic)
+Platform ..> LibComm : 4. DelegateCall (Executes Logic)
+
+' Logic Dependencies (Financials)
+LibPlat --> Token : Transfers
+LibTourn --> Token : Bounty Management
+LibComm --> Token : Reward Withdrawal
+
+@enduml

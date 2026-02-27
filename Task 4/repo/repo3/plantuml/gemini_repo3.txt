@@ -1,0 +1,72 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+package "zswag System" {
+
+    package "Python Layer" {
+        [zswag.app] as ZSwagApp
+        [zswag.gen] as ZSwagGen
+        [zswag.doc] as ZSwagDoc
+        [zswag.reflect] as ZSwagReflect
+    }
+
+    package "Binding Layer (pyzswagcl)" {
+        [PyOpenApiClient] as PyOAClient
+        [py-zswagcl module] as PyModule
+    }
+
+    package "C++ Client Core (zswagcl)" {
+        [OpenAPIClient] as OAClient
+        [OpenAPIConfig] as OAConfig
+        [AuthRegistry] as AuthReg
+        [OpenAPIParser] as OAParser
+        [OAClient Interface] as OAInterface
+    }
+
+    package "HTTP Foundation (httpcl)" {
+        [IHttpClient] as IHttpClient
+        [HttpSettings] as HttpSettings
+        [OAuth/Security] as HttpSecurity
+        [URI & Utils] as URIUtils
+    }
+}
+
+package "External Ecosystem" {
+    [Zserio Runtime] as Zserio
+    [Flask/Connexion] as WebFramework
+    [External HTTP Server] as ExtServer
+}
+
+' Relationships
+
+' Python Layer Interactions
+ZSwagApp ..> WebFramework : extends/uses
+ZSwagApp --> ZSwagGen : uses for schema gen
+ZSwagGen --> ZSwagDoc : extracts docs
+ZSwagGen --> ZSwagReflect : reflects types
+ZSwagApp --> PyModule : imports
+
+' Binding Layer Interactions
+PyModule *-- PyOAClient : exposes
+PyOAClient --> OAClient : wraps C++ implementation
+PyOAClient ..> Zserio : handles blob data
+
+' C++ Core Interactions
+OAClient --> OAConfig : reads spec
+OAClient --> AuthReg : manages security
+OAClient --> OAParser : parses YAML/JSON spec
+OAClient --> OAInterface : implements
+OAClient --> IHttpClient : sends requests
+
+' HTTP Foundation Interactions
+IHttpClient --> HttpSettings : configured by
+IHttpClient --> URIUtils : parses URLs
+AuthReg --> HttpSecurity : uses signatures/tokens
+HttpSecurity --> IHttpClient : signs requests
+
+' Cross-Boundary/External Interactions
+OAInterface ..> Zserio : serializes/deserializes data
+IHttpClient ..> ExtServer : HTTP/1.1 requests
+
+@enduml

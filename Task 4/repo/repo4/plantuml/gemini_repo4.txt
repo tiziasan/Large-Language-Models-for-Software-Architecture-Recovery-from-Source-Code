@@ -1,0 +1,73 @@
+@startuml
+!theme plain
+hide empty members
+skinparam componentStyle rectangle
+
+package "Infrastructure / Adapters" {
+    component "gRPC Server" as Server <<Entry Point>>
+    component "PostgreSQL Provider" as DBProvider <<Adapter>>
+    
+    node "External Systems" {
+        database "PostgreSQL" as DB
+    }
+}
+
+package "Interface Adapters" {
+    component "ModelBank Controller" as Controller
+    component "ModelBank Presenter" as Presenter <<Implied>>
+    
+    note right of Controller
+        Converts external requests (gRPC)
+        into internal Use Case requests
+    end note
+}
+
+package "Core Business Logic" {
+    package "Application Layer (Use Cases)" {
+        interface "Input Port\n(ModelBankUsecaseInputPort)" as InputPort
+        interface "Output Port\n(ModelBankUsecaseOutputPort)" as OutputPort
+        interface "Entity Gateway\n(ModelBankEntityGateway)" as EntityGateway
+        
+        component "ModelBank UseCase" as UseCase
+    }
+
+    package "Domain Layer (Entities)" {
+        component "Financial Institution" as FI
+        component "Account" as Acc
+        component "Account Holder" as AccHolder
+        component "Consent" as Consent
+        component "Transaction/Payment" as Trans
+    }
+}
+
+' Relationships & Dependencies
+
+' Server to Controller (Driving Side)
+Server ..> Controller : Uses
+Server ..> InputPort : Invokes via Controller
+
+' Controller implementation
+Controller -down-|> OutputPort : Implements
+Controller ..> InputPort : Delegates to
+
+' Use Case Implementation
+UseCase -up-|> InputPort : Implements
+UseCase ..> EntityGateway : Uses for Data Access
+UseCase ..> OutputPort : Sends Responses to
+
+' Data Access (Driven Side)
+DBProvider -up-|> EntityGateway : Implements
+DBProvider ..> DB : Read/Write
+DBProvider ..> FI : Maps Data
+DBProvider ..> Acc : Maps Data
+
+' Domain Dependencies
+UseCase ..> FI : Manipulates
+UseCase ..> Acc : Manipulates
+UseCase ..> Consent : Manipulates
+
+AccHolder "1" *-- "*" Acc : Owns
+Acc "1" *-- "*" Trans : Contains Ledger
+FI "1" o-- "*" AccHolder : Customers
+
+@enduml

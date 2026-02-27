@@ -1,0 +1,59 @@
+@startuml
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+skinparam package {
+  BackgroundColor WhiteSmoke
+  BorderColor Gray
+}
+
+title High-Level Architecture: HomeSensorHub
+
+package "HomeSensorHub System" {
+    
+    component [Orchestrator] as Core <<HomeSensorHub>>
+    note top of Core : Main Entry Point\nLifecycle Management
+    
+    package "Routing Subsystem" {
+        component [Message Handler] as Router <<Sender & Subscriber>>
+        component [MQTT Connector] as MQTT <<Singleton>>
+    }
+
+    package "Sensor Subsystem" {
+        component [Probe Factory] as Probes <<Discovery>>
+        component [Sensor Nodes] as Nodes <<Active Threads>>
+        note right of Nodes : Handles Polling, \nTimers & Async Events
+    }
+
+    package "Hardware Abstraction" {
+        component [Device Drivers] as Drivers
+        note bottom of Drivers : Wraps External Hardware Libs\n(Bosch BME, TSL258x, RCWL0515)
+    }
+}
+
+cloud "External MQTT Broker" as Cloud
+
+' Main orchestration flow
+Core --> Probes : 1. Invokes Discovery
+Core --> Router : Initializes
+Core o--> Nodes : Manages List
+
+' Discovery and Instantiation
+Probes ..> Drivers : Probes Hardware
+Probes ..> Nodes : Instantiates & Configures
+
+' Data Flow and Control
+Nodes --> Router : Publishes Telemetry (Callback)
+Router --> Nodes : Updates Config (via Subscription)
+
+' External Communication
+Router --> MQTT : Uses
+MQTT <--> Cloud : MQTT Protocol (Pub/Sub)
+
+' Hardware Interaction
+Nodes --> Drivers : Reads Sensor Data
+
+@enduml

@@ -1,0 +1,63 @@
+@startuml
+!theme plain
+hide empty members
+skinparam componentStyle rectangle
+
+package "Infrastructure Layer" {
+    component "gRPC Server" as Server <<Entry Point>>
+    component "PostgreSQL" as DB <<Database>>
+}
+
+package "Interface Adapters Layer" {
+    component "ModelBank Controller" as Controller <<Adapter>>
+    component "DB Provider" as DbProvider <<Adapter>>
+    
+    note right of Controller
+        Converts gRPC requests to 
+        Use Case Inputs & manages
+        response mapping
+    end note
+}
+
+package "Application Layer (Use Cases)" {
+    interface "ModelBankUsecaseInputPort" as InputPort
+    interface "ModelBankUsecaseOutputPort" as OutputPort
+    interface "ModelBankEntityGateway" as Gateway
+    
+    component "ModelBank UseCase" as UseCase
+}
+
+package "Domain Layer (Entities)" {
+    component "Domain Model" as Domain {
+        rectangle "FinancialInstitution"
+        rectangle "Account"
+        rectangle "AccountHolder"
+        rectangle "Consent"
+        rectangle "PaymentInstruction"
+    }
+    
+    interface "AccountProcessor" as AccProc
+    interface "AccountHolderProcessor" as AccHolderProc
+}
+
+' Infrastructure to Adapters
+Server ..> Controller : Uses
+DbProvider ..> DB : Read/Write
+
+' Adapters to Application Boundary
+Controller ..> InputPort : Invokes
+Controller .up.|> OutputPort : Implements (ReceiveResponse)
+DbProvider .up.|> Gateway : Implements
+
+' Application Layer Internal Wiring
+UseCase .up.|> InputPort : Implements
+UseCase ..> OutputPort : Sends Output
+UseCase ..> Gateway : Requests Data
+
+' Domain Dependencies
+UseCase ..> Domain : Manipulates
+DbProvider ..> Domain : Maps DB Rows to Entities
+Domain -down- AccProc : Defines Logic
+Domain -down- AccHolderProc : Defines Logic
+
+@enduml

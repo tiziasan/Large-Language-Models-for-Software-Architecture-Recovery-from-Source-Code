@@ -1,0 +1,5301 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/*.png, **/*.jpg, **/*.jpeg, **/*.gif, **/*.svg, **/*.pdf, **/*.jar, **/*.exe, **/*.dll, **/*.txt, **/*.json, **/*.md, **/*.html, **/*.css, **/*.npy, **/*.pickle, **/*.pb, **/*.index, node_modules/**/*, build/**/*, dist/**/*, tests/**/*, **/*/cnn/**/*
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+.gitignore
+.repomixignore
+backend/dockerfile_fastapi
+backend/fastapi/__init.py__
+backend/fastapi/configuration/__init__.py
+backend/fastapi/configuration/config.py
+backend/fastapi/elasticsearch_functions.py
+backend/fastapi/main.py
+backend/fastapi/secrets/genius_api_secret
+backend/fastapi/utils.py
+data_exploration/CNN-Model-Creation.ipynb
+data_exploration/kaggle_data_preprocessing.ipynb
+data_exploration/lastfm_labels/lastfm_labels_download.ipynb
+data_exploration/lastfm_labels/lastfm_labels.ipynb
+data_exploration/max_data_exploration.ipynb
+data_exploration/pascal_data_exploration.ipynb
+data_exploration/simon_data_exploration.ipynb
+docker-compose.yaml
+elasticsearch/create_load_save_es_index.py
+elasticsearch/dockerfile
+elasticsearch/startup.sh
+elasticsearch/wait-for-it.sh
+frontend/dockerfile_react
+frontend/mood_classification/src/App.js
+frontend/mood_classification/src/components/Main.js
+frontend/mood_classification/src/index.js
+LICENSE
+
+================================================================
+Files
+================================================================
+
+================
+File: .gitignore
+================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Dont ignore the secret anymore for final submisson
+#backend/fastapi/secrets/genius_api_secret
+
+# Ignore nodejs
+node_modules
+node_modules/
+
+# macOS
+.DS_Store
+
+# Data 
+*.csv
+# don't ignore the json anymore since we need it for the dump to be uploaded
+# *.json
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+*.sqlite
+*.db
+
+================
+File: .repomixignore
+================
+# Add patterns to ignore here, one per line
+# Example:
+# *.log
+# tmp/
+
+================
+File: backend/dockerfile_fastapi
+================
+FROM ubuntu:latest
+RUN apt update -y && apt upgrade -y
+RUN apt install gcc python3 python3-pip -y
+
+RUN python3 -m pip install fastapi[all]
+COPY ./backend/requirements.txt /tmp/requirements.txt
+RUN python3 -m pip install -r /tmp/requirements.txt
+
+RUN python3 -m pip install -U pip setuptools wheel
+RUN python3 -m pip install -U spacy
+RUN python3 -m spacy download en_core_web_sm
+
+================
+File: backend/fastapi/__init.py__
+================
+
+
+================
+File: backend/fastapi/configuration/__init__.py
+================
+
+
+================
+File: backend/fastapi/configuration/config.py
+================
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+app = FastAPI()
+origins = [
+    "http://localhost:3000",
+    "localhost:3000",
+    "http://elasticsearch:9200"
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+================
+File: backend/fastapi/elasticsearch_functions.py
+================
+from elasticsearch import Elasticsearch
+index_name = "lyrics_mood_classification"
+def add_es_document(song_name, artist_name, lyrics, mood):
+    global index_name
+    es_host = "http://elasticsearch:9200"
+    es = Elasticsearch(hosts=es_host)
+    es.index(
+        index=index_name,
+        document={
+            "song_name": song_name,
+            "artist_name": artist_name,
+            "lyrics": lyrics,
+            "mood": mood,
+        },
+    )
+    es.close()
+def get_stored_mood_of_song(song_name, artist_name):
+    global index_name
+    es_host = "http://elasticsearch:9200"
+    es = Elasticsearch(hosts=es_host)
+    result = es.search(
+        index=index_name,
+        query={
+            "bool": {
+                "must": [
+                    {"match": {"song_name": song_name}},
+                    {"match": {"artist_name": artist_name}},
+                ]
+            }
+        },
+    )
+    es.close()
+    if result["hits"]["total"]["value"] > 0:
+        return result["hits"]["hits"][0]["_source"]["mood"]
+    else:
+        return None
+def get_stored_lyrics_of_song(song_name, artist_name):
+    global index_name
+    es_host = "http://elasticsearch:9200"
+    es = Elasticsearch(hosts=es_host)
+    result = es.search(
+        index=index_name,
+        query={
+            "bool": {
+                "must": [
+                    {"match": {"song_name": song_name}},
+                    {"match": {"artist_name": artist_name}},
+                ]
+            }
+        },
+    )
+    es.close()
+    if result["hits"]["total"]["value"] > 0:
+        return result["hits"]["hits"][0]["_source"]["lyrics"]
+    else:
+        return None
+def get_all_documents_of_mood(mood):
+    global index_name
+    es_host = "http://elasticsearch:9200"
+    es = Elasticsearch(hosts=es_host)
+    results = es.search(index=index_name, size=10000,
+                        query={"match": {"mood": mood}})
+    es.close()
+    if results["hits"]["total"]["value"] == 0:
+        raise Exception(f"No songs found for mood: {mood}.")
+    # save all lyrics of the songs with the given mood
+    song_same_mood_dict = {}
+    for result in results["hits"]["hits"]:
+        song = result["_source"]["song_name"]
+        artist = result["_source"]["artist_name"]
+        lyrics = result["_source"]["lyrics"]
+        document_dict = {"Song": song, "Artist": artist, "Lyrics": lyrics}
+        song_same_mood_dict[f"{song}_{artist}"] = document_dict
+    return song_same_mood_dict
+def get_stored_song(song_name, artist_name):
+    """Search in Elasticsearch index for the song and return the song and artist name if already stored.
+    :param song_name: song name of the document entry.
+    :param artist_name: artist name of the document entry.
+    :return: song and artist name of given song and artist if stored in Elasticsearch index. Else None.
+    :rtype: String or None
+    """
+    global index_name
+    es_host = "http://elasticsearch:9200"
+    es = Elasticsearch(hosts=es_host)
+    result = es.search(
+        index=index_name,
+        query={
+            "bool": {
+                "must": [
+                    {"match": {"song_name": song_name}},
+                    {"match": {"artist_name": artist_name}},
+                ]
+            }
+        },
+    )
+    es.close()
+    if result["hits"]["total"]["value"] > 0:
+        return result["hits"]["hits"][0]["_source"]["song_name"], result["hits"]["hits"][0]["_source"]["artist_name"]
+    else:
+        return None
+
+================
+File: backend/fastapi/main.py
+================
+import pickle
+import lyricsgenius as genius
+import numpy as np
+import tensorflow as tf
+from pydantic import BaseModel
+from sklearn import preprocessing
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from fastapi import HTTPException
+import elasticsearch_functions as ef
+import utils as utils
+from configuration.config import app as app
+from utils import processing_pipeline
+CNN_MODEL = "./cnn/cnn_model_v3"
+TOKENIZER = "./cnn/cnn_model_v3/tokenizer.pickle"
+LABELENCODER = "./cnn/cnn_model_v3/label_encoder.npy"
+class Body(BaseModel):
+    song_name: str
+    artist_name: str
+@app.post("/search")
+async def search(body: Body) -> dict:
+    with open("secrets/genius_api_secret", "r") as file:
+        api_token = file.read()
+    song = body.song_name.lower()
+    artist = body.artist_name.lower()
+    song_lyrics = ef.get_stored_lyrics_of_song(song, artist)
+    if song_lyrics is None:
+        api = genius.Genius(api_token)
+        try:
+            lyrics = api.search_song(song, artist)
+        except BaseException:
+            raise HTTPException(
+                status_code=500, detail="Error during scraping of the lyrics"
+            )
+        if lyrics is None:
+            print(f"Couldn't find a corresponding song to {song} from {artist}")
+            return {"error": 404}
+        song = lyrics.title.lower()
+        artist = lyrics.artist.lower()
+        lyrics.lyrics = utils.chorus_normalization(lyrics.lyrics.lower())
+        song_dictionary = {
+            "Song": song,
+            "Artist": artist,
+            "Lyrics": lyrics.lyrics,
+            "Mood": "none",
+        }
+        mood = classify(song_dictionary)
+        ef.add_es_document(song, artist, lyrics.lyrics, mood)
+    else:
+        mood = ef.get_stored_mood_of_song(song, artist)
+        song,artist = ef.get_stored_song(song,artist)
+        song_dictionary = {
+            "Song": song,
+            "Artist": artist,
+            "Lyrics": song_lyrics.lower(),
+            "Mood": mood,
+        }
+    mood = song_dictionary["Mood"]
+    song_dictionary.pop("Mood", None)
+    similar_songs = get_similar(song_to_compare=song_dictionary, mood=mood)
+    song_dictionary.pop("Lyrics", None)
+    song_dictionary.pop("Vectorized_lyric", None)
+    similar_songs.update(song_dictionary)
+    return similar_songs
+def sklearn_cosine(x: np.array, y: np.array) -> int:
+    return cosine_similarity([x], [y])
+def get_top_n_similar(
+    song_to_compare: dict, songs_to_compare_to: dict, top_n_simlar: int = 3
+) -> list:
+    cosine_similarity_scores = []
+    for key, value in songs_to_compare_to.items():
+        similarity_score = sklearn_cosine(
+            song_to_compare["Vectorized_lyric"], value["Vectorized_lyric"]
+        )[0][0]
+        if similarity_score >= 0.999:
+            similarity_score = 0
+        cosine_similarity_scores.append(similarity_score)
+        value["Similarity"] = round(similarity_score * 100, 2)
+    cosine_similarity_scores = np.array(cosine_similarity_scores)
+    indexes_top_n = np.argsort(cosine_similarity_scores)[::-1][:top_n_simlar]
+    top_n_keys = np.array(list(songs_to_compare_to))[indexes_top_n]
+    top_n_dict = {key: songs_to_compare_to[key] for key in top_n_keys}
+    top_n_songs_no_lyrics = {
+        key: {
+            "Song": value["Song"],
+            "Artist": value["Artist"],
+            "Similarity": value["Similarity"],
+        }
+        for key, value in top_n_dict.items()
+    }
+    return top_n_songs_no_lyrics
+def get_tf_idf_vectorized_lyrics(
+    song_to_compare: dict, mood: str
+) -> tuple[dict, dict]:
+    song_same_mood_dict = ef.get_all_documents_of_mood(mood)
+    song_to_compare_key = (
+        f'{song_to_compare["Song"]}_{song_to_compare["Artist"]}'
+    )
+    if song_to_compare_key not in song_same_mood_dict.keys():
+        song_same_mood_dict[song_to_compare_key] = song_to_compare
+    lyrics_list = [
+        document["Lyrics"] for document in song_same_mood_dict.values()
+    ]
+    tfidf_vectorizer = TfidfVectorizer(
+        analyzer="word", lowercase=True, stop_words="english", min_df=5
+    )
+    print(f"tfidf_vectorizer: {tfidf_vectorizer}")
+    # generate tdf-idf scores
+    lyrics_tf_idf = tfidf_vectorizer.fit_transform(lyrics_list)
+    # reduce the dimensionality of the tf-idf vectors
+    SVD = TruncatedSVD(
+        n_components=300, random_state=42  # number of output dimensionalities
+    )
+    vectorized_lyrics = SVD.fit_transform(
+        lyrics_tf_idf
+    )
+    for key, vectorized_lyric in zip(
+        list(song_same_mood_dict.keys()), vectorized_lyrics
+    ):
+        song_same_mood_dict[key]["Vectorized_lyric"] = vectorized_lyric
+    song_to_compare = song_same_mood_dict.pop(song_to_compare_key)
+    return song_to_compare, song_same_mood_dict
+def get_similar(song_to_compare: dict, mood: str) -> dict:
+    song_to_compare, songs_to_compare_to = get_tf_idf_vectorized_lyrics(
+        song_to_compare=song_to_compare, mood=mood
+    )
+    top_n_songs_no_lyrics = get_top_n_similar(
+        song_to_compare=song_to_compare,
+        songs_to_compare_to=songs_to_compare_to)
+    similar_songs = {"similar_songs": top_n_songs_no_lyrics, "mood": mood}
+    return similar_songs
+def classify(song_dictionary: dict) -> dict:
+    song_dictionary_transformable = song_dictionary.copy()
+    preprocessed_lyrics = processing_pipeline(song_dictionary_transformable)
+    with open(TOKENIZER, "rb") as handle:
+        tokenizer = pickle.load(handle)
+    text = tokenizer.texts_to_sequences([preprocessed_lyrics["Lyrics"]])
+    text = pad_sequences(text, 180)
+    model = tf.keras.models.load_model(CNN_MODEL)
+    prediction = model.predict(text)
+    predicted_mood = np.argmax(prediction, axis=1)
+    encoder = preprocessing.LabelEncoder()
+    encoder.classes_ = np.load(LABELENCODER, allow_pickle=True)
+    mood = encoder.inverse_transform(predicted_mood)[0]
+    song_dictionary["Mood"] = mood
+    return mood
+
+================
+File: backend/fastapi/secrets/genius_api_secret
+================
+TQdTzth8QuovVPC3AWrU4EPADP2v2mil2_TXw0xWA-50wmFgsK8-04UWD6vRRLkR
+
+================
+File: backend/fastapi/utils.py
+================
+import re
+import spacy
+def chorus_normalization(original_lyrics: str) -> str:
+    lyrics = original_lyrics
+    lyrics = re.sub("\[[^]]*\]", "", lyrics)
+    # filter everything in (..)
+    lyrics = re.sub("\([^)]*\)", "", lyrics)
+    # filter everything in {..}
+    lyrics = re.sub("\{[^}]*\}", "", lyrics)
+    # filter everything in <..>
+    lyrics = re.sub("\<[^>]*\>", "", lyrics)
+    # filter everything in ::..::
+    lyrics = re.sub("::[^(::)]*::", "", lyrics)
+    # filter more specific combinations of chorus
+    lyrics = re.sub("\nchorus\n", "", lyrics)
+    lyrics = re.sub("\[chorus", "", lyrics)
+    lyrics = re.sub("\nchorus", "", lyrics)
+    lyrics = re.sub("pre[-]?chorus", "", lyrics)
+    lyrics = re.sub("\nrepeat chorus\n", "", lyrics)
+    return lyrics
+def processing_pipeline(song_data: dict) -> dict:
+    """Function executes the entire processing pipeline on given song data.
+    Preprocessing steps:
+    - Tokenization
+    - Stop word removal
+    - Punctuation removal
+    - Lemmatization
+    :param song_data: song data saved in a json file containing song name,
+        artist name and lyrics
+    :type song_data: dict
+    :return: preprocessed song data
+    :rtype: dict
+    """
+    nlp = spacy.load("en_core_web_sm", disable=['ner'])
+    text_nlp_pipe = list(nlp.pipe([song_data["Lyrics"]]))
+    song_data["Lyrics"] = tokenization(text_nlp_pipe)
+    song_data["Lyrics"] = stop_word_removal(song_data["Lyrics"])
+    song_data["Lyrics"] = punctutation_removal(song_data["Lyrics"])
+    song_data["Lyrics"] = lemmatization(song_data["Lyrics"])
+    return song_data
+def tokenization(
+        text: list[spacy.tokens.token.Token]
+        ) -> list[spacy.tokens.token.Token]:
+    token_list = []
+    for doc in text:
+        for token in doc:
+            token_list.append(token)
+    return token_list
+def stop_word_removal(
+        text: list[spacy.tokens.token.Token]
+        ) -> list[spacy.tokens.token.Token]:
+    token_list_without_stop = []
+    for token in text:
+        if token.is_stop is False:
+            token_list_without_stop.append(token)
+    return token_list_without_stop
+def punctutation_removal(
+        text: list[spacy.tokens.token.Token]
+        ) -> list[spacy.tokens.token.Token]:
+    token_list_no_stop_no_punct = []
+    for token in text:
+        if token.is_punct is False:
+            token_list_no_stop_no_punct.append(token)
+    return token_list_no_stop_no_punct
+def lemmatization(text: list[spacy.tokens.token.Token]) -> list[str]:
+    token_list_no_stop_no_punct_lemmatized = []
+    for token in text:
+        if "\n" not in token.lemma_:
+            token_list_no_stop_no_punct_lemmatized.append(token.lemma_)
+    return token_list_no_stop_no_punct_lemmatized
+
+================
+File: data_exploration/CNN-Model-Creation.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "e7027cc2",
+   "metadata": {},
+   "source": [
+    "## This notebook was for the first cut solution of a CNN + for evaluating the different dataset we generated from our data in accordance with the CNN predictions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "43598701",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "from tensorflow.keras.layers import Dense, Embedding,GlobalMaxPooling1D\n",
+    "from tensorflow.keras.models import Sequential\n",
+    "from tensorflow.keras.layers import Dense\n",
+    "from tensorflow.keras.layers import Embedding\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "from gensim.models.word2vec import Word2Vec\n",
+    "from tensorflow import keras\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from keras.utils import to_categorical\n",
+    "from keras.layers import Dense, Dropout, Conv1D, MaxPool1D, GlobalMaxPool1D, Embedding, Activation\n",
+    "from keras.preprocessing.text import Tokenizer\n",
+    "from tensorflow.keras.preprocessing.sequence import pad_sequences\n",
+    "from keras.models import Sequential\n",
+    "import re\n",
+    "import nltk\n",
+    "from nltk.corpus import stopwords\n",
+    "from nltk.stem.snowball import PorterStemmer\n",
+    "from sklearn import preprocessing\n",
+    "import pickle\n",
+    "from sklearn.model_selection import GridSearchCV\n",
+    "from keras.wrappers.scikit_learn import KerasClassifier\n",
+    "\n",
+    "# Preprocessing and model is used from \n",
+    "# "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2446eea8",
+   "metadata": {},
+   "source": [
+    "## Adapt the preprocessing pipeline to the songs so thath the input is cleaned"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1e0cdeee",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import spacy\n",
+    "\n",
+    "def tokenization(text):\n",
+    "    \"\"\"Use this function to tokenize text.\n",
+    "\n",
+    "    :param text: Text as list\n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: Tokenized text as list\n",
+    "    :rtype: list[spacy.tokens.token.Token]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list = []\n",
+    "    for doc in text: \n",
+    "        # iterate over tokens in docs\n",
+    "        for token in doc:\n",
+    "            token_list.append(token)\n",
+    "\n",
+    "    return token_list\n",
+    "\n",
+    "\n",
+    "def stop_word_removal(text): \n",
+    "    \"\"\"Use this function to remove stop words. \n",
+    "\n",
+    "    :param text: Tokens to remove stop words from \n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: Tokens without stop words\n",
+    "    :rtype: list[spacy.tokens.token.Token]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list_without_stop = []\n",
+    "    # Don't add token to list if stop word\n",
+    "    for token in text:\n",
+    "        if token.is_stop == False: \n",
+    "            token_list_without_stop.append(token)\n",
+    "\n",
+    "    return token_list_without_stop\n",
+    "\n",
+    "\n",
+    "def punctutation_removal(text): \n",
+    "    \"\"\"Use this function to remove punctuation.\n",
+    "\n",
+    "    :param text: Tokens to remove punctuation from\n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: Tokens without punctuation\n",
+    "    :rtype: list[spacy.tokens.token.Token]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list_no_stop_no_punct = []\n",
+    "    # Don't add token to list if punctuation\n",
+    "    for token in text:\n",
+    "        if token.is_punct == False:\n",
+    "            token_list_no_stop_no_punct.append(token)\n",
+    "\n",
+    "    return token_list_no_stop_no_punct\n",
+    "\n",
+    "\n",
+    "def lemmatization(text): \n",
+    "    \"\"\"Use this function to lemmatize a given text.\n",
+    "\n",
+    "    :param text: Tokens to lemmatize\n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: lemmatized tokens\n",
+    "    :rtype: list[str]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list_no_stop_no_punct_lemmatized = []\n",
+    "    for token in text: \n",
+    "        if \"\\n\" not in token.lemma_:\n",
+    "            token_list_no_stop_no_punct_lemmatized.append(token.lemma_)\n",
+    "    return token_list_no_stop_no_punct_lemmatized\n",
+    "\n",
+    "\n",
+    "def processing_pipeline(song_data):\n",
+    "    \"\"\"Use this function to execute the entire processing pipeline on given song data.\n",
+    "    Preprocessing steps:\n",
+    "    - Tokenization\n",
+    "    - Stop word removal\n",
+    "    - Punctuation removal\n",
+    "    - Lemmatization\n",
+    "    - ...\n",
+    "\n",
+    "    :param song_data: song data saved in a json file containing song name, artist name and lyrics\n",
+    "    :type song_data: dict\n",
+    "    :return: preprocessed song data\n",
+    "    :rtype: dict\n",
+    "    \"\"\"\n",
+    "\n",
+    "    nlp = spacy.load(\"en_core_web_sm\", disable = ['ner'])\n",
+    "    \n",
+    "    for row in range(len(song_data)):\n",
+    "        text_nlp_pipe = list(nlp.pipe([song_data.iloc[row][\"Lyric\"]]))\n",
+    "    \n",
+    "        # Tokenization\n",
+    "        song_data.at[row,\"Lyric\"] = tokenization(text_nlp_pipe)\n",
+    "        # Stop word removal\n",
+    "        song_data.at[row,\"Lyric\"] = stop_word_removal(song_data.iloc[row][\"Lyric\"])\n",
+    "        # Punctuation removal\n",
+    "        song_data.at[row,\"Lyric\"] = punctutation_removal(song_data.iloc[row][\"Lyric\"])\n",
+    "        # Lemmatization\n",
+    "        song_data.at[row,\"Lyric\"] = lemmatization(song_data.iloc[row][\"Lyric\"])\n",
+    "        song_data.at[row,\"Lyric\"] = \" \".join(song_data.iloc[row][\"Lyric\"])\n",
+    "        song_data.at[row,\"Lyric\"] = song_data.iloc[row][\"Lyric\"].lower()\n",
+    "        if row%500 == 0 and row >= 500:\n",
+    "            print(f\"processsed: {row} rows out of {len(song_data)}\")\n",
+    "    return song_data\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f400ebb0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# helper function to use the word2vec as an layer in keras \n",
+    "# taken from the gensim wikipage: https://github.com/RaRe-Technologies/gensim/wiki/Using-Gensim-Embeddings-with-Keras-and-Tensorflow\n",
+    "\n",
+    "from tensorflow.keras.layers import Embedding\n",
+    "\n",
+    "def gensim_to_keras_embedding(model, train_embeddings=False):\n",
+    "    \"\"\"Get a Keras 'Embedding' layer with weights set from Word2Vec model's learned word embeddings.\n",
+    "\n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    train_embeddings : bool\n",
+    "        If False, the returned weights are frozen and stopped from being updated.\n",
+    "        If True, the weights can / will be further updated in Keras.\n",
+    "\n",
+    "    Returns\n",
+    "    -------\n",
+    "    `keras.layers.Embedding`\n",
+    "        Embedding layer, to be used as input to deeper network layers.\n",
+    "\n",
+    "    \"\"\"\n",
+    "    keyed_vectors = model.wv  # structure holding the result of training\n",
+    "    weights = keyed_vectors.vectors  # vectors themselves, a 2D numpy array    \n",
+    "    index_to_key = keyed_vectors.index_to_key  # which row in `weights` corresponds to which word?\n",
+    "\n",
+    "    layer = Embedding(\n",
+    "        input_dim=weights.shape[0],\n",
+    "        output_dim=weights.shape[1],\n",
+    "        weights=[weights],\n",
+    "        trainable=train_embeddings,\n",
+    "    )\n",
+    "    return layer"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ebb8a83c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def create_model(density, wrd2vecmodel,mood_count,filters,multiplicator, multiplicator2, kernel, adapt_embedding, outputfunction):\n",
+    "    \n",
+    "    keras_model = Sequential()\n",
+    "    keras_model.add(gensim_to_keras_embedding(wrd2vecmodel, True))\n",
+    "    keras_model.add(Dropout(0.2))\n",
+    "    keras_model.add(Conv1D(filters, kernel, activation='relu', padding='same', strides=1))\n",
+    "    keras_model.add(Conv1D(filters, kernel, activation='relu', padding='same', strides=1))\n",
+    "    keras_model.add(MaxPool1D())\n",
+    "    keras_model.add(Dropout(0.2))\n",
+    "    keras_model.add(Conv1D(filters*multiplicator, kernel, activation='relu', padding='same', strides=1))\n",
+    "    keras_model.add(Conv1D(filters*multiplicator, kernel, activation='relu', padding='same', strides=1))\n",
+    "    keras_model.add(MaxPool1D())\n",
+    "    keras_model.add(Dropout(0.2))\n",
+    "    keras_model.add(Conv1D(filters*multiplicator2, kernel, activation='relu', padding='same', strides=1))\n",
+    "    keras_model.add(Conv1D(filters*multiplicator2, kernel, activation='relu', padding='same', strides=1))\n",
+    "    keras_model.add(GlobalMaxPool1D())\n",
+    "    keras_model.add(Dropout(0.2))\n",
+    "    keras_model.add(Dense(density))\n",
+    "    keras_model.add(Activation('relu'))\n",
+    "    keras_model.add(Dropout(0.2))\n",
+    "    # Number of moods to be classified to\n",
+    "    keras_model.add(Dense(mood_count))\n",
+    "    keras_model.add(Activation(outputfunction))\n",
+    "    \n",
+    "    keras_model.compile(loss='binary_crossentropy', metrics=['acc'], optimizer='adam')\n",
+    "    return keras_model\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2ad98c42",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def test_dataset(dataset_path, mood_count):\n",
+    "    print(f\"Testing now dataset {dataset_path} with {mood_count} moods\")\n",
+    "    df = pd.read_csv(dataset_path)\n",
+    "    print((df[\"Mood\"].unique()))\n",
+    "    df = processing_pipeline(df)\n",
+    "    list(df[\"Lyric\"].head(2))\n",
+    "    # merge lyrics together\n",
+    "    lyrics = []\n",
+    "    for i in df['Lyric']:\n",
+    "        lyrics.append(i.split())\n",
+    "    print(lyrics[:2])\n",
+    "    \n",
+    "    # train the word2vec model\n",
+    "    # vector size according to https://moj-analytical-services.github.io/NLP-guidance/NNmodels.html#:~:text=The%20standard%20Word2Vec%20pre%2Dtrained,fewer%20dimensions%20to%20represent%20them.\n",
+    "    # mincount = 2 to prevent misspellings\n",
+    "    word2vec_model = Word2Vec(lyrics, vector_size=150, window=5, min_count=2, workers=16)\n",
+    "    \n",
+    "    # use the keras tokenizer and apply it to the lyrics\n",
+    "    # number in first row is vocab size from word2vec model\n",
+    "    token = Tokenizer(len(word2vec_model.wv))\n",
+    "    token.fit_on_texts(df['Lyric'])\n",
+    "    text = token.texts_to_sequences(df['Lyric'])\n",
+    "    text = pad_sequences(text, 180)\n",
+    "    print(text[3:5])\n",
+    "    \n",
+    "    # encode the labels\n",
+    "    le = preprocessing.LabelEncoder()\n",
+    "    y = le.fit_transform(df['Mood'])\n",
+    "    y = to_categorical(y)\n",
+    "    # save the label encoder\n",
+    "    np.save('data/label_encoder.npy', le.classes_)\n",
+    "    \n",
+    "    x_train, x_test, y_train, y_test = train_test_split(np.array(text), y, test_size=0.2, stratify=y)\n",
+    "    \n",
+    "    seed = 7\n",
+    "    np.random.seed(seed)\n",
+    "    batch_size = 32\n",
+    "    epochs = 3\n",
+    "\n",
+    "    model_CV = KerasClassifier(build_fn=create_model, epochs=epochs, \n",
+    "                               batch_size=batch_size, verbose=1)\n",
+    "    # grid search parameters\n",
+    "    filters = [50, 100]\n",
+    "    multiplicator = [2]\n",
+    "    multiplicator2 = [3,4]\n",
+    "    kernel = [5]\n",
+    "    adapt_embedding = [True, False]\n",
+    "    outputfunction = [\"relu\",\"softmax\"]\n",
+    "    word2vecmodel = [word2vec_model]\n",
+    "    density = [200, 50]\n",
+    "\n",
+    "    param_grid = dict(density, wrd2vecmodel=word2vecmodel,mood_count=[mood_count], filters=filters, multiplicator=multiplicator, multiplicator2=multiplicator2, kernel=kernel, adapt_embedding=adapt_embedding, outputfunction=outputfunction)\n",
+    "    grid = GridSearchCV(estimator=model_CV, param_grid=param_grid, n_jobs=-1, cv=2)\n",
+    "    grid_result = grid.fit(x_train, y_train)\n",
+    "    \n",
+    "    \n",
+    "    # print results\n",
+    "    print(f'Best Accuracy for dataset {dataset_path} is: {grid_result.best_score_} using {grid_result.best_params_}')\n",
+    "    means = grid_result.cv_results_['mean_test_score']\n",
+    "    stds = grid_result.cv_results_['std_test_score']\n",
+    "    params = grid_result.cv_results_['params']\n",
+    "    for mean, stdev, param in zip(means, stds, params):\n",
+    "        print(f' mean={mean:.4}, std={stdev:.4} using {param}')\n",
+    "    print(\"##\"*50)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "462d19d3",
+   "metadata": {},
+   "source": [
+    "## Test the dataset with unnormalized data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3fe3da31",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "test_dataset(\"./data/song-data-labels-cleaned.csv\", 17)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "eba28144",
+   "metadata": {},
+   "source": [
+    "## Test the dataset with only 4 moods"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1acb4a45",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "test_dataset(\"./data/song-data-labels-cleaned-quadrant.csv\",4)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4af4d176",
+   "metadata": {},
+   "source": [
+    "## Test the dataset with normalized moods and data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2539b4b4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "test_dataset(\"./data/song-data-labels-cleaned-seven-moods.csv\", 7)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4fcaafdd",
+   "metadata": {},
+   "source": [
+    "# Sample prediction\n",
+    "Code might be broken due to heavy restructuring of the notebook, but it should only assist as a \"documentation\" for us developers anyway"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f391ee6b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import spacy\n",
+    "\n",
+    "def tokenization(text: list[spacy.tokens.token.Token]) -> list[spacy.tokens.token.Token]:\n",
+    "    \"\"\"Use this function to tokenize text.\n",
+    "\n",
+    "    :param text: Text as list\n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: Tokenized text as list\n",
+    "    :rtype: list[spacy.tokens.token.Token]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list = []\n",
+    "    for doc in text: \n",
+    "        # iterate over tokens in docs\n",
+    "        for token in doc:\n",
+    "            token_list.append(token)\n",
+    "\n",
+    "    return token_list\n",
+    "\n",
+    "\n",
+    "def stop_word_removal(text: list[spacy.tokens.token.Token]) -> list[spacy.tokens.token.Token]: \n",
+    "    \"\"\"Use this function to remove stop words. \n",
+    "\n",
+    "    :param text: Tokens to remove stop words from \n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: Tokens without stop words\n",
+    "    :rtype: list[spacy.tokens.token.Token]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list_without_stop = []\n",
+    "    # Don't add token to list if stop word\n",
+    "    for token in text:\n",
+    "        if token.is_stop == False: \n",
+    "            token_list_without_stop.append(token)\n",
+    "\n",
+    "    return token_list_without_stop\n",
+    "\n",
+    "\n",
+    "def punctutation_removal(text: list[spacy.tokens.token.Token]) -> list[spacy.tokens.token.Token]: \n",
+    "    \"\"\"Use this function to remove punctuation.\n",
+    "\n",
+    "    :param text: Tokens to remove punctuation from\n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: Tokens without punctuation\n",
+    "    :rtype: list[spacy.tokens.token.Token]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list_no_stop_no_punct = []\n",
+    "    # Don't add token to list if punctuation\n",
+    "    for token in text:\n",
+    "        if token.is_punct == False:\n",
+    "            token_list_no_stop_no_punct.append(token)\n",
+    "\n",
+    "    return token_list_no_stop_no_punct\n",
+    "\n",
+    "\n",
+    "def lemmatization(text: list[spacy.tokens.token.Token]) -> list[str]: \n",
+    "    \"\"\"Use this function to lemmatize a given text.\n",
+    "\n",
+    "    :param text: Tokens to lemmatize\n",
+    "    :type text: list[spacy.tokens.token.Token]\n",
+    "    :return: lemmatized tokens\n",
+    "    :rtype: list[str]\n",
+    "    \"\"\"\n",
+    "\n",
+    "    token_list_no_stop_no_punct_lemmatized = []\n",
+    "    for token in text: \n",
+    "        if \"\\n\" not in token.lemma_:\n",
+    "            token_list_no_stop_no_punct_lemmatized.append(token.lemma_)\n",
+    "    return token_list_no_stop_no_punct_lemmatized\n",
+    "\n",
+    "\n",
+    "def processing_pipeline(song_data: dict) -> dict:\n",
+    "    \"\"\"Use this function to execute the entire processing pipeline on given song data.\n",
+    "    Preprocessing steps:\n",
+    "    - Tokenization\n",
+    "    - Stop word removal\n",
+    "    - Punctuation removal\n",
+    "    - Lemmatization\n",
+    "\n",
+    "    :param song_data: song data saved in a json file containing song name, artist name and lyrics\n",
+    "    :type song_data: dict\n",
+    "    :return: preprocessed song data\n",
+    "    :rtype: dict\n",
+    "    \"\"\"\n",
+    "\n",
+    "    nlp = spacy.load(\"en_core_web_sm\", disable = ['ner'])\n",
+    "    text_nlp_pipe = list(nlp.pipe([song_data[\"Lyrics\"]]))\n",
+    "    \n",
+    "    # Tokenization\n",
+    "    song_data[\"Lyrics\"] = tokenization(text_nlp_pipe)\n",
+    "    # Stop word removal\n",
+    "    song_data[\"Lyrics\"] = stop_word_removal(song_data[\"Lyrics\"])\n",
+    "    # Punctuation removal\n",
+    "    song_data[\"Lyrics\"] = punctutation_removal(song_data[\"Lyrics\"])\n",
+    "    # Lemmatization\n",
+    "    song_data[\"Lyrics\"] = lemmatization(song_data[\"Lyrics\"])\n",
+    "\n",
+    "    return song_data\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "578cbdaf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# test model:\n",
+    "test_song = {\n",
+    "        \"Song\": \"Mockingbird\",\n",
+    "        \"Artist\": \"Eminem\",\n",
+    "        \"Lyrics\": (\n",
+    "            \"\"\"Yeah\n",
+    "            I know sometimes things may not always make sense to you right now\n",
+    "            But hey, what daddy always tell you?\n",
+    "            Straighten up little soldier\n",
+    "            Stiffen up that upper lip\n",
+    "            What you crying about?\n",
+    "            You got me\n",
+    "            Hailie, I know you miss your mom, and I know you miss your dad\n",
+    "            When I'm gone, but I'm trying to give you the life that I never had\n",
+    "            I can see you're sad, even when you smile, even when you laugh\n",
+    "            I can see it in your eyes, deep inside you want to cry\n",
+    "            'Cause you're scared, I ain't there, daddy's with you in your prayers\n",
+    "            No more crying, wipe them tears, daddy's here, no more nightmares\n",
+    "            We gon' pull together through it, we gon' do it\n",
+    "            Laney uncle's crazy, ain't he? Yeah, but he loves you girl and you better know it\n",
+    "            We're all we got in this world, when it spins, when it swirls\n",
+    "            When it whirls, when it twirls, two little beautiful girls\n",
+    "            Lookin' puzzled, in a daze, I know it's confusing you\n",
+    "            Daddy's always on the move, mamma's always on the news\n",
+    "            I try to keep you sheltered from it, but somehow it seems\n",
+    "            The harder that I try to do that, the more it backfires on me\n",
+    "            All the things growing up, his daddy, daddy had to see\n",
+    "            Daddy don't want you to see, but you see just as much as he did\n",
+    "            We did not plan it to be this way, your mother and me\n",
+    "            But things have gotten so bad between us, I don't see us ever being together\n",
+    "            Ever again like we used to be when we was teenagers\n",
+    "            But then of course everything always happens for a reason\n",
+    "            I guess it was never meant to be\n",
+    "            But it's just something we have no control, over and that's what destiny is\n",
+    "            But no more worries, rest your head and go to sleep\n",
+    "            Maybe one day we'll wake up, and this will all just be a dream\n",
+    "            Now hush little baby, don't you cry\n",
+    "            Everything's gonna be alright\n",
+    "            Stiffen that upper-lip up, little lady, I told ya\n",
+    "            Daddy's here to hold ya through the night\n",
+    "            I know mommy's not here right now, and we don't know why\n",
+    "            We fear how we feel inside\n",
+    "            It may seem a little crazy, pretty baby\n",
+    "            But I promise momma's gon' be alright\n",
+    "            Huh, it's funny\n",
+    "            I remember back one year when daddy had no money\n",
+    "            Mommy wrapped the Christmas presents up and stuck 'em under the tree\n",
+    "            And said, \"Some of 'em were from me, 'cause Daddy couldn't buy 'em\"\n",
+    "            I'll never forget that Christmas, I sat up the whole night crying\n",
+    "            'Cause daddy felt like a bum\n",
+    "            See daddy had a job\n",
+    "            But his job was to keep the food on the table for you and mom\n",
+    "            And at the time every house that we lived in\n",
+    "            Either kept getting broke into and robbed\n",
+    "            Or shot up on the block\n",
+    "            And your Mom was saving money for you in a jar\n",
+    "            Tryna start a piggy bank for you, so you could go to college\n",
+    "            Almost had a thousand dollars 'til someone broke in and stole it\n",
+    "            And I know it hurt so bad, it broke your momma's heart\n",
+    "            And it seemed like everything was just startin' to fall apart\n",
+    "            Mom and dad was arguin' a lot, so momma moved back\n",
+    "            On the Chalmers in the flat one-bedroom apartment\n",
+    "            And dad moved back to the other side of 8 Mile on Novara\n",
+    "            And that's when daddy went to California with his C.D\n",
+    "            And met Dr. Dre, and flew you and momma out to see me\n",
+    "            But daddy had to work, you and momma had to leave me\n",
+    "            Then you started seeing daddy on the T.V\n",
+    "            And momma didn't like it, and you and Laney were to young to understand it\n",
+    "            Papa was a rollin' stone, momma developed a habit\n",
+    "            And it all happened too fast for either one of us to grab it\n",
+    "            I'm just sorry you were there and had to witness it first hand\n",
+    "            'Cause all I ever wanted to do was just make you proud\n",
+    "            Now I'm sittin' in this empty house\n",
+    "            Just reminiscing, lookin' at your baby pictures\n",
+    "            It just trips me out\n",
+    "            To see how much you both have grown\n",
+    "            It's almost like you're sisters now\n",
+    "            Wow, guess you pretty much are, and daddy's still here\n",
+    "            Laney, I'm talkin' to you too, daddy's still here\n",
+    "            I like the sound of that, yeah, It's got a ring to it, don't it?\n",
+    "            Shh, momma's only gone for the moment\n",
+    "            Now hush little baby, don't you cry\n",
+    "            Everything's gonna be alright\n",
+    "            Stiffen that upper-lip up, little lady, I told ya\n",
+    "            Daddy's here to hold ya through the night\n",
+    "            I know mommy's not here right now, and we don't know why\n",
+    "            We fear how we feel inside\n",
+    "            It may seem a little crazy, pretty baby\n",
+    "            But I promise, momma's gon' be alright\n",
+    "            And if you ask me too\n",
+    "            Daddy's gonna buy you a Mockingbird\n",
+    "            I'ma give you the world\n",
+    "            I'ma buy a diamond ring for you, I'ma sing for you\n",
+    "            I'll do anything for you to see you smile\n",
+    "            And if that Mockingbird don't sing, and that ring don't shine\n",
+    "            I'ma break that birdies neck\n",
+    "            I'd go back to the jeweler who sold it to ya\n",
+    "            And make him eat every karat, don't fuck with dad (haha)\"\"\"\n",
+    "        ),\n",
+    "}\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8781897a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "processed_song = processing_pipeline(test_song)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b0c51077",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(processed_song[\"Lyrics\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e72b5d08",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#load the tokenizer\n",
+    "with open('tokenizer.pickle', 'rb') as handle:\n",
+    "    token = pickle.load(handle)\n",
+    "# tokenize\n",
+    "text = token.texts_to_sequences([processed_song[\"Lyrics\"]])\n",
+    "text = pad_sequences(text, 180)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1f801eb4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(text)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "70e71d13",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pred = keras_model.predict(text)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1a8601a3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(pred)\n",
+    "# propability distr."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "de5d65b4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pred_mood=np.argmax(pred,axis=1)\n",
+    "# get the mood that is predicted the most "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0a0dde91",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(pred_mood)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1dc196a9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# load the label encoder\n",
+    "encoder = preprocessing.LabelEncoder()\n",
+    "encoder.classes_ = np.load('data/label_encoder.npy', allow_pickle=True)\n",
+    "\n",
+    "print(encoder.inverse_transform(pred_mood))\n",
+    "# reverse transform the mood"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e3ac45eb",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.10"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "cc1f558fa75d74d13a110a756bf00a1a7a77d8327c013f6ebbe6af7a56ad119a"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
+
+================
+File: data_exploration/kaggle_data_preprocessing.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "9b201189",
+   "metadata": {},
+   "source": [
+    "## This notebook is used to create the initial dataframe (saved as .csv) containing the ground truth information for each (song, artist) pair of the kaggle dataset. Furthermore, the lyrics will be normalized and the dataset balanced such that each mood has approximitally the same amount of songs for better predictions of CNN model."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6b922086-445c-45d7-bf0f-2f53dd826626",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "import re\n",
+    "\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8a202ec8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "DATA_DIR = \"data\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9bb23070-6d90-4ae1-bec4-80bb00277d4a",
+   "metadata": {},
+   "source": [
+    "## Load data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f7cd7d32-8cd0-4f6d-8b4a-e3e1b8a8cd3f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# lyrics data path\n",
+    "lyrics_path = os.path.join(DATA_DIR, \"lyrics-data.csv\")\n",
+    "df_lyrics = pd.read_csv(lyrics_path)\n",
+    "\n",
+    "# artists data path\n",
+    "artists_path = os.path.join(DATA_DIR, \"artists-data.csv\")\n",
+    "df_artists = pd.read_csv(artists_path)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4d0c5be4",
+   "metadata": {},
+   "source": [
+    "## Remove non-english songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9a9322fd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Filter for language en = english\n",
+    "df_lyrics_en = df_lyrics[df_lyrics[\"language\"] == \"en\"]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e46dac62",
+   "metadata": {},
+   "source": [
+    "## Remove songs with less than 70 and more than 1000 words"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e91e4e69",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Split each string column and count length\n",
+    "df_lyrics_en = df_lyrics_en[\n",
+    "    df_lyrics_en[\"Lyric\"].apply(lambda lyric: (len(lyric.split()) >= 70) & (len(lyric.split()) <= 1000))\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8199518b",
+   "metadata": {},
+   "source": [
+    "## Merge songs and artists"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bc23c54d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Merge artists and lyrics\n",
+    "df_songs = pd.merge(\n",
+    "    df_lyrics_en, \n",
+    "    df_artists, \n",
+    "    how=\"inner\",\n",
+    "    left_on=\"ALink\",\n",
+    "    right_on=\"Link\"\n",
+    ")\n",
+    "\n",
+    "# Remove duplicate columns\n",
+    "del df_songs[\"Link\"]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "20524b16",
+   "metadata": {},
+   "source": [
+    "## Remove columns with duplicate or redundant information"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "61cb2b0c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "del df_songs[\"ALink\"]\n",
+    "del df_songs[\"language\"]\n",
+    "del df_songs[\"Songs\"]\n",
+    "del df_songs[\"Popularity\"]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4ffe8537",
+   "metadata": {},
+   "source": [
+    "## Remove duplicate rows"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b66d8ec9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_songs_no_duplicates = df_songs.drop_duplicates(subset=['SLink'])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7f92c5a2",
+   "metadata": {},
+   "source": [
+    "## Add labels from Last.fm"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "21826714",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tags_df= pd.read_csv('./data/tags.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f36e8153",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = pd.merge(df_songs_no_duplicates, tags_df,  how='left', left_on=[\"Artist\",\"SName\"], right_on = [\"Artist\",\"SName\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c8d14ed9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = df[(df[\"Tags\"] != \"NoTagsFound\") & (df[\"Tags\"] != \"NoSongFound\")]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "aa7567d9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7da32e5d",
+   "metadata": {},
+   "source": [
+    "## Mood ground truth"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "464fcb8d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "MOOD_CATEGORIES = {\n",
+    "    'calm': ['calm', 'comfort', 'quiet', 'serene', 'mellow', 'chill out'],\n",
+    "    'sad': ['sadness', 'unhappy', 'melancholic', 'melancholy'],\n",
+    "    'happy': ['happy', 'happiness', 'happy songs', 'happy music'],\n",
+    "    'romantic': ['romantic', 'romantic music'],\n",
+    "    'upbeat': ['upbeat', 'gleeful', 'high spirits', 'zest', 'enthusiastic'],\n",
+    "    'depressed': ['depressed', 'blue', 'dark', 'depressive', 'dreary'],\n",
+    "    'anger': ['anger', 'angry', 'choleric', 'fury', 'outraged', 'rage'],\n",
+    "    'grief': ['grief', 'heartbreak', 'mournful', 'sorrow', 'sorry'],\n",
+    "    'dreamy': ['dreamy'],\n",
+    "    'cheerful': ['cheerful', 'cheer up', 'festive', 'jolly', 'jovial', 'merry'],\n",
+    "    'brooding': ['brooding', 'contemplative', 'meditative', 'reflective'],\n",
+    "    'aggression': ['aggression', 'aggressive'],\n",
+    "    'confident': ['confident', 'encouraging', 'encouragement', 'optimism'],\n",
+    "    'angst': ['angst', 'anxiety', 'anxious', 'jumpy', 'nervous', 'angsty'],\n",
+    "    'earnest': ['earnest', 'heartfelt'],\n",
+    "    'desire': ['desire', 'hope', 'hopeful', 'mood: hopeful'],\n",
+    "    'pessimism': ['pessimism', 'cynical', 'pessimistic', 'weltschmerz'],\n",
+    "    'excitement': ['excitement', 'exciting', 'exhilarating', 'thrill', 'ardor']\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a024fb73",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_mood_from_tags(tags):\n",
+    "    \"\"\"Get mood from tags. If tags does not contain tags mapped to moods then mood is None.\n",
+    "\n",
+    "    :param tags: tags of the song.\n",
+    "    :ptype: String\n",
+    "    \n",
+    "    :return: Mood for given tags.\n",
+    "    :rtype: String or None\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    moods = list(MOOD_CATEGORIES.keys())\n",
+    "    \n",
+    "    # initialize mood_keyword_count_dict\n",
+    "    mood_keyword_count_dict = dict(zip(moods, [0]*len(MOOD_CATEGORIES)))\n",
+    "    \n",
+    "    # create tags list\n",
+    "    if isinstance(tags, str) and tags not in [\"NoTagsFound\", \"NoSongFound\"]:\n",
+    "        tags = tags.split(\", \")\n",
+    "    else:\n",
+    "        # if no tags available then return None \n",
+    "        return None\n",
+    "\n",
+    "    # compute mood count for all moods based on if tags contains tags mapped to these moods\n",
+    "    for tag in tags:\n",
+    "        for mood in moods:\n",
+    "            if tag in MOOD_CATEGORIES[mood]:\n",
+    "                mood_keyword_count_dict[mood] += 1\n",
+    "                break\n",
+    "            \n",
+    "    # compute the assigned mood (if no mood assigned return None) \n",
+    "    mood_counts = list(mood_keyword_count_dict.values())\n",
+    "    if max(mood_counts) > 0:\n",
+    "        assigned_mood_idx = np.argmax(mood_counts)\n",
+    "        return list(mood_keyword_count_dict.keys())[assigned_mood_idx]\n",
+    "    else:\n",
+    "        return None"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5716e663",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# create mood column to df\n",
+    "df[\"Mood\"] = df[\"Tags\"].apply(get_mood_from_tags)\n",
+    "df = df[df[\"Mood\"].notnull()]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "553d2872",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "06525cc5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(f\"Number of songs with mood: {len(df)}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1b4babda",
+   "metadata": {},
+   "source": [
+    "## Clean keywords from Lyrics\n",
+    "Some lyrics contain words like \"chorus\" instead of the full text, if there is repetition for example. \n",
+    "In this step we will define those keywords (manually extracted from data) and remove them. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "02f51c26",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# lowercase the lyrics\n",
+    "df[\"Lyric\"] = df[\"Lyric\"].str.lower()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5797197d",
+   "metadata": {},
+   "source": [
+    "### Lyrics keywords exploration\n",
+    "Use these two cells to check for unwanted patterns in text and also to check whether you have filtered this pattern out correctly"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "80cab7d2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# print one example lyrics containing specific keyword (e.g. \"chorus\"). Might also be helpful to spot further unwanted patterns in the lyrics (like \"(4x)\")\n",
+    "df[df[\"Lyric\"].str.contains(\"chorus\")][\"Lyric\"].tolist()[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "24496f4e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# print text parts of size window_length with parts of lyrics that are containing a certain keyword\n",
+    "keyword = \"chorus\" # chorus\n",
+    "lyrics_with_keyword = df[df[\"Lyric\"].str.contains(keyword)][\"Lyric\"].tolist()\n",
+    "\n",
+    "# defines how much text around the keyword should be extracted (to obtain all various combinations of that keyword)\n",
+    "window_length = 40\n",
+    "cutted_lyrics_with_keyword = []\n",
+    "for lyric in lyrics_with_keyword:\n",
+    "    # get all occurences positions of that keyword within given lyric\n",
+    "    keyword_positions = [m.start() for m in re.finditer(keyword, lyric)]\n",
+    "    for keyword_position in keyword_positions:\n",
+    "        start_idx = max(0, keyword_position - window_length)\n",
+    "        end_idx = min(len(lyric) - 1, keyword_position + window_length)\n",
+    "        cutted_lyrics_with_keyword.append(lyric[start_idx : end_idx])\n",
+    "\n",
+    "# output all parts with given keyword       \n",
+    "for cutted_lyrics_with_keyword_element in cutted_lyrics_with_keyword:\n",
+    "    print(repr(cutted_lyrics_with_keyword_element))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "99ce0707",
+   "metadata": {},
+   "source": [
+    "### Keyword filtering steps"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5b26f7fa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# filter everything in [..]\n",
+    "df = df.replace(\"\\[[^]]*\\]\", \"\", regex=True)\n",
+    "# filter everything in (..)\n",
+    "df =  df.replace(\"\\([^)]*\\)\", \"\", regex=True)\n",
+    "# filter everything in {..}\n",
+    "df = df.replace(\"\\{[^}]*\\}\", \"\", regex=True)\n",
+    "# filter everything in <..>\n",
+    "df = df.replace(\"\\<[^>]*\\>\", \"\", regex=True)\n",
+    "# filter everything in ::..::\n",
+    "df = df.replace(\"::[^(::)]*::\", \"\", regex=True)\n",
+    "\n",
+    "# filter more specific combinations of chorus\n",
+    "df = df.replace(\"\\nchorus\\n\", \"\", regex=True)\n",
+    "df = df.replace(\"\\[chorus\", \"\", regex=True)\n",
+    "df = df.replace(\"\\nchorus\", \"\", regex=True)\n",
+    "df = df.replace(\"pre[-]?chorus\", \"\", regex=True)\n",
+    "df = df.replace(\"\\nrepeat chorus\\n\", \"\", regex=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0716d4d6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df.head(2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3865f5f5",
+   "metadata": {},
+   "source": [
+    "## Show the mood distribution to finetune the moods"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "791f4db5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df[\"Mood\"].unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c646a890",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "moods = { 'romantic': 0, 'happy': 0, 'sad': 0, 'grief': 0, 'upbeat': 0, 'earnest': 0,\n",
+    "       'cheerful': 0, 'depressed': 0, 'anger': 0, 'calm': 0, 'excitement': 0,\n",
+    "       'aggression': 0, 'confident': 0, 'angst': 0, 'brooding': 0, 'desire': 0,\n",
+    "       'pessimism': 0 }\n",
+    "for row in range(len(df)):\n",
+    "    mood = df.iloc[row][\"Mood\"]\n",
+    "    moods[mood] += 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e610e2ae",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(moods)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "53dda535",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "labels = [ k for k,v in moods.items()]\n",
+    "data = [ v for k,v in moods.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d73750e5",
+   "metadata": {},
+   "source": [
+    "### combine moods with low quantities if possible, else discard them\n",
+    "The combination is the same as in  our baseline project. This includes that we will only use 4 quadrants as moods (happy, sad, calm anger) by combining all the lower level moods appropriately, based on the keywords used to label them. We also incuded more moods than the baseline project, which discarded the following: dreamy, desire, earnest, pessimism, romantic, brooding, whereas we discarded desire, romantic, confident, dreamy (as it was not present in the dataset)\n",
+    "\n",
+    "Hence the following applies:\n",
+    "\n",
+    "happy = cheerfull, happy, excitement, upbeat\n",
+    "\n",
+    "sad = grief, sad, pessimism, angst, depressed\n",
+    "\n",
+    "calm = calm, brooding, earnest\n",
+    "\n",
+    "anger = anger, aggression\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "27b00098",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "new_moods = {\n",
+    "    \"happy\": moods[\"happy\"] + moods[\"cheerful\"] + moods[\"excitement\"] + moods[\"upbeat\"],\n",
+    "    \"calm\": moods[\"calm\"]+moods[\"brooding\"] + moods[\"earnest\"],\n",
+    "    \"sad\": moods[\"sad\"] + moods[\"grief\"] + moods[\"pessimism\"] + moods[\"angst\"] + moods[\"depressed\"],\n",
+    "    \"anger\": moods[\"anger\"] + moods[\"aggression\"]\n",
+    "} \n",
+    "\n",
+    "labels = [ k for k,v in new_moods.items()]\n",
+    "data = [ v for k,v in new_moods.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9f8bbd27",
+   "metadata": {},
+   "source": [
+    "### Alternative combination\n",
+    "\n",
+    "We propose another way of combining the moods whilest maintaining as much as possible moods to have the user labeled his song with a less generalistic mood than just happy like this:\n",
+    "\n",
+    "enthusiastic = excitement, upbeat, cheerfull\n",
+    "\n",
+    "happy = happy\n",
+    "\n",
+    "sad = grief, sad \n",
+    "\n",
+    "depressed = pessimism, angst, depressed\n",
+    "\n",
+    "romantic = romantic, desire\n",
+    "\n",
+    "calm = calm, brooding, earnest\n",
+    "\n",
+    "anger = anger, aggression\n",
+    "\n",
+    "This approach manages to incorporate all prior moods (without dreamy) whilest enabling 7 moods for classification instead of 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a7fffcbd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "alt_new_moods = {\n",
+    "    \"happy\": moods[\"happy\"],\n",
+    "    \"enthusiastic\": moods[\"cheerful\"] + moods[\"excitement\"] + moods[\"upbeat\"],\n",
+    "    \"calm\": moods[\"calm\"]+moods[\"brooding\"] + moods[\"earnest\"],\n",
+    "    \"sad\": moods[\"sad\"] + moods[\"grief\"],\n",
+    "    \"depressed\": moods[\"pessimism\"] + moods[\"angst\"] + moods[\"depressed\"],\n",
+    "    \"romantic\": moods[\"romantic\"] + moods[\"desire\"],\n",
+    "    \"anger\": moods[\"anger\"] + moods[\"aggression\"]\n",
+    "} \n",
+    "\n",
+    "labels = [ k for k,v in alt_new_moods.items()]\n",
+    "data = [ v for k,v in alt_new_moods.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "50842412",
+   "metadata": {},
+   "source": [
+    "both approaches will be tested with the CNN"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fedbc4f8",
+   "metadata": {},
+   "source": [
+    "### normalize/cap ammount of songs for a given mood, so that it does not dominate the dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "991af662",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def normalize_df(limit, df):\n",
+    "    moods = df[\"Mood\"].unique()\n",
+    "    helper = pd.DataFrame(columns=[\"SName\", \"SLink\", \"Lyric\", \"Artist\", \"Genres\", \"Tags\", \"Mood\"])\n",
+    "    for mood in moods:\n",
+    "        df_for_mood = df[df[\"Mood\"] == mood]\n",
+    "        if len(df_for_mood)> limit:\n",
+    "            df_for_mood = df_for_mood.iloc[0:limit]\n",
+    "        helper = pd.concat([helper, df_for_mood])\n",
+    "    return helper"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c3bf53c7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "quadrants_df = df.copy()\n",
+    "quadrants_df[\"Mood\"] = quadrants_df[\"Mood\"].replace([\"cheerful\", \"excitement\", \"upbeat\"], \"happy\")\n",
+    "quadrants_df[\"Mood\"] = quadrants_df[\"Mood\"].replace([\"brooding\", \"earnest\"], \"calm\")\n",
+    "quadrants_df[\"Mood\"] = quadrants_df[\"Mood\"].replace([\"grief\", \"pessimism\", \"angst\", \"depressed\"], \"sad\")\n",
+    "quadrants_df[\"Mood\"] = quadrants_df[\"Mood\"].replace([\"aggression\"], \"anger\")\n",
+    "# drop rows with moods not included (desire, romantic, confident, dreamy)\n",
+    "quadrants_df = quadrants_df[(quadrants_df[\"Mood\"] != \"romantic\") & (quadrants_df[\"Mood\"] != \"desire\") & (quadrants_df[\"Mood\"] != \"confident\") & (quadrants_df[\"Mood\"] != \"dreamy\") ]\n",
+    "# limit every mood to only have about the average ammount of songs\n",
+    "limit = int(np.min([v for k,v in new_moods.items()]))\n",
+    "quadrants_df = normalize_df(limit, quadrants_df)\n",
+    "\n",
+    "\n",
+    "## alternative approach\n",
+    "alt_moods_df = df.copy()\n",
+    "alt_moods_df[\"Mood\"] = alt_moods_df[\"Mood\"].replace([\"desire\"], \"romantic\")\n",
+    "alt_moods_df[\"Mood\"] = alt_moods_df[\"Mood\"].replace([\"confident\",\"cheerful\", \"excitement\", \"upbeat\"], \"enthusiastic\")\n",
+    "alt_moods_df[\"Mood\"] = alt_moods_df[\"Mood\"].replace([\"brooding\",\"earnest\"],\"calm\")\n",
+    "alt_moods_df[\"Mood\"] = alt_moods_df[\"Mood\"].replace([\"grief\"], \"sad\")\n",
+    "alt_moods_df[\"Mood\"] = alt_moods_df[\"Mood\"].replace([\"pessimism\",\"angst\"], \"depressed\")\n",
+    "alt_moods_df[\"Mood\"] = alt_moods_df[\"Mood\"].replace([\"aggression\"], \"anger\")\n",
+    "# drop rows with moods not included (dreamy)\n",
+    "alt_moods_df = alt_moods_df[alt_moods_df[\"Mood\"] != \"dreamy\"]\n",
+    "# limit every mood to only have about the average ammount of songs\n",
+    "limit = int(np.min([v for k,v in alt_new_moods.items()]))\n",
+    "alt_moods_df = normalize_df(limit, alt_moods_df)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2789c07d",
+   "metadata": {},
+   "source": [
+    "## This notebook was for the first cut solution of a CNN + for evaluating the different dataset we generated from our data in accordance with the CNN predictions"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e93399ed",
+   "metadata": {},
+   "source": [
+    "### Print new distributions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2448a2d7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "new_moods = {\n",
+    "    \"happy\": len(quadrants_df[quadrants_df[\"Mood\"] == \"happy\"]),\n",
+    "    \"calm\": len(quadrants_df[quadrants_df[\"Mood\"] == \"calm\"]),\n",
+    "    \"sad\": len(quadrants_df[quadrants_df[\"Mood\"] == \"sad\"]),\n",
+    "    \"anger\": len(quadrants_df[quadrants_df[\"Mood\"] == \"anger\"])\n",
+    "} \n",
+    "\n",
+    "labels = [ k for k,v in new_moods.items()]\n",
+    "data = [ v for k,v in new_moods.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "111f89c7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "alt_new_moods = {\n",
+    "    \"happy\": len(alt_moods_df[alt_moods_df[\"Mood\"] == \"happy\"]),\n",
+    "    \"enthusiastic\": len(alt_moods_df[alt_moods_df[\"Mood\"] == \"enthusiastic\"]),\n",
+    "    \"calm\": len(alt_moods_df[alt_moods_df[\"Mood\"] == \"calm\"]),\n",
+    "    \"sad\": len(alt_moods_df[alt_moods_df[\"Mood\"] == \"sad\"]),\n",
+    "    \"depressed\":len(alt_moods_df[alt_moods_df[\"Mood\"] == \"depressed\"]),\n",
+    "    \"romantic\": len(alt_moods_df[alt_moods_df[\"Mood\"] == \"romantic\"]),\n",
+    "    \"anger\": len(alt_moods_df[alt_moods_df[\"Mood\"] == \"anger\"])\n",
+    "} \n",
+    "\n",
+    "labels = [ k for k,v in alt_new_moods.items()]\n",
+    "data = [ v for k,v in alt_new_moods.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4b264b95",
+   "metadata": {},
+   "source": [
+    "## Save data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "981f8ca7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "song_data_labels_cleaned_path = os.path.join(DATA_DIR, \"song-data-labels-cleaned.csv\")\n",
+    "df.to_csv(song_data_labels_cleaned_path, index=False)\n",
+    "\n",
+    "song_data_labels_cleaned_path_quadrant = os.path.join(DATA_DIR, \"song-data-labels-cleaned-quadrant.csv\")\n",
+    "quadrants_df.to_csv(song_data_labels_cleaned_path_quadrant, index=False)\n",
+    "\n",
+    "song_data_labels_cleaned_path_seven_moods = os.path.join(DATA_DIR, \"song-data-labels-cleaned-seven-moods.csv\")\n",
+    "alt_moods_df.to_csv(song_data_labels_cleaned_path_seven_moods, index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2b1de264",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "ta_3.10",
+   "language": "python",
+   "name": "ta_3.10"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.10"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "9ba333f5b88f2c39406c57348eec4dc5739a73c0795bfc96ca59f0f2e4bd3367"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
+
+================
+File: data_exploration/lastfm_labels/lastfm_labels_download.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import requests\n",
+    "import time\n",
+    "\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "import pandas as pd\n",
+    "from tqdm import tqdm\n",
+    "import glob\n",
+    "import requests_cache\n",
+    "\n",
+    "requests_cache.install_cache()\n",
+    "\n",
+    "# Make the graphs a bit prettier, and bigger\n",
+    "plt.style.use('ggplot')\n",
+    "plt.rcParams['figure.figsize'] = (15, 5)\n",
+    "plt.rcParams['font.family'] = 'sans-serif'\n",
+    "\n",
+    "%matplotlib inline"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Artist & Song Dataframe"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Load lyrics dataframe "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df = pd.read_csv(\"../data/lyrics-data.csv\")\n",
+    "artists_df = pd.read_csv('../data/artists-data.csv')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Show general information for the dataframes"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Create dataframe with song name and artist name (only English songs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_songs_dataframe = pd.merge(artists_df, lyrics_df, how=\"inner\", left_on=\"Link\", right_on=\"ALink\")\n",
+    "artists_songs_dataframe = artists_songs_dataframe[artists_songs_dataframe[\"language\"] == \"en\"][[\"Artist\", \"SName\"]]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Number of English songs\n",
+    "print(f\"Number of English songs: {artists_songs_dataframe['SName'].count()}\")\n",
+    "\n",
+    "# Number of all artists with English songs\n",
+    "print(f\"Number of all artists with English songs: {artists_songs_dataframe['Artist'].nunique()}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Take first third of the data (191385 / 3 = 63795)\n",
+    "artists_songs_dataframe = artists_songs_dataframe[:63795]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LastFM API (download tags)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Source: https://www.dataquest.io/blog/last-fm-api-python/"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "API_KEY = 'b0fc842b94c2e6a0b4458c1686a24f61'\n",
+    "USER_AGENT = 'idsta_project'"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def lastfm_get(payload):\n",
+    "    \"\"\"Send a GET request to lastfm API to receive, e.g., song tags.\n",
+    "\n",
+    "    :param payload: payload for the API request (contains, e.g., 'method', 'artist', 'track').\n",
+    "    \n",
+    "    :return: Response for the API request to lastfm.\n",
+    "    :rtype: requests.Response\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    # define headers and URL\n",
+    "    headers = {'user-agent': USER_AGENT}\n",
+    "    url = 'https://ws.audioscrobbler.com/2.0/'\n",
+    "\n",
+    "    # Add API key and format to the payload\n",
+    "    payload['api_key'] = API_KEY\n",
+    "    payload['format'] = 'json'\n",
+    "\n",
+    "    response = requests.get(url, headers=headers, params=payload)\n",
+    "    return response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Get top tags for all songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def lookup_tags_for_artist_song(row):\n",
+    "    \"\"\"Return a tags string containing all tags for a given artist and song.\n",
+    "\n",
+    "    :param row: dataframe row consisting of columns 'Artist' and 'SName' specifying the artist and song name.\n",
+    "    \n",
+    "    :return: tags for a given artist and song.\n",
+    "    :rtype: String\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    artist, song = row[\"Artist\"], row[\"SName\"]\n",
+    "    \n",
+    "    response = lastfm_get({\n",
+    "        'method': 'track.getTopTags',\n",
+    "        'artist':  artist,\n",
+    "        'track': song\n",
+    "    })\n",
+    "\n",
+    "    # if there's an error, just return nothing\n",
+    "    if response.status_code != 200 or \"error\" in response.text:\n",
+    "        return \"NoSongFound\"\n",
+    "\n",
+    "    # extract the top tags and turn them into a string\n",
+    "    tags = [t['name'] for t in response.json()['toptags']['tag']]\n",
+    "    tags_str = ', '.join(tags)\n",
+    "    if tags_str == \"\":\n",
+    "        tags_str =\"NoTagsFound\" \n",
+    "\n",
+    "    # rate limiting\n",
+    "    if not getattr(response, 'from_cache', False):\n",
+    "        time.sleep(0.25)\n",
+    "    return tags_str"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tqdm.pandas()\n",
+    "\n",
+    "artists_songs_dataframe['Tags'] = artists_songs_dataframe[[\"Artist\", \"SName\"]].progress_apply(lambda row: lookup_tags_for_artist_song(row), axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Save df\n",
+    "file_name = '../data/tags.csv'\n",
+    "file_present = files_present = glob.glob(file_name)\n",
+    "if not file_present:\n",
+    "    artists_songs_dataframe.to_csv(file_name, index=False)\n",
+    "else:\n",
+    "    print(\"File already exist. Use different name or delete file manually first.\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_songs_dataframe = pd.read_csv('../data/tags.csv')\n",
+    "artists_songs_dataframe.head(20)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3.9.13 ('base')",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.13"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "8b6a09c6c881074955117e125c5183f144e2c1816a788965e3262d942faf08f4"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
+
+================
+File: data_exploration/lastfm_labels/lastfm_labels.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import requests\n",
+    "import time\n",
+    "\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "import pandas as pd\n",
+    "from tqdm import tqdm\n",
+    "import requests_cache\n",
+    "import numpy as np\n",
+    "\n",
+    "requests_cache.install_cache()\n",
+    "\n",
+    "# Make the graphs a bit prettier, and bigger\n",
+    "plt.style.use('ggplot')\n",
+    "plt.rcParams['figure.figsize'] = (15, 5)\n",
+    "plt.rcParams['font.family'] = 'sans-serif'\n",
+    "\n",
+    "%matplotlib inline"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Artist & Song Dataframe"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Load lyrics dataframe "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df = pd.read_csv(\"../data/lyrics-data.csv\")\n",
+    "artists_df = pd.read_csv('../data/artists-data.csv')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Show general information for the dataframes"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_df.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Create dataframe with song name and artist name (only English songs)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_songs_dataframe = pd.merge(artists_df, lyrics_df, how=\"inner\", left_on=\"Link\", right_on=\"ALink\")\n",
+    "artists_songs_dataframe = artists_songs_dataframe[artists_songs_dataframe[\"language\"] == \"en\"][[\"Artist\", \"SName\"]]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_songs_dataframe.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Number of English songs\n",
+    "print(f\"Number of English songs: {artists_songs_dataframe['SName'].count()}\")\n",
+    "\n",
+    "# Number of all artists with English songs\n",
+    "print(f\"Number of all artists with English songs: {artists_songs_dataframe['Artist'].nunique()}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# LastFM API - Scraping Tags"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Based on: https://www.dataquest.io/blog/last-fm-api-python/"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "API_KEY = 'b0fc842b94c2e6a0b4458c1686a24f61'\n",
+    "USER_AGENT = 'idsta_project'"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def lastfm_get(payload):\n",
+    "    \"\"\"Send a GET request to lastfm API to receive, e.g., song tags.\n",
+    "\n",
+    "    :param payload: payload for the API request (contains, e.g., 'method', 'artist', 'track').\n",
+    "    \n",
+    "    :return: Response for the API request to lastfm.\n",
+    "    :rtype: requests.Response\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    # define headers and URL\n",
+    "    headers = {'user-agent': USER_AGENT}\n",
+    "    url = 'https://ws.audioscrobbler.com/2.0/'\n",
+    "\n",
+    "    # Add API key and format to the payload\n",
+    "    payload['api_key'] = API_KEY\n",
+    "    payload['format'] = 'json'\n",
+    "\n",
+    "    response = requests.get(url, headers=headers, params=payload)\n",
+    "    return response"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Get top tags for all songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def lookup_tags_for_artist_song(row):\n",
+    "    \"\"\"Return a tags string containing all tags for a given artist and song.\n",
+    "\n",
+    "    :param row: dataframe row consisting of columns 'Artist' and 'SName' specifying the artist and song name.\n",
+    "    \n",
+    "    :return: tags for a given artist and song.\n",
+    "    :rtype: String\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    artist, song = row[\"Artist\"], row[\"SName\"]\n",
+    "    \n",
+    "    response = lastfm_get({\n",
+    "        'method': 'track.getTopTags',\n",
+    "        'artist':  artist,\n",
+    "        'track': song\n",
+    "    })\n",
+    "\n",
+    "    # if there's an error, just return nothing\n",
+    "    if response.status_code != 200 or \"error\" in response.text:\n",
+    "        return \"NoSongFound\"\n",
+    "\n",
+    "    # extract the top tags and turn them into a string\n",
+    "    tags = [t['name'] for t in response.json()['toptags']['tag']]\n",
+    "    tags_str = ', '.join(tags)\n",
+    "    if tags_str == \"\":\n",
+    "        tags_str =\"NoTagsFound\" \n",
+    "\n",
+    "    # rate limiting (to not get banned by lastfm API)\n",
+    "    if not getattr(response, 'from_cache', False):\n",
+    "        time.sleep(0.25)\n",
+    "    return tags_str"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Shorten artists_songs_dataframe for testing purposes\n",
+    "artists_songs_dataframe = artists_songs_dataframe[artists_songs_dataframe[\"Artist\"] == \"Eminem\"]\n",
+    "artists_songs_dataframe.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Scrape tags from lastfm for given songs of given artists (within the artists_songs_dataframe)\n",
+    "tqdm.pandas()\n",
+    "artists_songs_dataframe['Tags'] = artists_songs_dataframe[[\"Artist\", \"SName\"]].progress_apply(lambda row: lookup_tags_for_artist_song(row), axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_songs_dataframe.head(50)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Preload Tags Dataframe"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_songs_dataframe = pd.read_csv('../data/tags.csv')\n",
+    "\n",
+    "artists_songs_dataframe.head(20)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Get statistics on how many songs were not found and how many had no tags"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "num_songs= len(artists_songs_dataframe[\"Tags\"])\n",
+    "print(f\"Number of songs that were scraped: {num_songs}\")\n",
+    "\n",
+    "num_songs_not_found = len(artists_songs_dataframe[artists_songs_dataframe[\"Tags\"] == \"NoSongFound\"][\"Tags\"])\n",
+    "print(f\"Number of songs that were not found in lastfm: {num_songs_not_found}\")\n",
+    "\n",
+    "num_songs_not_found = len(artists_songs_dataframe[artists_songs_dataframe[\"Tags\"] == \"NoTagsFound\"][\"Tags\"])\n",
+    "print(f\"Number of songs that had no tags in lastfm: {num_songs_not_found}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Mood keyword distribution"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "MOOD_CATEGORIES = {\n",
+    "    'calm': ['calm', 'comfort', 'quiet', 'serene', 'mellow', 'chill out'],\n",
+    "    'sad': ['sadness', 'unhappy', 'melancholic', 'melancholy'],\n",
+    "    'happy': ['happy', 'happiness', 'happy songs', 'happy music'],\n",
+    "    'romantic': ['romantic', 'romantic music'],\n",
+    "    'upbeat': ['upbeat', 'gleeful', 'high spirits', 'zest', 'enthusiastic'],\n",
+    "    'depressed': ['depressed', 'blue', 'dark', 'depressive', 'dreary'],\n",
+    "    'anger': ['anger', 'angry', 'choleric', 'fury', 'outraged', 'rage'],\n",
+    "    'grief': ['grief', 'heartbreak', 'mournful', 'sorrow', 'sorry'],\n",
+    "    'dreamy': ['dreamy'],\n",
+    "    'cheerful': ['cheerful', 'cheer up', 'festive', 'jolly', 'jovial', 'merry'],\n",
+    "    'brooding': ['brooding', 'contemplative', 'meditative', 'reflective'],\n",
+    "    'aggression': ['aggression', 'aggressive'],\n",
+    "    'confident': ['confident', 'encouraging', 'encouragement', 'optimism'],\n",
+    "    'angst': ['angst', 'anxiety', 'anxious', 'jumpy', 'nervous', 'angsty'],\n",
+    "    'earnest': ['earnest', 'heartfelt'],\n",
+    "    'desire': ['desire', 'hope', 'hopeful', 'mood: hopeful'],\n",
+    "    'pessimism': ['pessimism', 'cynical', 'pessimistic', 'weltschmerz'],\n",
+    "    'excitement': ['excitement', 'exciting', 'exhilarating', 'thrill', 'ardor']\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This approach only counts a mood once per song, even if mutiple keywords of a mood are available in the tags\n",
+    "num_moods = len(MOOD_CATEGORIES)\n",
+    "song_distribution= dict(zip(MOOD_CATEGORIES.keys(), [0]*num_moods))\n",
+    "\n",
+    "for tag_string in artists_songs_dataframe[\"Tags\"]:\n",
+    "    tag_list = str(tag_string).split(\", \")\n",
+    "    for mood in MOOD_CATEGORIES:\n",
+    "        for keyword in MOOD_CATEGORIES[mood]:\n",
+    "            if keyword in tag_list:\n",
+    "                song_distribution[mood] += 1\n",
+    "                break"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The figure shows in how many songs the keywords of a mood category appear \n",
+    "# (If for instance 2 keywords appear in 1 text, this counts as 1)\",\n",
+    "\n",
+    "labels = song_distribution.keys()\n",
+    "data = song_distribution.values()\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The figure shows in how many songs the keywords of a mood category appear \n",
+    "# (If for instance 2 keywords appear in 1 text, this counts as 1)\",\n",
+    "\n",
+    "labels = song_distribution.keys()\n",
+    "data = song_distribution.values()\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts with total ammouint of songs')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.axhline(y = len(artists_songs_dataframe[\"Tags\"]), color = 'r', linestyle = '-', label = \"Total ammount of songs\")\n",
+    "plt.legend(bbox_to_anchor = (1.0, 1), loc = 'upper center')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Now we will calculate how many songs can be identified with a mood at all"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "songs_without_moods = 0\n",
+    "\n",
+    "for tag_string in artists_songs_dataframe[\"Tags\"]:\n",
+    "    tag_list = str(tag_string).split(\", \")\n",
+    "    flag = 0\n",
+    "    for mood in MOOD_CATEGORIES:\n",
+    "        for keyword in MOOD_CATEGORIES[mood]:\n",
+    "            if keyword in tag_list:\n",
+    "                flag = 1\n",
+    "                break\n",
+    "    if flag == 0:\n",
+    "        songs_without_moods += 1\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# the following figure shows the ammount of songs not containing any of the mood keywords\n",
+    "\n",
+    "labels = [\"total ammount of songs\", \"without moods\", \"with moods\"]\n",
+    "songs_with_moood = len(artists_songs_dataframe[\"Tags\"])-songs_without_moods\n",
+    "print(f\"Number of songs with mood: {songs_with_moood}, which is {np.round(100*songs_with_moood/len(artists_songs_dataframe['Tags']), 2)}% of all songs.\")\n",
+    "data = [ len(artists_songs_dataframe[\"Tags\"]), songs_without_moods, songs_with_moood ]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Number of songs')\n",
+    "plt.title('Songs without moods')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Mood keyword distribution (with advanced keyword set)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Concept based on: https://github.com/workmanjack/lyric-mood-classification"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Expanding the Categories\n",
+    "\n",
+    "The last.fm dataset is generated by users without scientific rigor in mind. There is a chance that searching for an exact match on a mood and its related moods will not always yield all possible matches. In this section, we will explore additional tags that match with each category."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def find_tags_containing_keyword(df):\n",
+    "    \"\"\"Return an advanced mood keyword dictionary based on our dataset and the base mood keywords (defined above).\n",
+    "\n",
+    "    :param df: dataframe consisting of columns 'Artist', 'SName' and 'Tags' specifying the artist, song name and tags defined by users.\n",
+    "    \n",
+    "    :return: dictionary containing more mood keywords (values) for each mood (key) based on our dataset and the base mood keywords.\n",
+    "    :rtype: Dictionary\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    # Get all unique tags\n",
+    "    unique_tag_list = list(set([tag.lower() for tags in df[\"Tags\"] for tag in str(tags).split(\", \")]))\n",
+    "    \n",
+    "    # Check for each keyword of specific mood if this keyword is contained in the tags (do lower casing)\n",
+    "    advanced_mood_keyword_dict = {}\n",
+    "    for mood, keywords in MOOD_CATEGORIES.items():\n",
+    "        advanced_mood_keyword_dict[mood] = []\n",
+    "        for mood_keyword in keywords:\n",
+    "            for tag in unique_tag_list:\n",
+    "                if mood_keyword in tag:\n",
+    "                    advanced_mood_keyword_dict[mood].append(tag)\n",
+    "    \n",
+    "    return advanced_mood_keyword_dict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "advanced_mood_keyword_dict = find_tags_containing_keyword(artists_songs_dataframe)\n",
+    "\n",
+    "print(\"Base mood keywords:\")\n",
+    "print(MOOD_CATEGORIES)\n",
+    "\n",
+    "print(\"Advanced mood keywords:\")\n",
+    "print(advanced_mood_keyword_dict)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Advanced mood keywords distribution"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "263d5c98",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This approach only considers the first appearing mood keyword for the overall mood of the song\n",
+    "# --> Will assign the moods more sophisticatedly later in the project\n",
+    "song_distribution= dict(zip(advanced_mood_keyword_dict.keys(), [0]*num_moods))\n",
+    "\n",
+    "for tag_string in artists_songs_dataframe[\"Tags\"]:\n",
+    "    tag_list = str(tag_string).split(\", \")\n",
+    "    for mood in advanced_mood_keyword_dict:\n",
+    "        for keyword in advanced_mood_keyword_dict[mood]:\n",
+    "            if keyword in tag_list:\n",
+    "                song_distribution[mood] += 1\n",
+    "                break\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d836689",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The figure shows in how many songs the keywords of a mood category appear \n",
+    "# (If for instance 2 keywords appear in 1 text, this counts as 1)\",\n",
+    "\n",
+    "labels = song_distribution.keys()\n",
+    "data = song_distribution.values()\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b50a84f1",
+   "metadata": {},
+   "source": [
+    "#### Now plot the distribution with regards to the total ammount of songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5c3501a8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The figure shows in how many songs the keywords of a mood category appear \n",
+    "# (If for instance 2 keywords appear in 1 text, this counts as 1)\",\n",
+    "\n",
+    "labels = song_distribution.keys()\n",
+    "data = song_distribution.values()\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts with total ammouint of songs')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.axhline(y = len(artists_songs_dataframe[\"Tags\"]), color = 'r', linestyle = '-', label = \"Total ammount of songs\")\n",
+    "plt.legend(bbox_to_anchor = (1.0, 1), loc = 'upper center')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a0803346",
+   "metadata": {},
+   "source": [
+    "#### Now we will calculate how many songs can be identified with a mood at all"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "11437c14",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "songs_without_moods = 0\n",
+    "\n",
+    "for tag_string in artists_songs_dataframe[\"Tags\"]:\n",
+    "    tag_list = str(tag_string).split(\", \")\n",
+    "    flag = 0\n",
+    "    for mood in advanced_mood_keyword_dict:\n",
+    "        for keyword in advanced_mood_keyword_dict[mood]:\n",
+    "            if keyword in tag_list:\n",
+    "                flag = 1\n",
+    "                break\n",
+    "    if flag == 0:\n",
+    "        songs_without_moods += 1\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b6d7ac8e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# the following figure shows the ammount of songs not containing any of the mood keywords\n",
+    "\n",
+    "labels = [\"total ammount of songs\", \"without moods\", \"with moods\"]\n",
+    "songs_with_moood = len(artists_songs_dataframe[\"Tags\"])-songs_without_moods\n",
+    "print(f\"Number of songs with mood: {songs_with_moood}, which is {np.round(100*songs_with_moood/len(artists_songs_dataframe['Tags']), 2)}% of all songs.\")\n",
+    "data = [ len(artists_songs_dataframe[\"Tags\"]), songs_without_moods, songs_with_moood ]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Number of songs')\n",
+    "plt.title('Songs without moods')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.10"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "8b6a09c6c881074955117e125c5183f144e2c1816a788965e3262d942faf08f4"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
+
+================
+File: data_exploration/max_data_exploration.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "742ab35c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "from matplotlib.pyplot import figure\n",
+    "from scipy.stats import norm\n",
+    "import matplotlib.pyplot as plt\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6ac322f9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df = pd.read_csv('./data/lyrics-data.csv')\n",
+    "artists_df = pd.read_csv('./data/artists-data.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b3f0655a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.head(5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3242d284",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6a48e367",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(len(lyrics_df[\"language\"].unique()))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c33f7c59",
+   "metadata": {},
+   "source": [
+    "## Look at the lyrics DF and the respective languages"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ad2eb914",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "print(lyrics_df[\"language\"].unique())\n",
+    "\n",
+    "languages = lyrics_df[\"language\"].unique()\n",
+    "# delete nan from list\n",
+    "languages = np.delete(languages,3)\n",
+    "language_count = lyrics_df[\"language\"].value_counts()\n",
+    "\n",
+    "# Put the language data in a new df\n",
+    "df = pd.DataFrame(columns=languages)\n",
+    "for language in languages:\n",
+    "    df[language] = [language_count[language]]\n",
+    "    \n",
+    "\n",
+    "for col in df.columns:\n",
+    "    if df[col][0] < 50:\n",
+    "        # drop all languages with less than 100 songs\n",
+    "        df = df.drop(columns=col)    \n",
+    "\n",
+    "        \n",
+    "        \n",
+    "data = df.iloc[:1].values[0]\n",
+    "labels = [col for col in df.columns]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Ammount of songs')\n",
+    "plt.title('Total language distribution of languages with at least 50 songs')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4324315e",
+   "metadata": {},
+   "source": [
+    "## Data Preperation"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e8e3aeb4",
+   "metadata": {},
+   "source": [
+    "### Since there is a majority of english songs, we will focus on them in the following"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ab510bb5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "english_songs = lyrics_df[\"language\"] == \"en\"\n",
+    "english_songs_df = lyrics_df[english_songs]\n",
+    "english_songs_df.head(5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b3808404",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "english_songs_df.shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bcff0bc5",
+   "metadata": {},
+   "source": [
+    "### Drop useless columns and rename the other ones to more expressive ones"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b0eafb4a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#drop SLink Column since it has no use\n",
+    "english_songs_df=english_songs_df.drop('SLink', axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6bb5dcbd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# rename columns to more expressive names\n",
+    "english_songs_df= english_songs_df.rename(columns={'ALink': 'Link', 'SName': 'Song_Name', 'Lyric': 'Song_Text', 'language': 'Language'})"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c1c60550",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get artist names from dataset 2\n",
+    "english_songs_df = pd.merge(english_songs_df, artists_df[['Link','Artist']], on='Link', how='left')\n",
+    "english_songs_df = english_songs_df.drop([\"Link\"], axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "338d2b2a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(english_songs_df[\"Artist\"].unique())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bb0c79e0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "english_songs_df.head(5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "40ad7215",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# linebreaks are not important, replace them with \" \"\n",
+    "def remove_linebreak(string):\n",
+    "    string = string.replace(\"\\n\", \" \")\n",
+    "    return string\n",
+    "english_songs_df[\"Song_Text\"]=english_songs_df[\"Song_Text\"].apply(remove_linebreak)\n",
+    "english_songs_df.head(5)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "aa300014",
+   "metadata": {},
+   "source": [
+    "## how many artists are in the dataset?\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "050094e3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Artist count: \" + str(len(english_songs_df[\"Artist\"].unique())))\n",
+    "print(english_songs_df[\"Artist\"].unique())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "68cf3294",
+   "metadata": {},
+   "source": [
+    "## How long is the average length of a song in chars and words?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b25bf650",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# how long is Lyrics on average?\n",
+    "print('The average lyrics length is: ' + str(english_songs_df[\"Song_Text\"].str.len().mean()) + \"characters\")\n",
+    "print('The average word count of a song: ' + str(english_songs_df[\"Song_Text\"].str.split().str.len().mean()))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "768becc4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "data = [len(text.split()) for text in english_songs_df[\"Song_Text\"]]\n",
+    "\n",
+    "# implement a more performant sort algorithm\n",
+    "def qsort(inlist):\n",
+    "    if inlist == []: \n",
+    "        return []\n",
+    "    else:\n",
+    "        pivot = inlist[0]\n",
+    "        lesser = qsort([x for x in inlist[1:] if x < pivot])\n",
+    "        greater = qsort([x for x in inlist[1:] if x >= pivot])\n",
+    "        return lesser + [pivot] + greater\n",
+    "    \n",
+    "data_sorted = qsort(data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "03ad087d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots()\n",
+    "ax.plot(data_sorted)\n",
+    "ax.set_ylabel('Word count per song')\n",
+    "plt.title('Wordcount per song')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "02c265c8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# mean and standard deviation\n",
+    "mu, std = norm.fit(data) \n",
+    "  \n",
+    "# Plot the histogram.\n",
+    "plt.hist(data, bins=75, density=True, alpha=0.6, color='b')\n",
+    "  \n",
+    "# Plot the PDF.\n",
+    "xmin, xmax = plt.xlim()\n",
+    "x = np.linspace(xmin, xmax, 100)\n",
+    "p = norm.pdf(x, mu, std)\n",
+    "  \n",
+    "plt.plot(x, p, 'k', linewidth=2)\n",
+    "title = \"Gaussian distribution of word counts in song texts\"\n",
+    "plt.title(title)\n",
+    "  \n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ecbb0104",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig = plt.figure(figsize =(10, 3))\n",
+    " \n",
+    "# Creating plot\n",
+    "plt.boxplot(data_sorted, vert=False)\n",
+    "plt.xlabel(\"Word count per song\")\n",
+    "plt.title(\"Word count per song\")\n",
+    " \n",
+    "# show plot\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d2ed6dfc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "median=np.median(data_sorted)\n",
+    "mean=np.mean(data_sorted)\n",
+    "std=np.std(data_sorted)\n",
+    "min=np.min(data_sorted)\n",
+    "max=np.max(data_sorted)\n",
+    "\n",
+    "print(f\" The median is {median}\")\n",
+    "print(f\" The mean is {mean}\")\n",
+    "print(f\" The standard deviation is {std}\")\n",
+    "print(f\" The max value is {max}\")\n",
+    "print(f\" The min value is {min}\")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5ec169ea",
+   "metadata": {},
+   "source": [
+    "## Next we take a look at how many songs do artists have\n",
+    "#### Therefore we will divide them into groups, to see, if there are maybe artists that might influence an A.I. more sngnificantly by just having many songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c229250d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# plot how many song for each artist\n",
+    "helper = english_songs_df[\"Artist\"].value_counts()\n",
+    "artist_count_df = pd.DataFrame({'Artist': helper.index, 'Count': helper.values})\n",
+    "# since too many artists: \n",
+    "artist_count_df_categorized = pd.DataFrame(columns=[\"<=10_songs\", \"11<=20_songs\",\"21<=50_songs\", \"51<=75_songs\",\"76<=100_songs\",\"101<=250_songs\", \">250_songs\"])\n",
+    "artist_count_df_categorized[\"<=10_songs\"] = [len(artist_count_df[artist_count_df['Count']<=10])]\n",
+    "artist_count_df_categorized[\"11<=20_songs\"] = [len(artist_count_df[artist_count_df['Count']<=20]) - len(artist_count_df[artist_count_df['Count']<=10])]\n",
+    "artist_count_df_categorized[\"21<=50_songs\"] = [len(artist_count_df[artist_count_df['Count']<=50]) - len(artist_count_df[artist_count_df['Count']<=20])]\n",
+    "artist_count_df_categorized[\"51<=75_songs\"] = [len(artist_count_df[artist_count_df['Count']<=75]) - len(artist_count_df[artist_count_df['Count']<=50])]\n",
+    "artist_count_df_categorized[\"76<=100_songs\"] = [len(artist_count_df[artist_count_df['Count']<=100]) - len(artist_count_df[artist_count_df['Count']<=75])]\n",
+    "artist_count_df_categorized[\"101<=250_songs\"] = [len(artist_count_df[artist_count_df['Count']<=250]) - len(artist_count_df[artist_count_df['Count']<=100])]\n",
+    "artist_count_df_categorized[\">250_songs\"] = [len(artist_count_df[artist_count_df['Count']>250])]\n",
+    "\n",
+    "artist_count_df_categorized.head(5)\n",
+    "data = artist_count_df_categorized.iloc[:1].values[0]\n",
+    "labels = [col for col in artist_count_df_categorized.columns]\n",
+    "plt.pie(data, labels=labels, autopct='%1.1f%%')\n",
+    "plt.title('Artist distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "64b8a570",
+   "metadata": {},
+   "source": [
+    "## Now we will take a look at the occurences of the keywords used in our baseline project to label the data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a4abd54f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# plot how often keywords of CNN\n",
+    "MOOD_CATEGORIES = {\n",
+    "    'calm': ['calm', 'comfort', 'quiet', 'serene', 'mellow', 'chill out'],\n",
+    "    'sad': ['sadness', 'unhappy', 'melancholic', 'melancholy'],\n",
+    "    'happy': ['happy', 'happiness', 'happy songs', 'happy music'],\n",
+    "    'romantic': ['romantic', 'romantic music'],\n",
+    "    'upbeat': ['upbeat', 'gleeful', 'high spirits', 'zest', 'enthusiastic'],\n",
+    "    'depressed': ['depressed', 'blue', 'dark', 'depressive', 'dreary'],\n",
+    "    'anger': ['anger', 'angry', 'choleric', 'fury', 'outraged', 'rage'],\n",
+    "    'grief': ['grief', 'heartbreak', 'mournful', 'sorrow', 'sorry'],\n",
+    "    'dreamy': ['dreamy'],\n",
+    "    'cheerful': ['cheerful', 'cheer up', 'festive', 'jolly', 'jovial', 'merry'],\n",
+    "    'brooding': ['brooding', 'contemplative', 'meditative', 'reflective'],\n",
+    "    'aggression': ['aggression', 'aggressive'],\n",
+    "    'confident': ['confident', 'encouraging', 'encouragement', 'optimism'],\n",
+    "    'angst': ['angst', 'anxiety', 'anxious', 'jumpy', 'nervous', 'angsty'],\n",
+    "    'earnest': ['earnest', 'heartfelt'],\n",
+    "    'desire': ['desire', 'hope', 'hopeful', 'mood: hopeful'],\n",
+    "    'pessimism': ['pessimism', 'cynical', 'pessimistic', 'weltschmerz'],\n",
+    "    'excitement': ['excitement', 'exciting', 'exhilarating', 'thrill', 'ardor']\n",
+    "}\n",
+    "keyword_distibution = {\n",
+    "    'calm': 0,\n",
+    "    'sad': 0,\n",
+    "    'happy': 0,\n",
+    "    'romantic': 0,\n",
+    "    'upbeat': 0,\n",
+    "    'depressed': 0,\n",
+    "    'anger': 0,\n",
+    "    'grief': 0,\n",
+    "    'dreamy': 0,\n",
+    "    'cheerful': 0,\n",
+    "    'brooding': 0,\n",
+    "    'aggression': 0,\n",
+    "    'confident': 0,\n",
+    "    'angst': 0,\n",
+    "    'earnest': 0,\n",
+    "    'desire': 0,\n",
+    "    'pessimism': 0,\n",
+    "    'excitement': 0\n",
+    "}\n",
+    "for song_text in english_songs_df[\"Song_Text\"]:\n",
+    "    for key in MOOD_CATEGORIES:\n",
+    "        for keyword in MOOD_CATEGORIES[key]:\n",
+    "            if keyword in song_text:                \n",
+    "                keyword_distibution[key] += 1\n",
+    "keyword_distibution"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "263d5c98",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This approach attempts to count only a mood once \n",
+    "# (If for instance 2 keywords of a mood appear in 1 text, this counts as 1)\n",
+    "# This however will lead to the effect that sopngs are comunted multiple times, for every mood they can be identified with\n",
+    "song_distribution={\n",
+    "    'calm': 0,\n",
+    "    'sad': 0,\n",
+    "    'happy': 0,\n",
+    "    'romantic': 0,\n",
+    "    'upbeat': 0,\n",
+    "    'depressed': 0,\n",
+    "    'anger': 0,\n",
+    "    'grief': 0,\n",
+    "    'dreamy': 0,\n",
+    "    'cheerful': 0,\n",
+    "    'brooding': 0,\n",
+    "    'aggression': 0,\n",
+    "    'confident': 0,\n",
+    "    'angst': 0,\n",
+    "    'earnest': 0,\n",
+    "    'desire': 0,\n",
+    "    'pessimism': 0,\n",
+    "    'excitement': 0\n",
+    "}\n",
+    "\n",
+    "for song_text in english_songs_df[\"Song_Text\"]:\n",
+    "    for key in MOOD_CATEGORIES:\n",
+    "        for keyword in MOOD_CATEGORIES[key]:\n",
+    "            if keyword in song_text:\n",
+    "                song_distribution[key] += 1\n",
+    "                break\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "460f8ef3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "labels = [ k for k,v in keyword_distibution.items()]\n",
+    "data = [ v for k,v in keyword_distibution.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "\n",
+    "ax.set_ylabel('Appearance of keywords')\n",
+    "plt.title('Total Keyword distribution')\n",
+    "plt.show()\n",
+    "\n",
+    "# The figure shows how often the kexwords of a mood category appear in all english texts"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d836689",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The figure shows in how many songs the keywords of a mood category appear \n",
+    "# (If for instance 2 keywords appear in 1 text, this counts as 1)\",\n",
+    "\n",
+    "labels = [ k for k,v in song_distribution.items()]\n",
+    "data = [ v for k,v in song_distribution.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b50a84f1",
+   "metadata": {},
+   "source": [
+    "### Now plot the distribution with regards to the total ammount of songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5c3501a8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# The figure shows in how many songs the keywords of a mood category appear \n",
+    "# (If for instance 2 keywords appear in 1 text, this counts as 1)\",\n",
+    "\n",
+    "labels = [ k for k,v in song_distribution.items()]\n",
+    "data = [ v for k,v in song_distribution.items()]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Appearance of Moods in songtexts with total ammouint of songs')\n",
+    "plt.title('Total Mood distribution')\n",
+    "plt.axhline(y = len(english_songs_df[\"Song_Text\"]), color = 'r', linestyle = '-', label = \"Total ammount of songs\")\n",
+    "plt.legend(bbox_to_anchor = (1.0, 1), loc = 'upper center')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a0803346",
+   "metadata": {},
+   "source": [
+    "## Now we will calculate how many songs can be identified with a mood at all"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "11437c14",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "songs_without_moods = 0\n",
+    "\n",
+    "for song_text in english_songs_df[\"Song_Text\"]:\n",
+    "    flag = 0\n",
+    "    for key in MOOD_CATEGORIES:\n",
+    "        for keyword in MOOD_CATEGORIES[key]:\n",
+    "            if keyword in song_text:\n",
+    "                flag = 1\n",
+    "                break\n",
+    "    if flag == 0:\n",
+    "        songs_without_moods += 1\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b6d7ac8e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# the following figure shows the ammount of songs not containing any of the mood keywords\n",
+    "\n",
+    "labels = [\"total ammount of songs\", \"without moods\", \"with moods\"]\n",
+    "data = [ len(english_songs_df[\"Song_Text\"]), songs_without_moods, len(english_songs_df[\"Song_Text\"])-songs_without_moods ]\n",
+    "fig, ax = plt.subplots()\n",
+    "plt.xticks(rotation = 75)\n",
+    "ax.bar(labels, data)\n",
+    "ax.set_ylabel('Number of songs')\n",
+    "plt.title('Songs without moods')\n",
+    "plt.legend(bbox_to_anchor = (1.0, 1), loc = 'upper center')\n",
+    "plt.show()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.0"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "9ba333f5b88f2c39406c57348eec4dc5739a73c0795bfc96ca59f0f2e4bd3367"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
+
+================
+File: data_exploration/pascal_data_exploration.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%matplotlib inline\n",
+    "\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "from difflib import SequenceMatcher\n",
+    "\n",
+    "# Make the graphs a bit prettier, and bigger\n",
+    "plt.style.use('ggplot')\n",
+    "plt.rcParams['figure.figsize'] = (15, 5)\n",
+    "plt.rcParams['font.family'] = 'sans-serif'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Artists data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_df = pd.read_csv(\"./data/artists-data.csv\", index_col=\"Artist\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Show general information for the dataframe"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_df.describe(include='all')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_df.head(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "artists_df.tail(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for redundancy in first 100 rows (regardings artists)\n",
+    "num_listed_artists = 100\n",
+    "artists = artists_df.index.sort_values().tolist()\n",
+    "for idx, artist in enumerate(artists):\n",
+    "    if idx == num_listed_artists:\n",
+    "        break\n",
+    "    print(artist)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Check for artists redundancy"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for uniqueness of the artists\n",
+    "artists_df = pd.read_csv(\"./data/artists-data.csv\")\n",
+    "print(artists_df.groupby(\"Artist\")[\"Artist\"].count().sort_values(ascending=False))\n",
+    "artists_df = pd.read_csv(\"./data/artists-data.csv\", index_col=\"Artist\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Print all 79 genres\n",
+    "all_unique_genres_concatenated = artists_df.sort_values(by=\"Genres\")[\"Genres\"].unique()\n",
+    "all_genres = []\n",
+    "for concatenated_genres in all_unique_genres_concatenated:\n",
+    "    # Split genres of artist that have multiple genres assigned to them\n",
+    "    if isinstance(concatenated_genres, str):\n",
+    "        all_genres += concatenated_genres.split(\"; \")\n",
+    "all_unique_genres = list(set(all_genres))\n",
+    "num_genres = len(all_unique_genres)\n",
+    "print(f\"In total {num_genres} genres.\")\n",
+    "sorted_unique_genres = sorted(all_unique_genres)\n",
+    "for genre in sorted_unique_genres:\n",
+    "    print(genre)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Show more specific information (e.g., list all count most popular artists, ...)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Count how many artist per genre\n",
+    "artists_df.groupby(\"Genres\")[\"Genres\"].count().sort_values(ascending=False).head(20).plot(kind='bar')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Rank the artists regarding their popularity\n",
+    "artists_df.sort_values(by=\"Popularity\", ascending=False)[\"Popularity\"].head(20).plot(kind='bar')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Rank the artists regarding their number of songs\n",
+    "artists_df.sort_values(by=\"Songs\", ascending=False)[\"Songs\"].head(20).plot(kind='bar')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Lyrics data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df = pd.read_csv(\"data/lyrics-data.csv\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Show general information for the dataframe"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.describe(include='all')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.head(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lyrics_df.tail(3)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Language distribution of all songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Show language distribution of all songs\n",
+    "lyrics_df.groupby(\"language\")[\"language\"].count().sort_values(ascending=False).head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Check for instrumental songs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for variations in instrumental lyrics (description)\n",
+    "lyrics_df.groupby(\"Lyric\")[\"Lyric\"].count().sort_values(ascending=False).head(7)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get absolute and relative number of instrumental songs\n",
+    "\n",
+    "# Create instrumental lyric filter \n",
+    "lyrcis_list = lyrics_df[\"Lyric\"]\n",
+    "is_instrumental_lyric_filter = []\n",
+    "for lyric in lyrcis_list:\n",
+    "    if \"instrumental\" in str(lyric).lower():\n",
+    "        is_instrumental_lyric_filter.append(True)\n",
+    "    else:\n",
+    "        is_instrumental_lyric_filter.append(False)\n",
+    "\n",
+    "# Apply filter with various forms of instrumentals lyrics (description) to compute the number of instrumental songs\n",
+    "num_instrumentals_abs = lyrics_df[is_instrumental_lyric_filter].count()[\"ALink\"]\n",
+    "num_songs = lyrics_df.count()[\"ALink\"]\n",
+    "num_instrumentals_rel = num_instrumentals_abs/num_songs\n",
+    "print(f\"From all {num_songs} songs, are {num_instrumentals_rel*100}% (in total: {num_instrumentals_abs}) of them instrumental songs.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Song redundancy"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for song redundancy\n",
+    "lyrics_df.groupby(\"Lyric\")[\"Lyric\"].count().sort_values(ascending=False).head(20)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check appearance of one reoccurring lyrics\n",
+    "lyrics_df[lyrics_df[\"Lyric\"] == \"Shortcut to part of Donovan Leitch Lyrics\\nDonovan Leitch - Half Moon Bay Lyrics\\nDonovan Leitch - Hampstead Incident Lyrics\\nDonovan Leitch - Happiness Runs Lyrics\\nDonovan Leitch - Harmony Lyrics\\nDonovan Leitch - Henry Martin Lyrics\\nDonovan Leitch - Hey Gyp (Dig the Slowness) Lyrics\\nDonovan Leitch - Hi It's Been a Long Time Lyrics\\nDonovan Leitch - High Your Love Lyrics\\nDonovan Leitch - Homesickness Lyrics\\nDonovan Leitch - House of Jansch Lyrics\\nDonovan Leitch - How Silly Lyrics\\nDonovan Leitch - Hurdy Gurdy Man Lyrics\\nDonovan Leitch - I Like You Lyrics\\nDonovan Leitch - I Love My Shirt Lyrics\\nDonovan Leitch - I Love you Baby Lyrics\\nDonovan Leitch - In an Old-Fashioned Picture Book Lyrics\\nDonovan Leitch - International Man Lyrics\\nDonovan Leitch - Isle of Islay Lyrics\\nDonovan Leitch - Jabberwocky Lyrics\\nDonovan Leitch - Jennifer Juniper Lyrics\\nDonovan Leitch - Jersey Thursday Lyrics\\nDonovan Leitch - Joe Bean's Theme Lyrics\\nDonovan Leitch - Johnny Tuff Lyrics\\nDonovan Leitch - Josie Lyrics\\nDonovan Leitch - Kalifornia Kiddies Lyrics\\nDonovan Leitch - Keep on Truckin' Lyrics\\nDonovan Leitch - La Moora Lyrics\\nDonovan Leitch - Lady of the Flowers Lyrics\\nDonovan Leitch - Lady of the Lamp Lyrics\\nDonovan Leitch - Lady of the Stars Lyrics\\nDonovan Leitch - Lay Down Lassie Lyrics\\nDonovan Leitch - Lay of the Last Tinker Lyrics\\nDonovan Leitch - Lazy Daze Lyrics\\nDonovan Leitch - Legend of a Girl Child Linda Lyrics\\nDonovan Leitch - Liberation Rag Lyrics\\nDonovan Leitch - Life Goes On Lyrics\\nDonovan Leitch - Life Is a Merry-Go-Round Lyrics\\nDonovan Leitch - Little Ben Lyrics\\nDonovan Leitch - Little Boy in Corduroy Lyrics\\nDonovan Leitch - Little Tin Soldier Lyrics\\nDonovan Leitch - Living for the Love Light Lyrics\\nDonovan Leitch - Living For the Love Light in Your Eyes Lyrics\\nDonovan Leitch - Local Boy Chops Wood Lyrics\\nDonovan Leitch - Lord of the Dance Lyrics\\nDonovan Leitch - Lord of the Reedy River Lyrics\\nDonovan Leitch - Lost Time Lyrics\\nDonovan Leitch - Love is Only Feeling Lyrics\\nDonovan Leitch - Love of My Life Lyrics\\nDonovan Leitch - Lover O Lover Lyrics\\nDonovan Leitch - Mad John's Escape Lyrics\\nDonovan Leitch - Madrigalinda Lyrics\\nDonovan Leitch - Maria Magenta Lyrics\\nDonovan Leitch - Marjorie Margerine Lyrics\\nDonovan Leitch - Maya's Dance Lyrics\\nDonovan Leitch - Mee Mee I Love You Lyrics\\nDonovan Leitch - Mellow Yellow Lyrics\\nDonovan Leitch - Moon Rock Lyrics\\nDonovan Leitch - Mr. Wind Lyrics\\nDonovan Leitch - Museum Lyrics\\nDonovan Leitch - My Love Is True Lyrics\\nFull Donovan Leitch Lyrics...\\n\\n\\n\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for redundant songs for feature songs (e.g., in eminem songs)\n",
+    "pd.set_option('display.max_rows', None)\n",
+    "# Get the Alink for Eminem\n",
+    "eminem_alink = artists_df[artists_df.index == \"Eminem\"][\"Link\"][0]\n",
+    "# Print all rows of Eminem songs\n",
+    "print(lyrics_df[lyrics_df[\"ALink\"] == eminem_alink][\"SName\"])\n",
+    "pd.set_option('display.max_rows', 15)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for the song \"The Monster\" under featuring artist Rihanna\n",
+    "pd.set_option('display.max_rows', None)\n",
+    "# Get the Alink for Rihanna\n",
+    "rihanna_alink = artists_df[artists_df.index == \"Rihanna\"][\"Link\"][0]\n",
+    "# Print all rows of Rihanna songs\n",
+    "print(lyrics_df[lyrics_df[\"ALink\"] == rihanna_alink][\"SName\"])\n",
+    "pd.set_option('display.max_rows', 15)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get the lyrics for the song \"The Monster\" saved under the artist Eminem\n",
+    "eminem_lyric_the_moster = lyrics_df[(lyrics_df[\"ALink\"] == eminem_alink) & (lyrics_df[\"SName\"] == \"The Monster (Feat. Rihanna)\")][\"Lyric\"].values[0]\n",
+    "# Print lyrics + number of characters\n",
+    "print(eminem_lyric_the_moster)\n",
+    "print(len(eminem_lyric_the_moster))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get the lyrics for the song \"The Monster\" saved under the artist Rihanna\n",
+    "rihanna_lyric_the_monster = lyrics_df[(lyrics_df[\"ALink\"] == rihanna_alink) & (lyrics_df[\"SName\"] == \"The Monster\")][\"Lyric\"].values[0]\n",
+    "# Print lyrics + number of characters\n",
+    "print(rihanna_lyric_the_monster)\n",
+    "print(len(rihanna_lyric_the_monster))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Compare the sequence ratio between the same song \"The Monster (feat. Rihanna)\" once saved under Eminem and once under Rihanna\n",
+    "SequenceMatcher(None, eminem_lyric_the_moster, rihanna_lyric_the_monster).ratio()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for actual one word songs\n",
+    "lyrics_df[lyrics_df[\"SName\"] == \"Tequila\"]"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.0"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "9ba333f5b88f2c39406c57348eec4dc5739a73c0795bfc96ca59f0f2e4bd3367"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
+
+================
+File: data_exploration/simon_data_exploration.ipynb
+================
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6b922086-445c-45d7-bf0f-2f53dd826626",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "\n",
+    "import matplotlib.pyplot as plt\n",
+    "import scipy.stats as st\n",
+    "\n",
+    "from IPython.core.display import HTML\n",
+    "display(HTML(\"<style>pre { white-space: pre !important; }</style>\"))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9bb23070-6d90-4ae1-bec4-80bb00277d4a",
+   "metadata": {},
+   "source": [
+    "# Load data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f7cd7d32-8cd0-4f6d-8b4a-e3e1b8a8cd3f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# lyrics data path\n",
+    "lyrics_path = \"data/lyrics-data.csv\"\n",
+    "lyrics_pd_df = pd.read_csv(lyrics_path)\n",
+    "\n",
+    "# artists data path\n",
+    "artists_path = \"data/artists-data.csv\"\n",
+    "artists_pd_df = pd.read_csv(artists_path)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2e9831b1-733a-4eb0-8c69-facd8a75c443",
+   "metadata": {},
+   "source": [
+    "## Questions\n",
+    "- Which genre does a song belong to?\n",
+    "- Should we remove artists like \"10 things I hate about you\"?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "553bc426-36da-4320-9db4-3a481e181dd7",
+   "metadata": {},
+   "source": [
+    "## First Look"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d3e0fd90-f9c9-42c1-a023-2a96af13f7d6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def df_overview(df: pd.DataFrame, number_of_lines: int = 10):\n",
+    "    \"\"\"Use this function to generate an overview of a pandas dataframe.\n",
+    "\n",
+    "    :param df: Dataframe to generate overview of\n",
+    "    :type df: pd.DataFrame\n",
+    "    :param number_of_lines: Number of df rows printed, defaults to 10\n",
+    "    :type number_of_lines: int, optional\n",
+    "    \"\"\"\n",
+    "    \n",
+    "    print(\"Info about df:\")\n",
+    "    print(df.info())\n",
+    "    \n",
+    "    print(\"\\n\")\n",
+    "    print(\"#\" * 60)\n",
+    "    print(\"\\n\")\n",
+    "    \n",
+    "    nRow, nCol = df.shape\n",
+    "    print(f\"There are {nRow} rows and {nCol} columns in df.\")\n",
+    "    \n",
+    "    print(\"\\n\")\n",
+    "    print(\"#\" * 60)\n",
+    "    print(\"\\n\")\n",
+    "    \n",
+    "    print(f\"First {number_of_lines} of df:\")\n",
+    "    print(df.head(number_of_lines))\n",
+    "    \n",
+    "    print(\"\\n\")\n",
+    "    print(\"#\" * 60)\n",
+    "    print(\"\\n\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c117e69f-1c20-471d-8006-1a095efc3d89",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Unique languages\n",
+    "lyrics_pd_df.language.unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "91e46e5e-bbb6-45a4-89d2-f81c20734134",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Filter for language en = english\n",
+    "lyrics_en_pd_df = lyrics_pd_df[lyrics_pd_df[\"language\"] == \"en\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4bcddbaa-80ef-497b-a951-1ba41aeebb14",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_overview(lyrics_en_pd_df)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "84405216-c033-4485-8915-0e8e27b84f84",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_overview(artists_pd_df)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "44870158-ab12-47b2-b67c-e8ef5acdfddb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Merge artists and lyrics\n",
+    "songs_pd_df = pd.merge(\n",
+    "    lyrics_en_pd_df, \n",
+    "    artists_pd_df, \n",
+    "    how=\"inner\",\n",
+    "    left_on=\"ALink\",\n",
+    "    right_on=\"Link\"\n",
+    ")\n",
+    "\n",
+    "# Remove duplicate collumn\n",
+    "del songs_pd_df[\"Link\"]\n",
+    "\n",
+    "songs_pd_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6258c614-6d36-4172-bd10-0e82c59880d7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "number_of_artists = songs_pd_df.Artist.nunique()\n",
+    "print(f\"Number of unique artists: {number_of_artists}\")\n",
+    "\n",
+    "# use SLink, since song name could appear twice\n",
+    "# but is more unique with artist name\n",
+    "number_of_songs = songs_pd_df.SLink.nunique()\n",
+    "print(f\"Number of unique songs: {number_of_songs}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b00d9e1e-eb72-474a-ba39-c70aff32bcf8",
+   "metadata": {},
+   "source": [
+    "### Weird Artist names\n",
+    "Interestingly Artists can also be titles of movies"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f51ec03d-8a8f-4206-a460-041cbc1027b3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get mean values per artists\n",
+    "songs_pd_df.groupby(\"Artist\").mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fa014ac5-16ce-441f-b4c1-43d5045eac1f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "songs_pd_df[songs_pd_df[\"Artist\"] == \"10 Things I Hate About You\"].head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bebc6a06-6cbc-4829-a4fd-e199988bc443",
+   "metadata": {},
+   "source": [
+    "### Closer look at Artists"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f18db125-2cff-4277-84db-c6a84b63e256",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "songs_pd_df.groupby(\"Artist\").first().Songs.sort_values(ascending=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b7c39ba9-8224-4483-a876-0b7a9dae6a73",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Index of song count\n",
+    "y = songs_pd_df.groupby(\"Artist\").first().Songs.index.values\n",
+    "# Song count per artist\n",
+    "x = songs_pd_df.groupby(\"Artist\").first().Songs.values\n",
+    "N = len(x)\n",
+    "\n",
+    "# Get bin size\n",
+    "q25, q75 = np.percentile(x, [25, 75])\n",
+    "bin_width = 2 * (q75 - q25) * len(x) ** (-1/3)\n",
+    "bins = round((x.max() - x.min()) / bin_width)\n",
+    "print(\"Freedman–Diaconis number of bins:\", bins)\n",
+    "\n",
+    "# Generate histogram plot with PDF curve\n",
+    "plt.hist(x, density=True, bins=bins, label=\"Data\")\n",
+    "mn, mx = plt.xlim()\n",
+    "plt.xlim(mn, mx)\n",
+    "kde_xs = np.linspace(mn, mx, 300)\n",
+    "kde = st.gaussian_kde(x)\n",
+    "plt.plot(kde_xs, kde.pdf(kde_xs), label=\"PDF\")\n",
+    "plt.legend(loc=\"upper right\")\n",
+    "plt.ylabel(\"Probability\")\n",
+    "plt.xlabel(\"Song counts per artist\")\n",
+    "plt.title(\"Histogram\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "23ed236f-5942-42d9-9193-2c2e8c805136",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig = plt.figure(figsize =(10, 3))\n",
+    " \n",
+    "# Generate box plot\n",
+    "plt.boxplot(x, vert=False)\n",
+    "plt.xlabel(\"Song counts per artist\")\n",
+    "plt.title(\"Song Count per Artist\")\n",
+    "plt.show()\n",
+    "fig.savefig('images/artist_song_boxplot.png', dpi=fig.dpi)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f07fe391-9c34-41bf-b2c0-cce352289fde",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "np.median(x)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0e00ea7d-c714-419e-9774-03a39cc7ec2f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "np.mean(x)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3349848e-7e29-40ca-b911-75bbfd640f1a",
+   "metadata": {},
+   "source": [
+    "### Genres"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "669f5766-6e07-4ce4-a24f-ae8d6bacf71b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "genres_df = songs_pd_df[[\"ALink\", \"Genres\"]]\n",
+    "genres_df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "99a4dc7a-65e3-4f98-b9bb-793aaf763f16",
+   "metadata": {},
+   "source": [
+    "Check for duplicates and remove them. There should be many because of the merge with lyrics."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e08dbb5a-69e1-42b7-be5f-af517270b979",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "genres_df.ALink.value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "45b43d99-3e17-4095-b9ee-e3f97e01a3d0",
+   "metadata": {},
+   "source": [
+    "Lets check one of the duplicate artists."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "91ecfc0f-656a-41da-b75d-0a6e4eae3bd4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "genres_df[genres_df[\"ALink\"] == \"/frank-sinatra/\"].head(2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2af93dbc-e2f5-42a1-b759-78b7fe719495",
+   "metadata": {},
+   "source": [
+    "We can see, that most likely, all Genres are the same for each artist."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7b369c8c-9d58-4f4a-90ca-23790e789caf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "genres_df.sort_values(\"ALink\").duplicated().value_counts()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c78abd26-7f6e-400f-8d19-999dc5a66cdc",
+   "metadata": {},
+   "source": [
+    "Therefore, we only have 2488 unique artist genre combinations. Let's remove the others"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2a05962e-22a1-4d97-a906-1dc173bfe9a6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Keep only unique values for ALink and Genres\n",
+    "genres_en_df = genres_df.drop_duplicates(subset=[\"ALink\", \"Genres\"], keep=\"first\", ignore_index=True).copy()\n",
+    "genres_en_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "da623639-6963-4678-930d-5ad7ba7a60e7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Split genres and add as list\n",
+    "genres_en_df.loc[:, \"Genres\"] = genres_en_df[\"Genres\"].str.split('; ')\n",
+    "genres_en_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8c6deeac-4fac-423c-b714-094238464fd6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Explode genres list, so that each list entry gets it's own row\n",
+    "genres_en_exploded_df = genres_en_df.explode('Genres').copy()\n",
+    "genres_en_exploded_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "611511dd-0ec9-4c72-a4f7-d9bdb403ae79",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "genres_en_exploded_df.Genres.unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ceebee09-5b1a-49bd-89da-995c0e2e0c4d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "unique_genres = genres_en_exploded_df[\"Genres\"].nunique()\n",
+    "print(f\"The dataset contains {unique_genres} unique genres.\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "210bc2d0-8f69-405b-9507-87b8fc2be08b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Index of genre value count\n",
+    "x = genres_en_exploded_df[\"Genres\"].value_counts().index.values\n",
+    "# Genre value count\n",
+    "y = genres_en_exploded_df[\"Genres\"].value_counts().values\n",
+    "\n",
+    "# Generate bar plot\n",
+    "fig = plt.figure(figsize=(30,8))\n",
+    "plt.bar(x, y, align='center', alpha=0.5)\n",
+    "plt.ylabel('Count')\n",
+    "plt.xticks(rotation=90)\n",
+    "plt.title('Total appearance per Genre')\n",
+    "plt.show()\n",
+    "fig.savefig('images/genre_count.png', dpi=fig.dpi)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2c2c1d18-272a-4d82-be29-c9801e549e3a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "top_n = 20\n",
+    "# Index of top n genres value count\n",
+    "x = genres_en_exploded_df[\"Genres\"].value_counts().index.values[0:top_n]\n",
+    "# Top n genres value count\n",
+    "y = genres_en_exploded_df[\"Genres\"].value_counts().values[0:top_n]\n",
+    "\n",
+    "# Generate bar plot\n",
+    "fig = plt.figure(figsize=(10,8))\n",
+    "plt.bar(x, y, align='center', alpha=0.5)\n",
+    "plt.ylabel('Count')\n",
+    "plt.xticks(rotation=90)\n",
+    "plt.title(f'Total appearance per Genre for Top {top_n} Genres')\n",
+    "plt.show()\n",
+    "fig.savefig('images/genre_count_zoomed.png', dpi=fig.dpi)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "dfbb9265-47f2-4a1c-b8f7-5528b5cf169f",
+   "metadata": {},
+   "source": [
+    "Merge Genres with popularity"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e17b6201-bc75-41b7-8f64-f34f7802a6ab",
+   "metadata": {},
+   "source": [
+    "### Popularity"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d120ff3e-e8e8-4a81-b1e4-d43557aa20fd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "songs_pd_df[[\"ALink\", \"Popularity\"]]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2cb30271-bb8d-4112-b2d6-ff8976b06514",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Merge Genres and popularity\n",
+    "genre_popularity_df = pd.merge(\n",
+    "    genres_en_exploded_df, \n",
+    "    songs_pd_df[[\"ALink\", \"Popularity\"]].drop_duplicates(subset=[\"ALink\", \"Popularity\"], keep=\"first\", ignore_index=True), \n",
+    "    how=\"left\",\n",
+    "    on=\"ALink\"\n",
+    ")\n",
+    "\n",
+    "genre_popularity_df.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e3eb13b6-665d-4f0d-aa34-5841dfe51c59",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Groupby genres and calculate mean popularity of each genre\n",
+    "popularity_per_genre_df = genre_popularity_df.groupby(\"Genres\").mean(\"Popularity\").sort_values(\"Popularity\", ascending=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "53f92555-a1b5-4abe-ad9d-2da7a9d4680f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Index of mean genre popularity\n",
+    "x = popularity_per_genre_df.index.values\n",
+    "# Mean genre popularity\n",
+    "y = popularity_per_genre_df.values\n",
+    "\n",
+    "# Generate scatter plot\n",
+    "fig = plt.figure(figsize=(20,30))\n",
+    "plt.xticks(rotation=90)\n",
+    "plt.scatter(y, x)\n",
+    "plt.xlabel(\"Average Popularity\")\n",
+    "plt.ylabel(\"Genre\")\n",
+    "plt.title(\"Average Popularity per Genre\")\n",
+    "plt.show()\n",
+    "fig.savefig('images/popularity_per_genre.png', dpi=fig.dpi)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e80c0f29-5615-4fbb-9d04-c1752dcd9e5e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Groupby artist (ALink) and calculate mean popularity per artist\n",
+    "popularity_per_artist_df = genre_popularity_df.groupby(\"ALink\").mean(\"Popularity\").sort_values(\"Popularity\", ascending=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8a6be0bb-3eb8-43e4-848d-c031194cba79",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "top_n = 100\n",
+    "# Index of top n artist popularity\n",
+    "x = popularity_per_artist_df.index.values[0:top_n]\n",
+    "# Top n artist popularity\n",
+    "y = popularity_per_artist_df.values[0:top_n]\n",
+    "\n",
+    "# Generate scatter plot\n",
+    "fig = plt.figure(figsize=(20,30))\n",
+    "plt.xticks(rotation=0)\n",
+    "plt.scatter(y, x)\n",
+    "plt.ylabel(\"Aritst name\")\n",
+    "plt.xlabel(\"Popularity\")\n",
+    "plt.title(\"Average Popularity per Artist\")\n",
+    "plt.show()\n",
+    "fig.savefig('images/popularity_per_artist.png', dpi=fig.dpi)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.0"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "9ba333f5b88f2c39406c57348eec4dc5739a73c0795bfc96ca59f0f2e4bd3367"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
+
+================
+File: docker-compose.yaml
+================
+version: '3'
+services:
+  elasticsearch:
+    build:
+      context: ./
+      dockerfile: ./elasticsearch/dockerfile
+    container_name: "elasticsearch"
+    networks:
+      - fullstack
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - ./data_exploration/:/opt/data_exploration
+      - ./elasticsearch/:/opt/elasticsearch
+    ports:
+      - 9200:9200
+      - 9300:9300
+  kibana:
+    image: kibana:7.17.7
+    container_name: "kibana"
+    networks:
+      - fullstack
+    volumes:
+      - ./kibana:/opt/
+    ports:
+      - 5601:5601
+  fastapi:
+    build:
+      context: ./
+      dockerfile: ./backend/dockerfile_fastapi
+    container_name: fastapi
+    networks:
+      - fullstack
+    volumes:
+      - type: bind
+        source: ./backend/fastapi
+        target: /opt/fastapi
+    ports:
+      - 8000:8000
+    command: sh -c  "cd /opt/fastapi && uvicorn main:app --host 0.0.0.0 --port 8000 --reload "
+  react:
+    build:
+      context: ./
+      dockerfile: ./frontend/dockerfile_react
+    container_name: react
+    networks:
+      - fullstack
+    ports:
+      - 3000:3000
+    command: sh -c "cd /opt/mood_classification && npm start"
+networks:
+  fullstack:
+    name: text_analytics
+    driver: bridge
+
+================
+File: elasticsearch/create_load_save_es_index.py
+================
+import json
+import os
+import time
+from elasticsearch import helpers
+from elasticsearch import Elasticsearch
+import pandas as pd
+def create_es_index(path_to_csv):
+    if not os.path.isfile(path_to_csv):
+        raise Exception(
+            f"{path_to_csv} not found"
+        )
+    es_host = "http://localhost:9200"
+    es = Elasticsearch(hosts=es_host)
+    index_name = "lyrics_mood_classification"
+    es.indices.create(
+        index=index_name,
+        mappings={
+            "dynamic": "strict",
+            "properties": {
+                "song_name": {"type": "text"},
+                "artist_name": {"type": "text"},
+                "lyrics": {"type": "text"},
+                "mood": {"type": "text"},
+            },
+        },
+    )
+    ground_truth_df = pd.read_csv(path_to_csv)
+    ground_truth_df = ground_truth_df[["SName", "Artist", "Lyric", "Mood"]]
+    df_iter = ground_truth_df.iterrows()
+    new_documents = []
+    for id, document in df_iter:
+        new_documents.append(
+            {
+                "_index": index_name,
+                "_type": "_doc",
+                "_id": f"{id}",
+                "_source": {
+                    "song_name": str(document["SName"]),
+                    "artist_name": str(document["Artist"]),
+                    "lyrics": str(document["Lyric"]),
+                    "mood": str(document["Mood"]),
+                },
+            }
+        )
+    successful_operations, errors = helpers.bulk(es, new_documents)
+    print(f"Successful operations: {successful_operations}")
+    print(f"Errors: {errors}")
+    # wait till documents are saved in elasticsearch
+    while True:
+        if es.count(index=index_name)["count"] < len(ground_truth_df):
+            time.sleep(1)
+            print("Waiting one second for documents to be saved in elasticsearch..")
+            break
+    index_file = os.path.abspath(
+        os.path.join(path_to_csv, "..", f"{index_name}_index.json")
+    )
+    os.system(
+        f"elasticdump --input={es_host}/{index_name} --output={index_file} --type=data"
+    )
+def load_es_index(path):
+    index_name = "lyrics_mood_classification"
+    INDEX_FILE_PATH = path
+    if not os.path.isfile(INDEX_FILE_PATH):
+        raise Exception(f"{INDEX_FILE_PATH}.json not found")
+    es_host = "http://localhost:9200"
+    es = Elasticsearch(hosts=es_host)
+    es.indices.create(
+        index=index_name,
+        mappings={
+            "dynamic": "strict",
+            "properties": {
+                "song_name": {"type": "text"},
+                "artist_name": {"type": "text"},
+                "lyrics": {"type": "text"},
+                "mood": {"type": "text"},
+            },
+        },
+    )
+    new_documents = []
+    with open(INDEX_FILE_PATH, "r") as json_file:
+        for line in json_file:
+            document = json.loads(line)
+            new_documents.append(document)
+    successful_operations, errors = helpers.bulk(es, new_documents)
+    print(f"Successful operations: {successful_operations}")
+    print(f"Errors: {errors}")
+if __name__ == "__main__":
+    from os.path import exists
+    if exists("/opt/elasticsearch/dump.json"):
+        load_es_index("/opt/elasticsearch/dump.json")
+    else:
+        create_es_index("/opt/data_exploration/data/song-data-labels-cleaned-seven-moods.csv")
+
+================
+File: elasticsearch/dockerfile
+================
+FROM elasticsearch:7.17.7
+
+RUN apt update -y && apt upgrade -y
+RUN apt install python3 -y
+RUN apt-get install python3-pip -y
+
+# Copy python scripts and dump if exists
+COPY ./elasticsearch/startup.sh /tmp/startup.sh
+
+# get components for elasticdump
+# update repo because otherwise installation of node/npm requires numerical input which I cannot automate
+RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash - &&  apt update -y && apt install -y nodejs
+RUN npm install elasticdump --global --save
+
+# use this script later to ensure elasticsearch is running 
+RUN chmod 777 /tmp/startup.sh
+RUN chown elasticsearch:elasticsearch /tmp/startup.sh
+
+COPY ./elasticsearch/requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
+Entrypoint  ["/bin/tini", "--", "/tmp/startup.sh"]
+
+================
+File: elasticsearch/startup.sh
+================
+chmod -R 777 /opt/
+chown -R elasticsearch:elasticsearch /opt/
+/bin/tini /usr/local/bin/docker-entrypoint.sh -- &
+/opt/elasticsearch/wait-for-it.sh -t 60 localhost:9200 -- python3 /opt/elasticsearch/create_load_save_es_index.py
+while true; do sleep 100; done
+
+================
+File: elasticsearch/wait-for-it.sh
+================
+WAITFORIT_cmdname=${0
+echoerr() { if [[ $WAITFORIT_QUIET -ne 1 ]]; then echo "$@" 1>&2; fi }
+usage()
+{
+    cat << USAGE >&2
+Usage:
+    $WAITFORIT_cmdname host:port [-s] [-t timeout] [-- command args]
+    -h HOST | --host=HOST       Host or IP under test
+    -p PORT | --port=PORT       TCP port under test
+                                Alternatively, you specify the host and port as host:port
+    -s | --strict               Only execute subcommand if the test succeeds
+    -q | --quiet                Don't output any status messages
+    -t TIMEOUT | --timeout=TIMEOUT
+                                Timeout in seconds, zero for no timeout
+    -- COMMAND ARGS             Execute command with args after the test finishes
+USAGE
+    exit 1
+}
+wait_for()
+{
+    if [[ $WAITFORIT_TIMEOUT -gt 0 ]]; then
+        echoerr "$WAITFORIT_cmdname: waiting $WAITFORIT_TIMEOUT seconds for $WAITFORIT_HOST:$WAITFORIT_PORT"
+    else
+        echoerr "$WAITFORIT_cmdname: waiting for $WAITFORIT_HOST:$WAITFORIT_PORT without a timeout"
+    fi
+    WAITFORIT_start_ts=$(date +%s)
+    while :
+    do
+        if [[ $WAITFORIT_ISBUSY -eq 1 ]]; then
+            nc -z $WAITFORIT_HOST $WAITFORIT_PORT
+            WAITFORIT_result=$?
+        else
+            (echo -n > /dev/tcp/$WAITFORIT_HOST/$WAITFORIT_PORT) >/dev/null 2>&1
+            WAITFORIT_result=$?
+        fi
+        if [[ $WAITFORIT_result -eq 0 ]]; then
+            WAITFORIT_end_ts=$(date +%s)
+            echoerr "$WAITFORIT_cmdname: $WAITFORIT_HOST:$WAITFORIT_PORT is available after $((WAITFORIT_end_ts - WAITFORIT_start_ts)) seconds"
+            break
+        fi
+        sleep 1
+    done
+    return $WAITFORIT_result
+}
+wait_for_wrapper()
+{
+    if [[ $WAITFORIT_QUIET -eq 1 ]]; then
+        timeout $WAITFORIT_BUSYTIMEFLAG $WAITFORIT_TIMEOUT $0 --quiet --child --host=$WAITFORIT_HOST --port=$WAITFORIT_PORT --timeout=$WAITFORIT_TIMEOUT &
+    else
+        timeout $WAITFORIT_BUSYTIMEFLAG $WAITFORIT_TIMEOUT $0 --child --host=$WAITFORIT_HOST --port=$WAITFORIT_PORT --timeout=$WAITFORIT_TIMEOUT &
+    fi
+    WAITFORIT_PID=$!
+    trap "kill -INT -$WAITFORIT_PID" INT
+    wait $WAITFORIT_PID
+    WAITFORIT_RESULT=$?
+    if [[ $WAITFORIT_RESULT -ne 0 ]]; then
+        echoerr "$WAITFORIT_cmdname: timeout occurred after waiting $WAITFORIT_TIMEOUT seconds for $WAITFORIT_HOST:$WAITFORIT_PORT"
+    fi
+    return $WAITFORIT_RESULT
+}
+while [[ $
+do
+    case "$1" in
+        *:* )
+        WAITFORIT_hostport=(${1//:/ })
+        WAITFORIT_HOST=${WAITFORIT_hostport[0]}
+        WAITFORIT_PORT=${WAITFORIT_hostport[1]}
+        shift 1
+        ;;
+        --child)
+        WAITFORIT_CHILD=1
+        shift 1
+        ;;
+        -q | --quiet)
+        WAITFORIT_QUIET=1
+        shift 1
+        ;;
+        -s | --strict)
+        WAITFORIT_STRICT=1
+        shift 1
+        ;;
+        -h)
+        WAITFORIT_HOST="$2"
+        if [[ $WAITFORIT_HOST == "" ]]; then break; fi
+        shift 2
+        ;;
+        --host=*)
+        WAITFORIT_HOST="${1
+        shift 1
+        ;;
+        -p)
+        WAITFORIT_PORT="$2"
+        if [[ $WAITFORIT_PORT == "" ]]; then break; fi
+        shift 2
+        ;;
+        --port=*)
+        WAITFORIT_PORT="${1
+        shift 1
+        ;;
+        -t)
+        WAITFORIT_TIMEOUT="$2"
+        if [[ $WAITFORIT_TIMEOUT == "" ]]; then break; fi
+        shift 2
+        ;;
+        --timeout=*)
+        WAITFORIT_TIMEOUT="${1
+        shift 1
+        ;;
+        --)
+        shift
+        WAITFORIT_CLI=("$@")
+        break
+        ;;
+        --help)
+        usage
+        ;;
+        *)
+        echoerr "Unknown argument: $1"
+        usage
+        ;;
+    esac
+done
+if [[ "$WAITFORIT_HOST" == "" || "$WAITFORIT_PORT" == "" ]]; then
+    echoerr "Error: you need to provide a host and port to test."
+    usage
+fi
+WAITFORIT_TIMEOUT=${WAITFORIT_TIMEOUT:-15}
+WAITFORIT_STRICT=${WAITFORIT_STRICT:-0}
+WAITFORIT_CHILD=${WAITFORIT_CHILD:-0}
+WAITFORIT_QUIET=${WAITFORIT_QUIET:-0}
+# Check to see if timeout is from busybox?
+WAITFORIT_TIMEOUT_PATH=$(type -p timeout)
+WAITFORIT_TIMEOUT_PATH=$(realpath $WAITFORIT_TIMEOUT_PATH 2>/dev/null || readlink -f $WAITFORIT_TIMEOUT_PATH)
+WAITFORIT_BUSYTIMEFLAG=""
+if [[ $WAITFORIT_TIMEOUT_PATH =~ "busybox" ]]; then
+    WAITFORIT_ISBUSY=1
+    if timeout &>/dev/stdout | grep -q -e '-t '; then
+        WAITFORIT_BUSYTIMEFLAG="-t"
+    fi
+else
+    WAITFORIT_ISBUSY=0
+fi
+if [[ $WAITFORIT_CHILD -gt 0 ]]; then
+    wait_for
+    WAITFORIT_RESULT=$?
+    exit $WAITFORIT_RESULT
+else
+    if [[ $WAITFORIT_TIMEOUT -gt 0 ]]; then
+        wait_for_wrapper
+        WAITFORIT_RESULT=$?
+    else
+        wait_for
+        WAITFORIT_RESULT=$?
+    fi
+fi
+if [[ $WAITFORIT_CLI != "" ]]; then
+    if [[ $WAITFORIT_RESULT -ne 0 && $WAITFORIT_STRICT -eq 1 ]]; then
+        echoerr "$WAITFORIT_cmdname: strict mode, refusing to execute subprocess"
+        exit $WAITFORIT_RESULT
+    fi
+    exec "${WAITFORIT_CLI[@]}"
+else
+    exit $WAITFORIT_RESULT
+fi
+
+================
+File: frontend/dockerfile_react
+================
+FROM node:lts-alpine3.16
+
+RUN npm install -g npm
+COPY ./frontend/mood_classification/ /opt/mood_classification
+RUN cd /opt/mood_classification && npm install
+
+================
+File: frontend/mood_classification/src/App.js
+================
+import React from 'react'
+import Main from './components/Main'
+export default function App() {
+  return (
+    <div className='container'>
+      <Main />
+    </div>
+  )
+}
+
+================
+File: frontend/mood_classification/src/components/Main.js
+================
+import React, { useState } from 'react'
+export default function Main() {
+    const [song_name, set_song_name] = useState(null);
+    const [artist_name, set_artist_name] = useState(null);
+    const [wrongInputIsShown, setWrongInputIsShown] = useState(false);
+    const [mood, setMood] = useState(null);
+    const [similar_songs, setSimilarSongs] = useState(null);
+    const [returned_song, setReturnedSong] = useState(null);
+    const [returned_artist, setReturnedArtist] = useState(null);
+    const [songNotFound, setsongNotFound] = useState(null);
+    const [searchState, setSearchState] = useState(false);
+    function getSongName(input_box_input) {
+        set_song_name(input_box_input.target.value)
+    }
+    function getArtistName(input_box_input) {
+        set_artist_name(input_box_input.target.value)
+    }
+    async function postData(url = '', data = {}) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: data
+        })
+        return response.json();
+    }
+    function sendToFastApi(song_name, artist_name) {
+        setWrongInputIsShown(false)
+        setReturnedSong(null)
+        setReturnedArtist(null)
+        setMood(null)
+        setSimilarSongs(null)
+        setsongNotFound(null)
+        setSearchState(true)
+        console.log(searchState)
+        if ((song_name) && (artist_name)) {
+            setWrongInputIsShown(false)
+            console.log("Sending song and artist to fastapi...")
+            console.log(JSON.stringify({ song_name: song_name, artist_name: artist_name }))
+            const response = postData(
+                "http://localhost:8000/search",
+                JSON.stringify({ song_name: song_name, artist_name: artist_name })
+            )
+            console.log(response)
+            response.then(res => {
+                if (res.error === 404) {
+                    setsongNotFound(true)
+                }
+                else {
+                    setReturnedSong(res.Song)
+                    setReturnedArtist(res.Artist)
+                    setMood(res.mood)
+                    setSimilarSongs(res.similar_songs)
+                    setsongNotFound(false)
+                }
+                setSearchState(false)
+            })
+            console.log("Request finished...")
+        } else {
+            setWrongInputIsShown(true)
+            setReturnedSong(null)
+            setReturnedArtist(null)
+            setMood(null)
+            setSimilarSongs(null)
+            setsongNotFound(null)
+            setSearchState(false)
+        }
+    }
+    return (
+        <div id='mainDiv'>
+            <h1 id='mainHeader'>Looking for similar Songs?</h1>
+            <p id='lyricsRequest'>Just give us a song and artist name. We will find songs with a similar mood while you sit back and relax. </p>
+            <div id="searchInput" className="searchInput">
+                <input type="text" name="inputSong" id="inputSong" required spellCheck="false" placeholder='Song Name' onChange={getSongName}></input>
+                <input type="text" name="inputArtist" id="inputArtist" required spellCheck="false" placeholder='Artist Name' onChange={getArtistName}></input>
+            </div>
+            <button id='searchSimilarLyricsButton' name="searchLyrics" onClick={() => sendToFastApi(song_name, artist_name)}>Find Similar Songs</button>
+            {searchState && <p id="output_songs">Searching...</p>}
+            {wrongInputIsShown && <p id="errorMissingInput">Please fill out both song and artist name</p>}
+            {songNotFound && <p id="errorMissingInput">No result for this song and artist combination. Check the input for typos or try another one!</p>}
+            {!songNotFound && mood != null && similar_songs != null && returned_artist != null && returned_song != null && !wrongInputIsShown && <p id="output_songs">Similar songs for '{returned_song}' from '{returned_artist}' with a '{mood}' mood: </p>}
+            {!songNotFound && mood != null && similar_songs != null && returned_artist != null && returned_song != null && !wrongInputIsShown && <p id="output">{Object.keys(similar_songs).map((key) => {
+                return (
+                    <p>Song: {similar_songs[key].Song}, Artist: {similar_songs[key].Artist}, Similarity: {similar_songs[key].Similarity} %</p>
+                );
+            })}</p>}
+        </div >
+    )
+}
+
+================
+File: frontend/mood_classification/src/index.js
+================
+import React from "react"
+import ReactDOM from "react-dom"
+import App from "./App"
+ReactDOM.render(<App />, document.getElementById("root"))
+
+================
+File: LICENSE
+================
+MIT License
+
+Copyright (c) 2022 Simon-0711
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+
+
+================================================================
+End of Codebase
+================================================================

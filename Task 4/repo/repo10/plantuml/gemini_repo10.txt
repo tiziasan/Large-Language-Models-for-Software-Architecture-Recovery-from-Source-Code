@@ -1,0 +1,55 @@
+@startuml
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam handwritten false
+skinparam defaultFontName "Segoe UI"
+
+title High-Level Architecture: Security Posture Collection System
+
+package "Control Plane / Orchestrator" {
+    component "Job Scheduler" as Scheduler <<Python>>
+    component "Workflow Controller" as Controller <<Shell Script>>
+    component "Data Normalizer" as Normalizer <<Python>>
+    
+    note bottom of Scheduler
+        Parses config (scale-clusters.conf)
+        Iterates target clusters
+    end note
+
+    note bottom of Normalizer
+        Splits monolithic JSON into:
+        - Cluster Info
+        - Filesystem Data
+        - Export Data
+    end note
+}
+
+package "Target Infrastructure (IBM Spectrum Scale)" {
+    component "Ephemeral Collector" as Collector <<Python>>
+    interface "Native GPFS Interface" as GPFS_CLI
+    
+    note bottom of Collector
+        security_posture.py
+        (Deployed dynamically via SCP)
+    end note
+}
+
+package "Analytics Platform" {
+    database "Elasticsearch" as ES
+    component "Kibana Dashboard" as Dashboard
+}
+
+' Relationships
+Scheduler -> Controller : Triggers scan per cluster
+Controller --> Collector : 1. Deploys (SCP) & Executes (SSH)
+Collector -> GPFS_CLI : 2. Polls System Config\n(mmlscluster, mmnfs, mmsmb, etc.)
+GPFS_CLI -> Collector : Returns Security Config
+Collector --> Controller : 3. Returns Raw JSON (SCP)
+
+Controller -> Normalizer : 4. Passes Raw JSON
+Normalizer -> Controller : Returns Segmented JSONs
+
+Controller --> ES : 5. Ingests Data (HTTPS REST)
+ES <.. Dashboard : Queries & Visualizes
+
+@enduml

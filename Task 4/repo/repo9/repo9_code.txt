@@ -1,0 +1,1461 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/*.png, **/*.jpg, **/*.jpeg, **/*.gif, **/*.svg, **/*.pdf, **/*.jar, **/*.exe, **/*.dll, **/*.txt, **/*.json, **/*.md, **/*.html, **/*.css, **/*.npy, **/*.pickle, **/*.pb, **/*.index, node_modules/**/*, **/*/LICENSE/**/*, LICENSEHEADER, LICENSE, .github, **/*/test/**/*, data/**/*, build/**/*, dist/**/*, samples/**/*, config/**/*, doc/spec/**/*, gradle/wrapper/**/*, native.handler/**/*, **/*.scss, tests/**/*, **/*/cnn/**/*
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+.gitignore
+extract.js
+graphql.js
+netlify.toml
+quickstarts/go/.gitignore
+quickstarts/go/main-eos.go
+quickstarts/go/pb/graphql.pb.go
+quickstarts/javascript/.gitignore
+quickstarts/javascript/bundler/.gitignore
+quickstarts/javascript/bundler/index.eosio.js
+quickstarts/javascript/bundler/webpack.prod.js
+quickstarts/javascript/node/index.eosio.js
+quickstarts/python/.gitignore
+quickstarts/python/main.py
+static/drawings/general_architecture.plantuml
+static/drawings/render.sh
+static/drawings/search.plantuml
+static/scripts/main.js
+themes/book/.gitignore
+themes/book/assets/search-data.js
+themes/book/LICENSE
+themes/book/static/fonts/roboto-mono-v6-latin-regular.woff
+themes/book/static/fonts/roboto-mono-v6-latin-regular.woff2
+themes/book/static/fonts/roboto-v19-latin-300italic.woff
+themes/book/static/fonts/roboto-v19-latin-300italic.woff2
+themes/book/static/fonts/roboto-v19-latin-700.woff
+themes/book/static/fonts/roboto-v19-latin-700.woff2
+themes/book/static/fonts/roboto-v19-latin-regular.woff
+themes/book/static/fonts/roboto-v19-latin-regular.woff2
+themes/book/static/mermaid.min.js
+themes/book/theme.toml
+tutorials/eos/push-guaranteed/.gitignore
+tutorials/eos/push-guaranteed/.prettierrc
+tutorials/eos/push-guaranteed/index.ts
+
+================================================================
+Files
+================================================================
+
+================
+File: .gitignore
+================
+resources/_gen/*
+node_modules/
+/public
+.idea/*
+.idea
+.DS_Store
+
+# Local Netlify folder
+.netlify
+
+================
+File: extract.js
+================
+const { promisify } = require('util');
+const { resolve, join, extname, dirname } = require('path');
+const fs = require('fs');
+const mkdirp = require('mkdirp');
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
+const readFile = promisify(fs.readFile);
+function isEmpty(obj) {
+  return Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+const foldersToExtract = ['quickstarts', 'tutorials', 'samples'];
+let fileToWrite = {};
+async function getFilePaths(dir) {
+  const subdirs = await readdir(dir);
+  const files = await Promise.all(
+    subdirs.map(async subdir => {
+      const foldersToExclude = ['node_modules', 'public'];
+      if (foldersToExclude.includes(subdir)) return false;
+      const res = resolve(dir, subdir);
+      if ((await stat(res)).isDirectory()) {
+        return getFilePaths(res);
+      }
+      const exts = [
+        '.html',
+        '.css',
+        '.js',
+        '.jsx',
+        '.ts',
+        '.tsx',
+        '.go',
+        '.cpp',
+        '.py',
+        '.graphql'
+      ];
+      if (exts.includes(extname(res))) {
+        return res;
+      }
+      return false;
+    })
+  );
+  return files.reduce((a, f) => (f ? a.concat(f) : a), []);
+}
+async function parseFiles(paths) {
+  await Promise.all(
+    paths.map(async p => {
+      let fileExt = extname(p);
+      let file = await readFile(p, 'utf8');
+      let jsonFilePath = p.replace(
+        /quickstarts.*|tutorials.*|samples.*/,
+        'data/examples.json'
+      );
+      let sectionNumber = 1;
+      while (true) {
+        let extractSectionPattern = new RegExp(
+          `.*CODE:BEGIN:(\\S+${sectionNumber}).*\\n([\\s\\S]*)\\n.*CODE:END:\\1`,
+          'g'
+        );
+        let excludeTagsPattern = new RegExp(
+          '^((?!CODE:BEGIN|CODE:END)[\\s\\S])+$',
+          'gm'
+        );
+        let matches = extractSectionPattern.exec(file);
+        if (!matches || matches.length <= 0) break;
+        let cleanResults = matches[0].match(excludeTagsPattern);
+        let sectionName = matches[1];
+        if (!cleanResults || cleanResults.length <= 0) break;
+        let section = {};
+        section[sectionName] = '';
+        cleanResults.forEach(
+          codeBlock =>
+            (section[sectionName] = section[sectionName].concat(codeBlock))
+        );
+        fileToWrite = { ...fileToWrite, ...section };
+        sectionNumber++;
+      }
+      if (isEmpty(fileToWrite)) return;
+      await mkdirp(dirname(jsonFilePath));
+      fs.writeFile(jsonFilePath, JSON.stringify(fileToWrite, '', 2), err => {
+        if (err) throw err;
+      });
+    })
+  );
+}
+foldersToExtract.forEach(folder => {
+  getFilePaths(join(__dirname, folder))
+    .then(filePaths => parseFiles(filePaths))
+    .catch(e => console.error(e));
+});
+
+================
+File: graphql.js
+================
+const gql = require('graphql-tag');
+const fs = require('fs');
+function processSources(schemaSources, destination) {
+  console.log(`Generating GraphQL schema data from source files:
+${schemaSources.map(path => ` * ${path}`).join('\n')}`);
+  const schema = schemaSources.map(path => fs.readFileSync(path, 'utf-8')).join(' ')
+  const jsonSchema = gql(schema).definitions.map(def => {
+    const { name, description, fields } = def;
+    if (def.kind !== 'ObjectTypeDefinition') return null
+    return {
+      name: name.value,
+      hideChildren: (name.value != "Subscription" && name.value != "Query"),
+      description: description ? description.value : '',
+      fields: fields.map(field => {
+        const { name, type, description, arguments, defaultValue } = field;
+        //console.log("MAMA", JSON.stringify(field))
+        let typeDef = getFieldType(type)
+        return {
+          name: name.value,
+          type: typeDef,
+          description: description ? description.value : '',
+          arguments: arguments.map(arg => {
+            const  { name, type, description, defaultValue } = arg;
+            let typeDef = getFieldType(type, defaultValue)
+            return {
+              name: name.value,
+              type: typeDef,
+              description: description ? description.value : '',
+            }
+          })
+        }
+      })
+    }
+  }).filter(x => !!x);
+  fs.writeFileSync(destination, JSON.stringify(jsonSchema, null, 2));
+}
+// Recursively parses the field name
+function getFieldType(field, defaultValue) {
+  const { type, kind, name } = field;
+  //console.log("BVOOOOOOOOOOOOOO", defaultValue);
+  if (field.kind === 'NonNullType') {
+    if (field.type.kind === 'ListType') {
+      if (field.type.type.kind === 'NonNullType') {
+        if (field.type.type.type.kind === 'NamedType') {
+          return {isList: true, reqList: true, reqType: true, name: field.type.type.type.name.value}
+        } else {
+          throw("unsupported path type:", field.type.type.type.kind)
+        }
+      } else if (field.type.type.kind === 'NamedType') {
+        return {isList: true, reqList: true, name: field.type.type.name.value}
+      } else {
+          throw("unsupported path type:", field.type.type.kind)
+      }
+    } else if (field.type.kind === 'NamedType') {
+      return {reqType: true, name: field.type.name.value}
+    } else {
+      throw("unsupported path type:", field.type.kind)
+    }
+  } else if (field.kind === 'ListType') {
+    if (field.type.kind === 'NonNullType') {
+      if (field.type.type.kind === 'NamedType') {
+        return {isList: true, reqType: true, name: field.type.type.name.value}
+      } else {
+        throw("unsupported path type:", field.type.type.kind)
+      }
+    } else if (field.type.kind === 'NamedType') {
+      return {isList: true, name: field.type.name.value}
+    } else {
+      throw("unsupported path type:", field.type.kind)
+    }
+  } else if (field.kind === 'NamedType') {
+    const out = {name: field.name.value}
+    if (defaultValue !== undefined) {
+      out.default = formatDefaultValue(defaultValue)
+    }
+    return out
+  } else {
+    throw("unsupported path type:", field.kind)
+  }
+}
+function formatDefaultValue(def) {
+  switch (def.kind) {
+  case 'IntValue':
+    return def.value
+  case 'StringValue':
+    return JSON.stringify(def.value)
+  case 'BooleanValue':
+    return def.value
+  case 'EnumValue':
+    return def.value
+  default:
+    throw("unsupported format value:", def.kind)
+  }
+}
+processSources([
+  '../dfuse-eosio/dgraphql/schema/subscription.graphql',
+  '../dfuse-eosio/dgraphql/schema/query.graphql',
+  '../dfuse-eosio/dgraphql/schema/query_alpha.graphql',
+  '../dfuse-eosio/dgraphql/schema/block.graphql',
+  '../dfuse-eosio/dgraphql/schema/search_transaction.graphql',
+  '../dfuse-eosio/dgraphql/schema/accounthist.graphql',
+  '../dfuse-eosio/dgraphql/schema/transactions.graphql',
+  '../dfuse-eosio/dgraphql/schema/blockmeta.graphql',
+  '../dfuse-eosio/dgraphql/schema/tokenmeta.graphql',
+], 'data/eos/graphql.json')
+console.log('Done!')
+
+================
+File: netlify.toml
+================
+# Settings in the [build] context are global and are applied to all contexts
+# unless otherwise overridden by more specific contexts.
+[build]
+  # Directory (relative to root of your repo) that contains the deploy-ready
+  # HTML files and assets generated by the build. If a base directory has
+  # been specified, include it in the publish directory path.
+  publish = "public/"
+
+  # Default build command.
+  command = "npm run extract && hugo --gc --minify"
+
+================
+File: quickstarts/go/.gitignore
+================
+/quickstarts
+
+================
+File: quickstarts/go/main-eos.go
+================
+package main
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"time"
+	pb "github.com/EOS-Nation/dfuse-docs/quickstarts/go/pb"
+	"github.com/tidwall/gjson"
+	"golang.org/x/oauth2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/oauth"
+)
+func getToken(apiKey string) (token string, expiration time.Time, err error) {
+	reqBody := bytes.NewBuffer([]byte(fmt.Sprintf(`{"api_key":"%s"}`, apiKey)))
+	resp, err := http.Post("https://auth.eosnation.io/v1/auth/issue", "application/json", reqBody)
+	if err != nil {
+		err = fmt.Errorf("unable to obtain token: %s", err)
+		return
+	}
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("unable to obtain token, status not 200, got %d: %s", resp.StatusCode, reqBody.String())
+		return
+	}
+	if body, err := ioutil.ReadAll(resp.Body); err == nil {
+		token = gjson.GetBytes(body, "token").String()
+		expiration = time.Unix(gjson.GetBytes(body, "expires_at").Int(), 0)
+	}
+	return
+}
+func createClient(endpoint string) pb.GraphQLClient {
+	dfuseAPIKey := os.Getenv("DFUSE_API_KEY")
+	if dfuseAPIKey == "" {
+		panic("you must specify a DFUSE_API_KEY environment variable")
+	}
+	token, _, err := getToken(dfuseAPIKey)
+	panicIfError(err)
+	credential := oauth.NewOauthAccess(&oauth2.Token{AccessToken: token, TokenType: "Bearer"})
+	transportCreds := credentials.NewClientTLSFromCert(nil, "")
+	conn, err := grpc.Dial(endpoint,
+		grpc.WithPerRPCCredentials(credential),
+		grpc.WithTransportCredentials(transportCreds),
+	)
+	panicIfError(err)
+	return pb.NewGraphQLClient(conn)
+}
+// CODE:END:quickstarts_go_eos_section3
+//
+/// EOSIO
+//
+// CODE:BEGIN:quickstarts_go_eos_section4
+const operationEOS = `subscription {
+  searchTransactionsForward(query:"receiver:eosio.token action:transfer -data.quantity:'0.0001 EOS'") {
+    undo cursor
+    trace { id matchingActions { json } }
+  }
+}`
+type eosioDocument struct {
+	SearchTransactionsForward struct {
+		Cursor string
+		Undo   bool
+		Trace  struct {
+			ID              string
+			MatchingActions []struct {
+				JSON map[string]interface{}
+			}
+		}
+	}
+}
+// CODE:END:quickstarts_go_eos_section4
+// CODE:BEGIN:quickstarts_go_eos_section5
+func streamEOSIO(ctx context.Context) {
+	/* The client can be re-used for all requests, cache it at the appropriate level */
+	client := createClient("eos.dfuse.eosnation.io:9000")
+	executor, err := client.Execute(ctx, &pb.Request{Query: operationEOS})
+	panicIfError(err)
+	for {
+		resp, err := executor.Recv()
+		panicIfError(err)
+		if len(resp.Errors) > 0 {
+			for _, err := range resp.Errors {
+				fmt.Printf("Request failed: %s\n", err)
+			}
+			continue
+		}
+		document := &eosioDocument{}
+		err = json.Unmarshal([]byte(resp.Data), document)
+		panicIfError(err)
+		result := document.SearchTransactionsForward
+		reverted := ""
+		if result.Undo {
+			reverted = " REVERTED"
+		}
+		for _, action := range result.Trace.MatchingActions {
+			data := action.JSON
+			fmt.Printf("Transfer %s -> %s [%s]%s\n", data["from"], data["to"], data["quantity"], reverted)
+		}
+	}
+}
+func main() {
+	proto := ""
+	if len(os.Args) >= 2 {
+		proto = os.Args[1]
+	}
+	switch proto {
+	default:
+		streamEOSIO(context.Background())
+	}
+}
+func panicIfError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+================
+File: quickstarts/go/pb/graphql.pb.go
+================
+package pbgraphql
+import (
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	grpc "google.golang.org/grpc"
+	math "math"
+)
+var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
+const _ = proto.ProtoPackageIsVersion3
+type Request struct {
+	Query                string          `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Variables            *_struct.Struct `protobuf:"bytes,2,opt,name=variables,proto3" json:"variables,omitempty"`
+	OperationName        string          `protobuf:"bytes,3,opt,name=operationName,proto3" json:"operationName,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+func (m *Request) Reset()         { *m = Request{} }
+func (m *Request) String() string { return proto.CompactTextString(m) }
+func (*Request) ProtoMessage()    {}
+func (*Request) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1746f99f7140fb04, []int{0}
+}
+func (m *Request) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Request.Unmarshal(m, b)
+}
+func (m *Request) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Request.Marshal(b, m, deterministic)
+}
+func (m *Request) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Request.Merge(m, src)
+}
+func (m *Request) XXX_Size() int {
+	return xxx_messageInfo_Request.Size(m)
+}
+func (m *Request) XXX_DiscardUnknown() {
+	xxx_messageInfo_Request.DiscardUnknown(m)
+}
+var xxx_messageInfo_Request proto.InternalMessageInfo
+func (m *Request) GetQuery() string {
+	if m != nil {
+		return m.Query
+	}
+	return ""
+}
+func (m *Request) GetVariables() *_struct.Struct {
+	if m != nil {
+		return m.Variables
+	}
+	return nil
+}
+func (m *Request) GetOperationName() string {
+	if m != nil {
+		return m.OperationName
+	}
+	return ""
+}
+type Response struct {
+	Data                 string   `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Errors               []*Error `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+func (m *Response) Reset()         { *m = Response{} }
+func (m *Response) String() string { return proto.CompactTextString(m) }
+func (*Response) ProtoMessage()    {}
+func (*Response) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1746f99f7140fb04, []int{1}
+}
+func (m *Response) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Response.Unmarshal(m, b)
+}
+func (m *Response) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Response.Marshal(b, m, deterministic)
+}
+func (m *Response) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Response.Merge(m, src)
+}
+func (m *Response) XXX_Size() int {
+	return xxx_messageInfo_Response.Size(m)
+}
+func (m *Response) XXX_DiscardUnknown() {
+	xxx_messageInfo_Response.DiscardUnknown(m)
+}
+var xxx_messageInfo_Response proto.InternalMessageInfo
+func (m *Response) GetData() string {
+	if m != nil {
+		return m.Data
+	}
+	return ""
+}
+func (m *Response) GetErrors() []*Error {
+	if m != nil {
+		return m.Errors
+	}
+	return nil
+}
+// GraphQL Error
+type Error struct {
+	// Description of the error intended for the developer.
+	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	// The source location for the error.
+	Locations []*SourceLocation `protobuf:"bytes,2,rep,name=locations,proto3" json:"locations,omitempty"`
+	// Path to the `null` value justified by this error.
+	Path *_struct.ListValue `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	Extensions           *_struct.Struct `protobuf:"bytes,4,opt,name=extensions,proto3" json:"extensions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+func (m *Error) Reset()         { *m = Error{} }
+func (m *Error) String() string { return proto.CompactTextString(m) }
+func (*Error) ProtoMessage()    {}
+func (*Error) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1746f99f7140fb04, []int{2}
+}
+func (m *Error) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Error.Unmarshal(m, b)
+}
+func (m *Error) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Error.Marshal(b, m, deterministic)
+}
+func (m *Error) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Error.Merge(m, src)
+}
+func (m *Error) XXX_Size() int {
+	return xxx_messageInfo_Error.Size(m)
+}
+func (m *Error) XXX_DiscardUnknown() {
+	xxx_messageInfo_Error.DiscardUnknown(m)
+}
+var xxx_messageInfo_Error proto.InternalMessageInfo
+func (m *Error) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+func (m *Error) GetLocations() []*SourceLocation {
+	if m != nil {
+		return m.Locations
+	}
+	return nil
+}
+func (m *Error) GetPath() *_struct.ListValue {
+	if m != nil {
+		return m.Path
+	}
+	return nil
+}
+func (m *Error) GetExtensions() *_struct.Struct {
+	if m != nil {
+		return m.Extensions
+	}
+	return nil
+}
+// The source location of an error.
+type SourceLocation struct {
+	// The line the error occurred at.
+	Line int32 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
+	// The column the error occurred at.
+	Column               int32    `protobuf:"varint,2,opt,name=column,proto3" json:"column,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+func (m *SourceLocation) Reset()         { *m = SourceLocation{} }
+func (m *SourceLocation) String() string { return proto.CompactTextString(m) }
+func (*SourceLocation) ProtoMessage()    {}
+func (*SourceLocation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1746f99f7140fb04, []int{3}
+}
+func (m *SourceLocation) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SourceLocation.Unmarshal(m, b)
+}
+func (m *SourceLocation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SourceLocation.Marshal(b, m, deterministic)
+}
+func (m *SourceLocation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SourceLocation.Merge(m, src)
+}
+func (m *SourceLocation) XXX_Size() int {
+	return xxx_messageInfo_SourceLocation.Size(m)
+}
+func (m *SourceLocation) XXX_DiscardUnknown() {
+	xxx_messageInfo_SourceLocation.DiscardUnknown(m)
+}
+var xxx_messageInfo_SourceLocation proto.InternalMessageInfo
+func (m *SourceLocation) GetLine() int32 {
+	if m != nil {
+		return m.Line
+	}
+	return 0
+}
+func (m *SourceLocation) GetColumn() int32 {
+	if m != nil {
+		return m.Column
+	}
+	return 0
+}
+func init() {
+	proto.RegisterType((*Request)(nil), "dfuse.eosio.v1.Request")
+	proto.RegisterType((*Response)(nil), "dfuse.eosio.v1.Response")
+	proto.RegisterType((*Error)(nil), "dfuse.eosio.v1.Error")
+	proto.RegisterType((*SourceLocation)(nil), "dfuse.eosio.v1.SourceLocation")
+}
+func init() { proto.RegisterFile("lib/lib.proto", fileDescriptor_1746f99f7140fb04) }
+var fileDescriptor_1746f99f7140fb04 = []byte{
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x52, 0x4d, 0xcb, 0xd3, 0x40,
+	0x10, 0x36, 0xb6, 0x69, 0xcc, 0x04, 0x7b, 0x58, 0xac, 0x0d, 0x45, 0xa4, 0x04, 0x0f, 0xbd, 0xb8,
+	0xd5, 0x88, 0x78, 0xe9, 0x41, 0x84, 0xe2, 0xc1, 0x2a, 0xb8, 0x05, 0x0f, 0xde, 0x36, 0xe9, 0x34,
+	0x0d, 0xa4, 0xd9, 0x74, 0x3f, 0x4a, 0x05, 0x7f, 0xa0, 0x3f, 0x4b, 0xb2, 0xd9, 0xd2, 0xb7, 0x2d,
+	0xbc, 0xa7, 0x9d, 0x8f, 0x67, 0x9f, 0x99, 0x67, 0x66, 0x60, 0x54, 0x48, 0xde, 0xec, 0x0e, 0xd5,
+	0xdc, 0xbd, 0xb4, 0x91, 0x42, 0x0b, 0x32, 0xdc, 0x6c, 0x8d, 0x42, 0x8a, 0x42, 0x95, 0x82, 0x1e,
+	0xdf, 0x4f, 0x5e, 0x15, 0x42, 0x14, 0x15, 0xce, 0x6d, 0x36, 0x33, 0xdb, 0xb9, 0xd2, 0xd2, 0xe4,
+	0xba, 0x43, 0x27, 0x7f, 0x21, 0x60, 0x78, 0x30, 0xa8, 0x34, 0x79, 0x01, 0xfe, 0xc1, 0xa0, 0xfc,
+	0x13, 0x7b, 0x53, 0x6f, 0x16, 0xb2, 0xce, 0x21, 0x1f, 0x21, 0x3c, 0x72, 0x59, 0xf2, 0xac, 0x42,
+	0x15, 0x3f, 0x9d, 0x7a, 0xb3, 0x28, 0x1d, 0xd3, 0x8e, 0x92, 0x9e, 0x29, 0xe9, 0xda, 0x52, 0xb2,
+	0x0b, 0x92, 0xbc, 0x81, 0xe7, 0xa2, 0x41, 0xc9, 0x75, 0x29, 0xea, 0x1f, 0x7c, 0x8f, 0x71, 0xcf,
+	0x92, 0x5e, 0x07, 0x93, 0xef, 0xf0, 0x8c, 0xa1, 0x6a, 0x44, 0xad, 0x90, 0x10, 0xe8, 0x6f, 0xb8,
+	0xe6, 0xae, 0xba, 0xb5, 0xc9, 0x5b, 0x18, 0xa0, 0x94, 0x42, 0xb6, 0x95, 0x7b, 0xb3, 0x28, 0x1d,
+	0xd1, 0x6b, 0x71, 0x74, 0xd9, 0x66, 0x99, 0x03, 0x25, 0xff, 0x3c, 0xf0, 0x6d, 0x84, 0xc4, 0x10,
+	0xec, 0x51, 0x29, 0x5e, 0xa0, 0xe3, 0x3b, 0xbb, 0x64, 0x01, 0x61, 0x25, 0x72, 0xdb, 0xc2, 0x99,
+	0xf5, 0xf5, 0x2d, 0xeb, 0x5a, 0x18, 0x99, 0xe3, 0xca, 0xc1, 0xd8, 0xe5, 0x03, 0xa1, 0xd0, 0x6f,
+	0xb8, 0xde, 0x59, 0x35, 0x51, 0x3a, 0xb9, 0x1b, 0xc4, 0xaa, 0x54, 0xfa, 0x17, 0xaf, 0x0c, 0x32,
+	0x8b, 0x23, 0x9f, 0x00, 0xf0, 0xa4, 0xb1, 0x56, 0xb6, 0x5c, 0xff, 0xf1, 0xf1, 0x3d, 0x80, 0x26,
+	0x0b, 0x18, 0x5e, 0x77, 0xd1, 0xce, 0xa7, 0x2a, 0xeb, 0x4e, 0x8f, 0xcf, 0xac, 0x4d, 0x5e, 0xc2,
+	0x20, 0x17, 0x95, 0xd9, 0xd7, 0x76, 0x33, 0x3e, 0x73, 0x5e, 0xfa, 0x0d, 0x82, 0xaf, 0xed, 0x51,
+	0xfc, 0x5c, 0x91, 0xcf, 0x10, 0x2c, 0x4f, 0x98, 0x1b, 0x8d, 0x64, 0x7c, 0xab, 0xd3, 0x6d, 0x7e,
+	0x12, 0xdf, 0x27, 0xba, 0xa5, 0x24, 0x4f, 0xde, 0x79, 0x5f, 0xa2, 0xdf, 0x61, 0x93, 0xb9, 0x1b,
+	0xcb, 0x06, 0xb6, 0xe9, 0x0f, 0xff, 0x03, 0x00, 0x00, 0xff, 0xff, 0x38, 0x11, 0xe1, 0x33, 0x7d,
+	0x02, 0x00, 0x00,
+}
+var _ context.Context
+var _ grpc.ClientConn
+const _ = grpc.SupportPackageIsVersion4
+type GraphQLClient interface {
+	Execute(ctx context.Context, in *Request, opts ...grpc.CallOption) (GraphQL_ExecuteClient, error)
+}
+type graphQLClient struct {
+	cc *grpc.ClientConn
+}
+func NewGraphQLClient(cc *grpc.ClientConn) GraphQLClient {
+	return &graphQLClient{cc}
+}
+func (c *graphQLClient) Execute(ctx context.Context, in *Request, opts ...grpc.CallOption) (GraphQL_ExecuteClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_GraphQL_serviceDesc.Streams[0], "/dfuse.graphql.v1.GraphQL/Execute", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &graphQLExecuteClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+type GraphQL_ExecuteClient interface {
+	Recv() (*Response, error)
+	grpc.ClientStream
+}
+type graphQLExecuteClient struct {
+	grpc.ClientStream
+}
+func (x *graphQLExecuteClient) Recv() (*Response, error) {
+	m := new(Response)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+type GraphQLServer interface {
+	Execute(*Request, GraphQL_ExecuteServer) error
+}
+func RegisterGraphQLServer(s *grpc.Server, srv GraphQLServer) {
+	s.RegisterService(&_GraphQL_serviceDesc, srv)
+}
+func _GraphQL_Execute_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Request)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GraphQLServer).Execute(m, &graphQLExecuteServer{stream})
+}
+type GraphQL_ExecuteServer interface {
+	Send(*Response) error
+	grpc.ServerStream
+}
+type graphQLExecuteServer struct {
+	grpc.ServerStream
+}
+func (x *graphQLExecuteServer) Send(m *Response) error {
+	return x.ServerStream.SendMsg(m)
+}
+var _GraphQL_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "dfuse.graphql.v1.GraphQL",
+	HandlerType: (*GraphQLServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Execute",
+			Handler:       _GraphQL_Execute_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "lib/lib.proto",
+}
+
+================
+File: quickstarts/javascript/.gitignore
+================
+node_modules
+
+================
+File: quickstarts/javascript/bundler/.gitignore
+================
+/bundle.js
+/bundle.*.js
+
+================
+File: quickstarts/javascript/bundler/index.eosio.js
+================
+import { createDfuseClient } from "@dfuse/client"
+const client = createDfuseClient({
+  apiKey: process.env.DFUSE_API_KEY,
+  network: "eos.dfuse.eosnation.io",
+})
+const operation = `subscription($cursor: String!) {
+  searchTransactionsForward(query:"receiver:eosio.token action:transfer -data.quantity:'0.0001 EOS'", cursor: $cursor) {
+    undo cursor
+    trace { id matchingActions { json } }
+  }
+}`
+async function main() {
+  const stream = await client.graphql(operation, (message) => {
+    if (message.type === "data") {
+      const { undo, cursor, trace: { id, matchingActions }} = message.data.searchTransactionsForward
+      matchingActions.forEach(({ json: { from, to, quantity } }) => {
+        const paragraphNode = document.createElement("li")
+        paragraphNode.innerText = `Transfer ${from} -> ${to} [${quantity}]${undo ? " REVERTED" : ""}`
+        document.body.prepend(paragraphNode)
+      })
+      stream.mark({ cursor })
+    }
+    if (message.type === "error") {
+      const { errors, terminal } = message
+      const paragraphNode = document.createElement("li")
+      paragraphNode.innerText = `An error occurred ${JSON.stringify({ errors, terminal })}`
+      document.body.prepend(paragraphNode)
+    }
+    if (message.type === "complete") {
+        const paragraphNode = document.createElement("li")
+        paragraphNode.innerText = "Completed"
+        document.body.prepend(paragraphNode)
+    }
+  })
+  await stream.join()
+  await client.release()
+}
+main().catch((error) => document.body.innerHTML = `<p>${error}</p>`)
+
+================
+File: quickstarts/javascript/bundler/webpack.prod.js
+================
+const { EnvironmentPlugin } = require('webpack')
+module.exports = env => ({
+  mode: 'production',
+  entry: `./index.${env.chainId}.js`,
+  output: {
+    path: __dirname,
+    filename: `bundle.${env.chainId}.js`,
+  },
+  plugins: [
+    new EnvironmentPlugin(['DFUSE_API_KEY']),
+  ]
+})
+
+================
+File: quickstarts/javascript/node/index.eosio.js
+================
+global.fetch = require('node-fetch');
+global.WebSocket = require('ws');
+const { createDfuseClient } = require('@dfuse/client');
+const client = createDfuseClient({
+  apiKey: process.env.DFUSE_API_KEY,
+  network: 'eos.dfuse.eosnation.io'
+});
+const operation = `subscription($cursor: String!) {
+  searchTransactionsForward(query:"receiver:eosio.token action:transfer -data.quantity:'0.0001 EOS'", cursor: $cursor) {
+    undo cursor
+    trace { id matchingActions { json } }
+  }
+}`;
+async function main() {
+  const stream = await client.graphql(operation, message => {
+    if (message.type === 'data') {
+      const {
+        undo,
+        cursor,
+        trace: { id, matchingActions }
+      } = message.data.searchTransactionsForward;
+      matchingActions.forEach(({ json: { from, to, quantity } }) => {
+        console.log(
+          `Transfer ${from} -> ${to} [${quantity}]${undo ? ' REVERTED' : ''}`
+        );
+      });
+      stream.mark({ cursor });
+    }
+    if (message.type === 'error') {
+      console.log('An error occurred', message.errors, message.terminal);
+    }
+    if (message.type === 'complete') {
+      console.log('Completed');
+    }
+  });
+  await stream.join();
+  await client.release();
+}
+main().catch(error => console.log('Unexpected error', error));
+
+================
+File: quickstarts/python/.gitignore
+================
+*.pyc
+
+================
+File: quickstarts/python/main.py
+================
+try:
+    from http.client import HTTPSConnection
+except ImportError:
+    from httplib import HTTPSConnection
+import grpc
+import json
+import os
+import ssl
+import sys
+from graphql import graphql_pb2_grpc
+from graphql.graphql_pb2 import Request
+def get_token(api_key):
+    connection = HTTPSConnection("auth.eosnation.io")
+    connection.request('POST', '/v1/auth/issue', json.dumps({"api_key": api_key}), {'Content-type': 'application/json'})
+    response = connection.getresponse()
+    if response.status != 200:
+        raise Exception(" Status: %s reason: %s" % (response.status, response.reason))
+    token = json.loads(response.read().decode())['token']
+    connection.close()
+    return token
+def create_client(endpoint):
+    dfuse_api_key = os.environ.get("DFUSE_API_KEY")
+    if dfuse_api_key == None:
+        raise Exception("you must specify a DFUSE_API_KEY environment variable")
+    channel = grpc.secure_channel(endpoint,
+        credentials = grpc.composite_channel_credentials(
+            grpc.ssl_channel_credentials(),
+            grpc.access_token_call_credentials(get_token(dfuse_api_key))
+    ))
+    return graphql_pb2_grpc.GraphQLStub(channel)
+
+================
+File: static/drawings/general_architecture.plantuml
+================
+@startuml
+
+frame mindreaders {
+  node "mindreader 1 + nodeos" as mindreader1
+  node "mindreader 2 + nodeos" as mindreader2
+}
+
+frame relayers {
+  node relayer1
+  node relayer2
+}
+
+node eosq
+node eosws
+node dgraphql
+
+node merger
+note left of merger
+  reads one-block files
+  produces 100-blocks files,
+  including all perceived forks
+end note
+
+node search
+
+node "trxdb-loader" as trxdbLoader
+node statedb
+
+database "Key/Value Store" as kvstore
+note right of kvstore
+  Bigtable (GCP hosted)
+  TiKV (on prem) or
+  Badger (in-process)
+end note
+
+mindreader1 <-- relayer1
+mindreader1 <-- relayer2 : gRPC
+mindreader2 <-- relayer1
+mindreader2 <-- relayer2
+
+mindreader1 .> merger : one-block files
+mindreader2 .> merger
+
+database "Object Store" as s3
+merger --> s3
+note left of s3
+  Through **dstore** package
+  * AWS S3
+  * Google Storage
+  * Azure Blob File Storage
+  * Local disk
+end note
+
+
+dgraphql <-- eosq
+relayer1 <-- eosws
+eosws -> search : gRPC
+relayer1 <-- search : gRPC
+search <-- dgraphql
+dgraphql -> kvstore
+
+relayer1 <-- statedb
+relayer1 <-- trxdbLoader
+
+statedb --> kvstore
+trxdbLoader --> kvstore
+
+actor user
+
+eosws <-- user
+eosq <-- user
+dgraphql <-- user
+
+@enduml
+
+================
+File: static/drawings/render.sh
+================
+plantuml -tpng general_architecture.plantuml
+plantuml -tpng search.plantuml
+
+================
+File: static/drawings/search.plantuml
+================
+@startuml
+
+node "relayer 1, relayer 2" as relayers
+node "router 1, router 2" as routers
+node "archive 1, archive 2" as archives
+node "live 1, live 2" as lives
+
+node indexer
+node forkresolver
+node "dmesh (etcd)" as dmesh
+
+indexer --> archives : via Object Store
+
+dmesh <. archives
+dmesh <. lives
+dmesh <. routers
+
+forkresolver <-- routers
+archives <-- routers
+lives <-- routers
+
+relayers <-- indexer
+relayers <-- lives   : gRPC
+
+
+actor user
+
+routers --> user
+
+@enduml
+
+================
+File: static/scripts/main.js
+================
+function addCopyButtons(clipboard) {
+  document.querySelectorAll('.book-tabs pre > code').forEach(function (codeBlock) {
+    var button = document.createElement('button');
+    button.className = 'copy-code-button';
+    button.type = 'button';
+    button.innerText = 'Copy';
+    button.addEventListener('click', function () {
+      clipboard.writeText(codeBlock.innerText).then(function () {
+        button.blur();
+        button.innerText = 'Copied!';
+        setTimeout(function () {
+            button.innerText = 'Copy';
+        }, 2000);
+      }, function (error) {
+        button.innerText = 'Error';
+      });
+    });
+    var pre = codeBlock.parentNode;
+    if (pre.parentNode.classList.contains('highlight')) {
+        var highlight = pre.parentNode;
+        highlight.parentNode.insertBefore(button, highlight);
+    } else {
+      pre.parentNode.insertBefore(button, pre);
+    }
+  });
+}
+if (navigator && navigator.clipboard) {
+  addCopyButtons(navigator.clipboard);
+}
+const redirectMap = {
+  "/": [
+    "/#introduction",
+    "/#resources",
+    "/#release-notes",
+    '/#type-Transaction',
+  ],
+  "/guides/getting-started/": ["/#getting-started"],
+  "/eosio/public-apis/getting-started/with-javascript/": ["/#get-started-dfuse-client-js"],
+  "/eosio/public-apis/getting-started/with-python/": ["/#get-started-graphql-over-grpc-python"],
+  "/eosio/public-apis/getting-started/with-go/": ["/#get-started-graphql-over-grpc-grpcurl"],
+  "/eosio/public-apis/getting-started/with-other-languages/": ["/#get-started-other-languages"],
+  "/guides/core-concepts/authentication/": [
+    "/#authentication",
+    "/#issuing-a-short-lived-jwt",
+    "/#key-types--rate-limiting",
+    "/#rest-authentication",
+    "/#websocket-authentication",
+    "/#graphql-authentication",
+    "/#graphql-over-grpc-authentication",
+  ],
+  "/eosio/public-apis/reference/graphql/": [
+    "/#queries",
+    "/#subscriptions",
+    "/#graphql",
+    "/#getting-started-with-graphql",
+    "/#paginated-queries",
+    "/#navigating-forks-searching-graphql",
+    "/#graphql-api-reference",
+  ],
+  "/guides/core-concepts/graphql/": [
+    "/#transports",
+    "/#graphql-over-rest",
+    "/#apollo-subscription-transport",
+    "/#graphql-over-grpc",
+    "/#searching-through-graphql",
+    "/#graphql-sample-queries",
+    "/#graphql-over-grpc-grpcurl",
+  ],
+  "/eosio/public-apis/tutorials/": ["/#get-started-tutorials"],
+  "/eosio/public-apis/reference/endpoints/": ["/#endpoints"],
+  "/eosio/public-apis/reference/endpoints/": [
+    "/#eosio---mainnet",
+    "/#eosio---cryptokylin",
+    "/#eosio---testnet",
+  ],
+  "/eosio/public-apis/reference/websocket/introduction": [
+    "/#websocket",
+    "/#websocket-request-types",
+  ],
+  "/eosio/public-apis/reference/websocket/request-message-format/": ["/#websocket-request-message-format"],
+  "/eosio/public-apis/reference/websocket/never-missing-a-beat/": ["/#websocket-never-miss-a-beat"],
+  "/eosio/public-apis/reference/websocket/navigating-forks/": ["/#websocket-navigating-forks"],
+  "/eosio/public-apis/reference/websocket/req-get-action-traces/": ["/#websocket-get-action-traces"],
+  "/eosio/public-apis/reference/websocket/req-get-transaction-lifecycle/": ["/#websocket-get-transaction-lifecycle"],
+  "/eosio/public-apis/reference/websocket/req-get-table-rows/": ["/#websocket-get-table-rows"],
+  "/eosio/public-apis/reference/websocket/req-get-head-info/": ["/#websocket-get-head-info"],
+  "/eosio/public-apis/reference/websocket/req-unlisten/": ["/#websocket-req-unlisten"],
+  "/eosio/public-apis/reference/websocket/req-ping/": ["/#websocket-req-ping"],
+  "/eosio/public-apis/reference/websocket/responses/": [
+    "/#websocket-responses",
+    "/#websocket-resp-listening",
+    "/#websocket-resp-progress",
+    "/#websocket-resp-error",
+  ],
+  "/reference/": [
+    "/#rest-api",
+    "/#types",
+  ],
+  "/eosio/public-apis/reference/rest/auth-issue-intro/": ["/#post-v1-auth-issue"],
+  "/eosio/public-apis/reference/rest/block-id-by-time/": [
+    "/#rest-get-v0-block_id-by_time",
+    "/#rest-api-get-v0-block_id-by_time",
+  ],
+  "/eosio/public-apis/reference/rest/fetch-transaction/": [
+    "/#rest-get-v0-fetch-transaction",
+    "/#rest-api-get-v0-transaction_id",
+  ],
+  "/eosio/public-apis/reference/rest/push-transaction/": [
+    "/#span-classpostpostspan-pushtransaction",
+    "/#rest-api-post-v1-push-transaction",
+  ],
+  "/eosio/public-apis/reference/rest/search-transactions/": [
+    "/#rest-get-v0-search-transactions",
+    "/#rest-api-get-v0-search-transactions",
+    "/#ref-search-pagination",
+  ],
+  "/eosio/public-apis/reference/rest/state-abi/": [
+    "/#rest-get-v0-state-abi",
+    "/#rest-api-get-v0-state-abi",
+  ],
+  "/eosio/public-apis/reference/rest/state-abi-decode/": [
+    "/#rest-get-v0-state-abi-decode",
+    "/#rest-api-get-v0-state-abi-decode",
+  ],
+  "/eosio/public-apis/reference/rest/state-key-accounts/": ["/#rest-get-v0-state-key-accounts"],
+  "/eosio/public-apis/reference/rest/state-permission-links/": [
+    "/#rest-get-v0-state-permission_links",
+    "/#rest-api-get-v0-state-permission_links",
+  ],
+  "/eosio/public-apis/reference/rest/state-table/": [
+    "/#rest-get-v0-state-table",
+    "/#rest-api-get-v0-state-table",
+    "/#state-table-KeyType",
+  ],
+  "/eosio/public-apis/reference/rest/state-table-row/": [
+    "/#rest-get-v0-state-table-row",
+    "/#type-state-TableRow",
+  ],
+  "/eosio/public-apis/reference/rest/state-table-scopes/": [
+    "/#rest-get-v0-state-table-scopes",
+    "/#rest-api-get-v0-state-table-scopes",
+  ],
+  "/eosio/public-apis/reference/rest/state-tables-accounts/": [
+    "/#rest-get-v0-state-tables-accounts",
+    "/#rest-api-get-v0-state-tables-accounts",
+  ],
+  "/eosio/public-apis/reference/rest/state-tables-scopes/": ["/#rest-get-v0-state-tables-scopes"],
+  "/eosio/public-apis/reference/rest/errors/": ["/#rest-errors"],
+  "/eosio/public-apis/reference/search-terms/": [
+    "/#search",
+    "/#dfuse-query-language",
+    "/#ref-search-query-specs",
+    "/#ref-query-language",
+  ],
+  "/eosio/public-apis/reference/dfuse-events/": [
+    "/#dfuse-events",
+    "/#dfuse-events-indexing-limits",
+  ],
+  "/eosio/public-apis/reference/types/name": [
+    "/#type-Name",
+    "/#type-name",
+  ],
+  "/eosio/public-apis/reference/types/accountname": ["/#type-AccountName"],
+  "/eosio/public-apis/reference/types/actionname": ["/#type-ActionName"],
+  "/eosio/public-apis/reference/types/permissionname": ["/#type-PermissionName"],
+  "/eosio/public-apis/reference/types/tablename": ["/#type-TableName"],
+  "/eosio/public-apis/reference/types/publickey": ["/#type-PublicKey"],
+  "/eosio/public-apis/reference/types/tablesnapshotresponse": ["/#type-TableSnapshotResponse"],
+  "/eosio/public-apis/reference/types/tablerows": ["/#type-TableRows"],
+  "/eosio/public-apis/reference/types/tabledeltaresponse": ["/#type-TableDeltaResponse"],
+  "/eosio/public-apis/reference/types/tabledelta": ["/#type-TableDelta"],
+  "/eosio/public-apis/reference/types/stateresponse": ["/#type-StateResponse"],
+  "/eosio/public-apis/reference/types/statetablerowresponse": ["/#type-StateTableRowResponse"],
+  "/eosio/public-apis/reference/types/multistateresponse": ["/#type-MultiStateResponse"],
+  "/eosio/public-apis/reference/types/actiontrace": ["/#type-ActionTrace"],
+  "/eosio/public-apis/reference/types/creationtree": ["/#type-CreationTree"],
+  "/eosio/public-apis/reference/types/creationtreenode": ["/#type-CreationTreeNode"],
+  "/eosio/public-apis/reference/types/dbop": ["/#type-DBOp"],
+  "/eosio/public-apis/reference/types/dbrow": ["/#type-DBRow"],
+  "/eosio/public-apis/reference/types/dtrxop": [
+    "/#type-DTrxOp",
+    "/#type-DTrxOps",
+  ],
+  "/eosio/public-apis/reference/types/extdtrxop": ["/#type-ExtDTrxOp"],
+  "/eosio/public-apis/reference/types/ramop": ["/#type-RAMOp"],
+  "/eosio/public-apis/reference/types/tableop": ["/#type-TableOp"],
+  "/eosio/public-apis/reference/types/searchtransactionsresponse": ["/#type-SearchTransactionsResponse"],
+  "/eosio/public-apis/reference/types/searchtransactionsrow": ["/#type-SearchTransactionsRow"],
+  "/eosio/public-apis/reference/types/transactionlifecycleresponse": ["/#type-TransactionLifecycleResponse"],
+  "/eosio/public-apis/reference/types/transactionlifecycle": ["/#type-TransactionLifecycle"],
+  "/eosio/public-apis/reference/types/transactiontrace": ["/#type-TransactionTrace"],
+  "/eosio/public-apis/reference/types/headinfo": ["/#type-HeadInfo"],
+  "/eosio/public-apis/reference/types/linkedpermission": ["/#type-state-LinkedPermission"],
+ }
+ const flattenedRedirectMap = Object.keys(redirectMap).reduce((map, newUrl) => {
+  redirectMap[newUrl].forEach(oldUrl => {
+    map[oldUrl] = newUrl;
+  })
+  return map;
+ }, {})
+ const pathWithFragment = location.pathname + location.hash;
+ const redirectTo = flattenedRedirectMap[pathWithFragment];
+ if (redirectTo) {
+   location.href = redirectTo;
+ }
+ const tableOfContents = document.createElement('ul');
+ const parser = new DOMParser();
+ document.querySelector('.book-page').querySelectorAll('h1, h2, h3, h4, h5').forEach(heading => {
+   if (heading.getAttribute("toc-hidden") == "true") {
+     return;
+   }
+   const link = document.createElement('a')
+   link.innerText = heading.innerText;
+   link.setAttribute('href', `#${heading.id}`);
+   link.setAttribute('class', `toc-level-${heading.tagName}`)
+   tableOfContents.appendChild(document.createElement('li').appendChild(link))
+   console.log(heading)
+ })
+ var x = document.querySelector('#TableOfContents ul');
+ if (x != null) {
+   x.replaceWith(tableOfContents);
+ }
+
+================
+File: themes/book/.gitignore
+================
+
+
+================
+File: themes/book/assets/search-data.js
+================
+(function() {
+  const pages = [
+    {{ range $index, $page := .Site.Pages }}
+      {{- if $index -}},{{- end }}
+      {
+        "idx": {{ $index }},
+        "href": "{{ $page.RelPermalink }}",
+        "title": {{ (partial "docs/variables/title" $page) | jsonify }},
+        "content": {{ $page.Plain | jsonify }}
+      }
+    {{- end -}}
+  ];
+  window.bookSearch = {
+    pages: pages,
+    idx: lunr(function() {
+      this.ref("idx");
+      this.field("title");
+      this.field("content");
+      pages.forEach(this.add, this);
+    }),
+  }
+})();
+
+
+================
+File: themes/book/theme.toml
+================
+# theme.toml template for a Hugo theme
+# See https://github.com/gohugoio/hugoThemes#themetoml for an example
+
+name = "Book"
+license = "MIT"
+licenselink = "https://github.com/alex-shpak/hugo-book/blob/master/LICENSE"
+description = "Hugo documentation theme as simple as plain book"
+homepage = "https://github.com/alex-shpak/hugo-book"
+tags = ["responsive", "clean", "documentation", "docs", "flexbox", "search", "mobile"]
+features = []
+min_version = "0.55"
+
+[author]
+  name = "Alex Shpak"
+  homepage = "https://github.com/alex-shpak/"
+
+================
+File: tutorials/eos/push-guaranteed/.gitignore
+================
+.envrc
+dist
+node_modules
+index.js
+
+================
+File: tutorials/eos/push-guaranteed/.prettierrc
+================
+{
+  "arrowParens": "always",
+  "printWidth": 100,
+  "semi": false
+}
+
+================
+File: tutorials/eos/push-guaranteed/index.ts
+================
+import { Api, JsonRpc } from "eosjs"
+import { JsSignatureProvider } from "eosjs/dist/eosjs-jssig"
+import { TextDecoder, TextEncoder } from "text-encoding"
+import fetch, { Request, RequestInit, Response } from "node-fetch"
+import { createDfuseClient } from "@dfuse/client"
+;(global as any).fetch = fetch
+;(global as any).WebSocket = {}
+const config = readConfig()
+const client = createDfuseClient({ apiKey: config.dfuseApiKey, network: config.network })
+console.log("Performing push transaction with the following config", prettyJson(config))
+console.log()
+const customizedFetch = async (input?: string | Request, init?: RequestInit): Promise<Response> => {
+  if (init === undefined) {
+    init = {}
+  }
+  if (init.headers === undefined) {
+    init.headers = {}
+  }
+  const apiTokenInfo = await client.getTokenInfo()
+  const headers = init.headers as { [name: string]: string }
+  headers["Authorization"] = `Bearer ${apiTokenInfo.token}`
+  headers["X-Eos-Push-Guarantee"] = config.guaranteed
+  return fetch(input!, init)
+}
+async function main() {
+  const signatureProvider = new JsSignatureProvider([config.privateKey])
+  const rpc = new JsonRpc(client.endpoints.restUrl, { fetch: customizedFetch as any })
+  const api = new Api({
+    rpc,
+    signatureProvider,
+    textDecoder: new TextDecoder(),
+    textEncoder: new TextEncoder()
+  })
+  const transferAction = {
+    account: "eosio.token",
+    name: "transfer",
+    authorization: [
+      {
+        actor: config.transferFrom,
+        permission: "active"
+      }
+    ],
+    data: {
+      from: config.transferFrom,
+      to: config.transferTo,
+      quantity: config.transferQuantity,
+      memo: `Transaction with push guaranteed '${
+        config.guaranteed
+      }' from dfuse (https://docs.dfuse.eosnation.io/eosio/public-apis/tutorials/writing-on-chain)`
+    }
+  }
+  console.log("Transfer action", prettyJson(transferAction))
+  const startTime = new Date()
+  const result = await api.transact(
+    { actions: [transferAction] },
+    {
+      blocksBehind: 360,
+      expireSeconds: 3600
+    }
+  )
+  const endTime = new Date()
+  printResult(result, startTime, endTime)
+}
+function readConfig() {
+  const network = process.env.DFUSE_API_NETWORK || "kylin.dfuse.eosnation.io"
+  const guaranteed = process.env.PUSH_GUARANTEED || "in-block"
+  const transferTo = process.env.TRANSFER_TO_ACCOUNT || "eoscanadacom"
+  const transferQuantity = process.env.TRANSFER_QUANTITY || "0.0001 EOS"
+  const dfuseApiKey = process.env.DFUSE_API_KEY
+  if (dfuseApiKey === undefined) {
+    console.log(
+      "You must have a 'process.env.DFUSE_API_KEY' environment variable containing your dfuse API key."
+    )
+    process.exit(1)
+  }
+  const privateKey = process.env.SIGNING_PRIVATE_KEY
+  if (privateKey === undefined) {
+    console.log(
+      "You must have a 'SIGNING_PRIVATE_KEY' environment variable containing private used to sign."
+    )
+    process.exit(1)
+  }
+  const transferFrom = process.env.TRANSFER_FROM_ACCOUNT
+  if (transferFrom === undefined) {
+    console.log(
+      "You must have a 'TRANSFER_FROM_ACCOUNT' environment variable containing account that is going to send token."
+    )
+    process.exit(1)
+  }
+  return {
+    network,
+    guaranteed,
+    dfuseApiKey: dfuseApiKey!,
+    privateKey: privateKey!,
+    transferFrom: transferFrom!,
+    transferTo,
+    transferQuantity
+  }
+}
+function printResult(result: any, startTime: Date, endTime: Date) {
+  console.log("Transaction push result", prettyJson(result))
+  console.log()
+  const elapsed = (endTime.getTime() - startTime.getTime()) / 1000.0
+  console.log(`Pushed with guarenteed '${config.guaranteed}' in '${elapsed}' seconds`)
+  const networkMatch = client.endpoints.restUrl.match(
+    /https:\/\/(eos|wax|kylin|jungle4).dfuse.eosnation.io/
+  )
+  if (networkMatch !== null && networkMatch[1] != null) {
+    let network = networkMatch[1]
+    console.log(` - https://${network}.eosq.eosnation.io/tx/${result.transaction_id}`)
+  }
+}
+function prettyJson(input: any): string {
+  return JSON.stringify(input, null, 2)
+}
+main()
+  .then(() => {
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.log("An error occurred.", prettyJson(error))
+    process.exit(1)
+  })
+
+
+
+
+
+================================================================
+End of Codebase
+================================================================

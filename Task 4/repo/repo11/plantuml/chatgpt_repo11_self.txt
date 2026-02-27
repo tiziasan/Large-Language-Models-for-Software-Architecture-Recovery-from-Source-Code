@@ -1,0 +1,103 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "External User / DApp" as User
+actor "Platform Owner" as Owner
+
+package "On-Chain (Solidity)" as OnChain {
+
+  package "Core Registry & Dispatch" as Core {
+    component "MatryxSystem\n(Versioned registry of platform contracts,\ncontract-type classification,\ncontract-type → library-name mapping,\nper-function forwarding metadata)" as System <<contract>>
+
+    component "MatryxPlatform\n(State storage + Dispatcher)\n(Fallback resolves target library\nand delegatecalls implementation)" as Platform <<contract>>
+  }
+
+  package "Forwarder Proxies" as Proxies {
+    component "MatryxForwarder\n(Generic call forwarder)\n(Fallback forwards calls to\nMatryxPlatform resolved via MatryxSystem)" as Forwarder <<contract>>
+    component "MatryxCommit\n(Forwarder-based facade)" as CommitProxy <<contract>>
+    component "MatryxTournament\n(Forwarder-based facade)" as TournamentProxy <<contract>>
+  }
+
+  package "Library Implementations\n(delegatecall targets)" as Libs {
+    component "LibPlatform\n(Platform operations:\ninfo/query/admin,\ncreate tournament)" as LibPlatform <<library>>
+    component "LibCommit\n(Commit operations:\nclaim/create commits,\ngroup membership,\nreward accounting/withdrawal)" as LibCommit <<library>>
+    component "LibTournament\n(Tournament operations:\nround lifecycle,\nentry/submission,\nwinner selection,\nwithdraw/recover)" as LibTournament <<library>>
+
+    component "LibGlobals\n(Enums/shared types)" as LibGlobals <<library>>
+    component "SafeMath\n(Arithmetic guards)" as SafeMath <<library>>
+  }
+
+  package "Token Contract" as Token {
+    component "MatryxToken\n(ERC20-compatible token\nwith minting and upgrade mechanism)" as MatryxToken <<contract>>
+    component "IToken / IMatryxToken\n(Token interaction interfaces)" as TokenIfaces <<interface>>
+  }
+
+  component "Ownable\n(Ownership & access control)" as Ownable <<contract>>
+}
+
+package "Off-Chain Tooling (Node/Truffle)" as OffChain {
+  component "Truffle Migrations\n(deploy System/Platform/Proxies/Libraries/Token)" as Migrations <<script>>
+  component "Setup Generator\n(parse Solidity → build selectors &\nSystem.addContractMethods commands)" as SetupGen <<script>>
+  component "Dev/Test Utilities\n(Ethers/Web3 wrappers,\nlocal network config,\nbench/test runners)" as Utils <<script>>
+  component "Gas Parser\n(Local ganache + ethers:\nlog gas per tx)" as GasParser <<script>>
+  database "Ganache Local Chain\n(dev network)" as Ganache <<devnet>>
+}
+
+' === Primary entrypoints observed in code
+User --> Platform : direct calls (platform ABI)
+User --> CommitProxy : commit calls (forwarded)
+User --> TournamentProxy : tournament calls (forwarded)
+
+Owner --> System : configure versions/contracts/types/\nlibrary-name mapping/method metadata
+Owner --> Platform : owner-only administration\n(blacklist, token upgrade,\nwithdraw tokens, ownership transfer)
+
+' === Forwarding & dispatch flows (dominant)
+CommitProxy -down-|> Forwarder
+TournamentProxy -down-|> Forwarder
+
+Forwarder --> System : getContract(version,"MatryxPlatform")
+Forwarder --> Platform : forward calldata\n(+ injected sender/version parameters)
+
+Platform --> System : getVersion(), getLibraryName(msg.sender),\ngetContract(version, libName),\ngetContractMethod(version, libName, selector)
+Platform --> LibPlatform : delegatecall (selected by System mapping)
+Platform --> LibCommit : delegatecall (selected by System mapping)
+Platform --> LibTournament : delegatecall (selected by System mapping)
+
+' === Domain-level interactions evidenced via imports/calls
+LibPlatform --> System : getVersion(), setContractType()\n(register deployed tournament proxy type)
+LibPlatform --> TournamentProxy : deploy new MatryxTournament(version, system)
+
+LibPlatform --> TokenIfaces : transferFrom() for tournament bounty funding
+LibCommit --> TokenIfaces : transferFrom()/transfer()\n(commit staking/rewards)
+LibTournament --> TokenIfaces : transferFrom()/transfer()\n(entry fees, payouts, withdrawals)
+
+' === Shared utilities
+LibPlatform ..> LibGlobals
+LibCommit ..> LibGlobals
+LibTournament ..> LibGlobals
+LibPlatform ..> SafeMath
+LibCommit ..> SafeMath
+LibTournament ..> SafeMath
+
+' === Access control usage (coarse)
+System ..> Ownable
+Platform ..> Ownable
+
+' === Off-chain toolchain relationships evidenced in repo
+Migrations --> Ganache
+Migrations --> System
+Migrations --> Platform
+Migrations --> CommitProxy
+Migrations --> TournamentProxy
+Migrations --> MatryxToken
+Migrations --> LibPlatform
+Migrations --> LibCommit
+Migrations --> LibTournament
+
+SetupGen --> System : generate/execute\naddContractMethod(s)\nfor library dispatch metadata
+GasParser --> Ganache : subscribe/read tx receipts\n(JsonRpc provider)
+Utils --> Ganache : connect & drive flows
+Utils --> Platform : call platform/proxies via ABIs
+
+@enduml

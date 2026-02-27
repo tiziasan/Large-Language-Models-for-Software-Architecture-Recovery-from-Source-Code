@@ -1,0 +1,58 @@
+@startuml
+title Security Posture Collection & Elastic/Kibana Publishing (High-Level Architecture)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Operator / Scheduler" as Operator
+
+node "Scan Orchestrator Host" as OrchestratorHost {
+  component "cronjob.py\n(Scan Orchestrator)" as Cronjob
+  component "fetch_security_posture_and_upload_to_ES.sh\n(Remote Exec + Upload Pipeline)" as Pipeline
+  component "split_json_for_kibana.py\n(JSON Splitter for ES Indices)" as Splitter
+
+  artifact "security-posture.conf\n(Elasticsearch endpoint + credentials)" as ESConf
+  artifact "scale-clusters.conf\n(Cluster targets: user, ip, temp-dir)" as ClustersConf
+  artifact "output_data.json\n(Collected posture snapshot)" as OutputJson
+  folder "output_dir/\n(cluster.json, fs_*.json, export_*.json)" as OutputDir
+}
+
+node "Target IBM Spectrum Scale / GPFS Cluster Node" as TargetNode {
+  component "collector/security_posture.py\n(Security Posture Collector)" as Collector
+  component "GPFS / mmfs CLI\n(mmlscluster, mmlsmount, mmlsfs, mmnfs, mmsmb, ...)" as MMFS
+  artifact "Remote Temp Dir\n(e.g., /tmp/security-posture/)" as RemoteTmp
+}
+
+cloud "Elastic Stack" as ElasticStack {
+  component "Elasticsearch\n(Indices: scale_cluster, scale_fs, scale_export)" as ES
+  component "Kibana\n(Dashboard import: kibana_dashboard.ndjson)" as Kibana
+  artifact "kibana_dashboard.ndjson\n(Saved objects / visualizations)" as KibanaNdjson
+}
+
+Operator --> Cronjob : run with\n--config-file\n--scale-clusters-config-file
+
+ClustersConf --> Cronjob : targets & defaults
+ESConf --> Cronjob : ES URL + user:pass
+
+Cronjob --> Pipeline : executes bash pipeline\n(per cluster target)
+
+Pipeline --> TargetNode : SSH: prepare temp dir\n(copy collector)
+Pipeline --> Collector : SSH: run collector\n(--output_file .../output_data.json)
+Collector --> MMFS : execute GPFS/mm* commands\n(read posture signals)
+Collector --> RemoteTmp : write JSON posture snapshot
+
+Pipeline --> TargetNode : SCP: fetch output_data.json
+Pipeline --> OutputJson : store locally
+
+Pipeline --> Splitter : invoke splitter\n(--security-posture-json --output-dir)
+Splitter --> OutputDir : write documents:\ncluster.json, fs_*.json, export_*.json
+
+Pipeline --> ES : HTTP DELETE\nscale_cluster, scale_fs, scale_export
+Pipeline --> ES : HTTP POST\ncluster.json -> scale_cluster
+Pipeline --> ES : HTTP POST\nfs_*.json -> scale_fs
+Pipeline --> ES : HTTP POST\nexport_*.json -> scale_export
+
+KibanaNdjson --> Kibana : import saved dashboard/visualizations
+Kibana --> ES : query indexed posture data\nfor dashboards
+
+@enduml
