@@ -1,0 +1,101 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package esame_02_traccia1 {
+
+  interface Increasable {
+    +increase(value: int) : void
+  }
+
+  ' External (Java standard library) - referenced by code
+  interface "Comparable<VeicoloAutonomo>" as Comparable_VA {
+    +compareTo(va: VeicoloAutonomo) : int
+  }
+
+  abstract class VeicoloAutonomo implements Comparable_VA, Increasable {
+    -carica: int
+    -kmPercorsi: int
+    -Id: String
+
+    +VeicoloAutonomo(carica: int, kmPercorsi: int, Id: String)
+    +getCarica() : int
+    +toString() : String
+    +compareTo(va: VeicoloAutonomo) : int
+    +hashCode() : int
+    +equals(obj: Object) : boolean
+  }
+
+  class Automobile extends VeicoloAutonomo {
+    -velocitaCorrente: int
+
+    +Automobile(velocitaCorrente: int, carica: int, kmPercorsi: int, Id: String)
+    +toString() : String
+    +hashCode() : int
+    +equals(obj: Object) : boolean
+    +increase(value: int) : void
+  }
+
+  class Drone extends VeicoloAutonomo {
+    -altezzaCorrente: int
+
+    +Drone(altezzaCorrente: int, carica: int, kmPercorsi: int, Id: String)
+    +toString() : String
+    +hashCode() : int
+    +equals(obj: Object) : boolean
+    +increase(value: int) : void
+  }
+
+  class Lista {
+    ~testa: Nodo
+    ~Lista()
+    +empty() : boolean
+    +full() : boolean
+    +push(e: VeicoloAutonomo) : void
+    +append(e: VeicoloAutonomo) : void
+    +inserisci(e: VeicoloAutonomo) : void
+    +pop() : VeicoloAutonomo
+    +top() : VeicoloAutonomo
+    +pop_back() : VeicoloAutonomo
+    +top_back() : VeicoloAutonomo
+    +elimina(e: VeicoloAutonomo) : void
+    +inLista(e: VeicoloAutonomo) : boolean
+    +stampa() : void
+    +inserisciConOrdine(e: VeicoloAutonomo) : void
+
+    class Nodo {
+      -data: VeicoloAutonomo
+      -next: Nodo
+      ~Nodo(elem: VeicoloAutonomo)
+    }
+  }
+
+  class Esame_02_Traccia1 {
+    +main(args: String[]) : void
+  }
+
+  ' ==== Relationships (strictly from code) ====
+
+  ' Realization / inheritance
+  VeicoloAutonomo ..|> Increasable
+  VeicoloAutonomo ..|> Comparable_VA
+  Automobile --|> VeicoloAutonomo
+  Drone --|> VeicoloAutonomo
+
+  ' Nested class (UML nesting, not composition)
+  Lista +.. Lista.Nodo : «nested»
+
+  ' Field-level association: Lista has head node
+  Lista "1" --> "0..1" Lista.Nodo : testa
+
+  ' Field-level association: Nodo links to next node
+  Lista.Nodo "1" --> "0..1" Lista.Nodo : next
+
+  ' Field-level association: Nodo stores one VeicoloAutonomo
+  Lista.Nodo "1" --> "1" VeicoloAutonomo : data
+
+  ' Usage dependencies from main (object creation / method calls)
+  Esame_02_Traccia1 ..> Automobile
+  Esame_02_Traccia1 ..> Drone
+  Esame_02_Traccia1 ..> Lista
+}
+@enduml

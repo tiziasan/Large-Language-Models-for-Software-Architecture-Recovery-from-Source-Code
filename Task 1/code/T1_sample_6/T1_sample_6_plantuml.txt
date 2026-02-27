@@ -1,0 +1,90 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package esame_03_traccia2 {
+
+  class ArticoliLettura {
+    - Dim : int
+    - pos : int
+    - articoli : Libro[]
+    + ArticoliLettura()
+    + inserisciLibro(l : Libro) : void
+    + ricercaPerAutore(l : Libro) : boolean
+    + toString() : String
+    + LibriDiAutore(a : Autore) : int[]
+  }
+
+  class Autore {
+    - nome : String
+    + Autore(nome : String)
+    + getNome() : String
+    + equals(obj : Object) : boolean
+    + toString() : String
+  }
+
+  abstract class Libro {
+    - num_autori : int
+    - posizione : int
+    - titolo : String
+    - autori : Autore[]
+    + Libro(num_autori : int, titolo : String, a : Autore)
+    + getTitolo() : String
+    + add_autore(a : Autore) : void
+    + equals(obj : Object) : boolean
+    + toString() : String
+    + ricercaAutore(a : Autore) : boolean
+  }
+
+  class Cartaceo extends Libro {
+    + pagine : int
+    + Cartaceo(pagine : int, num_autori : int, titolo : String, a : Autore)
+    + toString() : String
+  }
+
+  class Digitale extends Libro {
+    + kByte : int
+    + Digitale(kByte : int, num_autori : int, titolo : String, a : Autore)
+    + toString() : String
+  }
+
+  class GestoreArrticoli {
+    + main(args : String[]) : void
+  }
+
+  class MiaEccezioneLibroEsistente extends Exception {
+    + MiaEccezioneLibroEsistente()
+  }
+
+  class MiaEccezioneListaPiena extends Exception {
+    + MiaEccezioneListaPiena()
+  }
+
+  ' Inheritance
+  Libro <|-- Cartaceo
+  Libro <|-- Digitale
+  Exception <|-- MiaEccezioneLibroEsistente
+  Exception <|-- MiaEccezioneListaPiena
+
+  ' Associations from fields (role name + navigation)
+  ArticoliLettura "1" --> "0..3" Libro : articoli
+  Libro "1" --> "0..*" Autore : autori
+
+  note right of Libro
+    autori array length = num_autori
+    (num_autori set by constructor parameter)
+  end note
+
+  ' Dependencies (throws / usage)
+  ArticoliLettura ..> MiaEccezioneLibroEsistente : throws
+  ArticoliLettura ..> MiaEccezioneListaPiena : throws
+
+  GestoreArrticoli ..> Autore
+  GestoreArrticoli ..> Cartaceo
+  GestoreArrticoli ..> Digitale
+  GestoreArrticoli ..> ArticoliLettura
+  GestoreArrticoli ..> MiaEccezioneLibroEsistente
+  GestoreArrticoli ..> MiaEccezioneListaPiena
+  GestoreArrticoli ..> IllegalArgumentException
+  GestoreArrticoli ..> ArrayStoreException
+}
+@enduml

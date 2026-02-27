@@ -1,0 +1,98 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+
+package esame_02_traccia2 {
+
+    interface Tunable {
+        + tune(value: int) : void
+    }
+
+    interface "Comparable<Canale>" as Comparable {
+        + compareTo(o: Canale) : int
+    }
+
+    abstract class Canale {
+        - frequenza : int
+        - nomeCanale : String
+        + Canale(frequenza: int, nomeCanale: String)
+        + getFrequenza() : int
+        + compareTo(c: Canale) : int
+        + toString() : String
+        + hashCode() : int
+        + equals(obj: Object) : boolean
+    }
+
+    class Audio {
+        - audioQuality : int
+        + Audio(audioQuality: int, frequenza: int, nomeCanale: String)
+        + tune(value: int) : void
+        + toString() : String
+    }
+
+    class Video {
+        - videoQuality : int
+        - resolution : int
+        + Video(videoQuality: int, resolution: int, frequenza: int, nomeCanale: String)
+        + tune(value: int) : void
+        + toString() : String
+    }
+
+    class Lista {
+        ~ testa : Nodo
+        ~ Lista()
+        + empty() : boolean
+        + full() : boolean
+        + push(e: Canale) : void
+        + append(e: Canale) : void
+        + inserisci(e: Canale) : void
+        + pop() : Canale
+        + top() : Canale
+        + pop_back() : Canale
+        + top_back() : Canale
+        + elimina(e: Canale) : void
+        + inLista(e: Canale) : boolean
+        + stampa() : void
+        + canaliRipetuti() : void
+        + modificaLista() : void
+    }
+
+    class Nodo {
+        - data : Canale
+        - next : Nodo
+        ~ Nodo(elem: Canale)
+    }
+
+    class Esame_02_Traccia2 {
+        + {static} main(args: String[]) : void
+    }
+
+}
+
+class "java.util.ArrayList<E>" as ArrayList
+
+' Relationships
+
+' Realization/Implementation
+Tunable <|.. Canale
+Comparable <|.. Canale
+
+' Inheritance/Generalization
+Canale <|-- Audio
+Canale <|-- Video
+
+' Nesting (Nodo is defined inside Lista)
+Lista +-- Nodo 
+
+' Associations (Fields)
+Lista "1" o--> "0..1" Nodo : testa
+Nodo "1" --> "0..1" Nodo : next
+Nodo "1" --> "1" Canale : data
+
+' Dependencies (Usage in Main and logic)
+Esame_02_Traccia2 ..> Audio : <<creates>>
+Esame_02_Traccia2 ..> Video : <<creates>>
+Esame_02_Traccia2 ..> Lista : <<creates>>
+Lista ..> ArrayList : <<uses>>
+
+@enduml

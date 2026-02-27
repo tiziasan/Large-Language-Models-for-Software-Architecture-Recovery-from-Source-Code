@@ -1,0 +1,88 @@
+@startuml
+
+package galleria {
+
+    interface Resizable {
+        + resize(percentage: int) : void
+        + checkQuality() : boolean
+    }
+
+    abstract class Multimedia {
+        ~ fileName : String
+        ~ resolution : char
+        ~ raw : boolean
+        + Multimedia(fileName: String, resolution: char, raw: boolean)
+        + toString() : String
+        + checkQuality() : boolean
+    }
+
+    class Image {
+        + xPixel : int
+        + yPixel : int
+        + Image(xPixel: int, yPixel: int, fileName: String, resolution: char, raw: boolean)
+        + resize(percentage: int) : void
+        + toString() : String
+    }
+
+    class Video {
+        + numFrames : int
+        + Video(numFrames: int, fileName: String, resolution: char, raw: boolean)
+        + resize(percentage: int) : void
+        + toString() : String
+    }
+
+    class Lista {
+        ~ testa : Nodo
+        ~ Lista()
+        + empty() : boolean
+        + full() : boolean
+        + push(e: Multimedia) : void
+        + elimina(e: Multimedia) : void
+        + pop() : Multimedia
+        + inLista(e: Multimedia) : boolean
+        + stampa() : void
+    }
+
+    class Nodo {
+        - data : Multimedia
+        - next : Nodo
+        ~ Nodo(elem: Multimedia)
+    }
+
+    class Galleria {
+        + {static} main(args: String[]) : void
+    }
+
+}
+
+' --- Relationships ---
+
+' Realization
+Resizable <|.. Multimedia
+
+' Generalization (Inheritance)
+Multimedia <|-- Image
+Multimedia <|-- Video
+
+' Nesting (Inner Class)
+Lista +-- Nodo
+
+' Associations (Attributes)
+' Role Name: testa, Navigation: Lista -> Nodo, Multiplicity: 0..1 (can be null)
+Lista "1" --> "0..1" Nodo : testa
+
+' Role Name: next, Navigation: Nodo -> Nodo, Multiplicity: 0..1 (can be null)
+Nodo "0..*" --> "0..1" Nodo : next
+
+' Role Name: data, Navigation: Nodo -> Multimedia, Multiplicity: 1 (assigned in constructor)
+Nodo "0..*" --> "1" Multimedia : data
+
+' Dependencies (Usage in Methods/Main)
+' Lista uses Multimedia in signatures (push, pop, etc.)
+Lista ..> Multimedia : <<use>>
+
+' Galleria instantiates Image and Lista in main()
+Galleria ..> Image : <<instantiate>>
+Galleria ..> Lista : <<instantiate>>
+
+@enduml

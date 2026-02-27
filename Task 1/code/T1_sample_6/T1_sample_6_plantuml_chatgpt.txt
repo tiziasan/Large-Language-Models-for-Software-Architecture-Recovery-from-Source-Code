@@ -1,0 +1,104 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package esame_03_traccia2 {
+
+  class ArticoliLettura {
+    - {final} int Dim = 3
+    - int pos = 0
+    - Libro[] articoli
+
+    + ArticoliLettura()
+    + void inserisciLibro(Libro l) throws MiaEccezioneLibroEsistente, MiaEccezioneListaPiena
+    + boolean ricercaPerAutore(Libro l)
+    + String toString()
+    + int[] LibriDiAutore(Autore a)
+  }
+
+  class Autore {
+    - String nome
+
+    + Autore(String nome)
+    + String getNome()
+    + boolean equals(Object obj)
+    + String toString()
+  }
+
+  abstract class Libro {
+    - int num_autori
+    - int posizione
+    - String titolo
+    - Autore[] autori
+
+    + Libro(int num_autori, String titolo, Autore a) throws IllegalArgumentException
+    + String getTitolo()
+    + void add_autore(Autore a) throws ArrayStoreException
+    + boolean equals(Object obj)
+    + String toString()
+    + boolean ricercaAutore(Autore a)
+  }
+
+  class Cartaceo {
+    + int pagine
+
+    + Cartaceo(int pagine, int num_autori, String titolo, Autore a) throws IllegalArgumentException
+    + String toString()
+  }
+
+  class Digitale {
+    + int kByte
+
+    + Digitale(int kByte, int num_autori, String titolo, Autore a) throws IllegalArgumentException
+    + String toString()
+  }
+
+  class GestoreArrticoli {
+    + {static} void main(String[] args)
+  }
+
+  class MiaEccezioneLibroEsistente {
+    + MiaEccezioneLibroEsistente()
+  }
+
+  class MiaEccezioneListaPiena {
+    + MiaEccezioneListaPiena()
+  }
+
+  '========================
+  ' Inheritance
+  '========================
+  Libro <|-- Cartaceo
+  Libro <|-- Digitale
+  Exception <|-- MiaEccezioneLibroEsistente
+  Exception <|-- MiaEccezioneListaPiena
+
+  '========================
+  ' Associations (from fields)
+  '========================
+  ArticoliLettura "1" --> "0..3" Libro : articoli
+
+  Libro "1" --> "0..*" Autore : autori
+  note on link
+    max elements in autori[] = num_autori
+    (array allocated as new Autore[num_autori])
+  end note
+
+  '========================
+  ' Dependencies (usage)
+  '========================
+  ArticoliLettura ..> MiaEccezioneLibroEsistente : throws
+  ArticoliLettura ..> MiaEccezioneListaPiena : throws
+  ArticoliLettura ..> Autore : uses (param)
+  ArticoliLettura ..> Cartaceo : instanceof
+
+  GestoreArrticoli ..> Autore : creates/uses
+  GestoreArrticoli ..> Cartaceo : creates/uses
+  GestoreArrticoli ..> Digitale : creates/uses
+  GestoreArrticoli ..> ArticoliLettura : creates/uses
+  GestoreArrticoli ..> MiaEccezioneLibroEsistente : catches
+  GestoreArrticoli ..> MiaEccezioneListaPiena : catches
+  GestoreArrticoli ..> IllegalArgumentException : catches
+  GestoreArrticoli ..> ArrayStoreException : catches
+}
+
+@enduml

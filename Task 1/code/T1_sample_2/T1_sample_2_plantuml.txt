@@ -1,0 +1,75 @@
+@startuml
+package galleria {
+
+  class Galleria {
+    +{static} main(args: String[]): void
+  }
+
+  interface Resizable {
+    +resize(percentage: int): void
+    +checkQuality(): boolean
+  }
+
+  abstract class Multimedia {
+    ~fileName: String
+    ~resolution: char
+    ~raw: boolean
+
+    +Multimedia(fileName: String, resolution: char, raw: boolean)
+    +toString(): String
+    +checkQuality(): boolean
+  }
+
+  class Image extends Multimedia {
+    +xPixel: int
+    +yPixel: int
+
+    +Image(xPixel: int, yPixel: int, fileName: String, resolution: char, raw: boolean)
+    +resize(percentage: int): void
+    +toString(): String
+  }
+
+  class Video extends Multimedia {
+    +numFrames: int
+
+    +Video(numFrames: int, fileName: String, resolution: char, raw: boolean)
+    +resize(percentage: int): void
+    +toString(): String
+  }
+
+  class Lista {
+    ~testa: Nodo
+    ~Lista()
+    +empty(): boolean
+    +full(): boolean
+    +push(e: Multimedia): void
+    +elimina(e: Multimedia): void
+    +pop(): Multimedia
+    +inLista(e: Multimedia): boolean
+    +stampa(): void
+  }
+
+  class Nodo {
+    -data: Multimedia
+    -next: Nodo
+    ~Nodo(elem: Multimedia)
+  }
+
+  ' --- Generalization / Realization ---
+  Multimedia ..|> Resizable
+  Image --|> Multimedia
+  Video --|> Multimedia
+
+  ' --- Field-based relationships (ultra-conservative multiplicities) ---
+  Lista *--> "0..1" Nodo : testa
+  Nodo *--> "0..1" Nodo : next
+  Nodo --> "0..1" Multimedia : data
+
+  ' --- Inner class relationship (explicit in code) ---
+  Lista +-- Nodo : inner class
+
+  ' --- Dependencies from main() usage ---
+  Galleria ..> Lista : uses
+  Galleria ..> Image : uses
+}
+@enduml

@@ -1,0 +1,80 @@
+@startuml
+class ArticoliLettura {
+    - Dim : int = 3 {readOnly}
+    - pos : int = 0
+    - articoli : Libro[]
+    + ArticoliLettura()
+    + inserisciLibro(l : Libro) : void
+    + ricercaPerAutore(l : Libro) : boolean
+    + toString() : String
+    + LibriDiAutore(a : Autore) : int[]
+}
+
+class Autore {
+    - nome : String
+    + Autore(nome : String)
+    + getNome() : String
+    + equals(obj : Object) : boolean
+    + toString() : String
+}
+
+abstract class Libro {
+    - num_autori : int
+    - posizione : int
+    - titolo : String
+    - autori : Autore[]
+    + Libro(num_autori : int, titolo : String, a : Autore)
+    + getTitolo() : String
+    + add_autore(a : Autore) : void
+    + equals(obj : Object) : boolean
+    + toString() : String
+    + ricercaAutore(a : Autore) : boolean
+}
+
+class Cartaceo {
+    + pagine : int
+    + Cartaceo(pagine : int, num_autori : int, titolo : String, a : Autore)
+    + toString() : String
+}
+
+class Digitale {
+    + kByte : int
+    + Digitale(kByte : int, num_autori : int, titolo : String, a : Autore)
+    + toString() : String
+}
+
+class GestoreArrticoli {
+    + {static} main(args : String[]) : void
+}
+
+class MiaEccezioneLibroEsistente {
+    + MiaEccezioneLibroEsistente()
+}
+
+class MiaEccezioneListaPiena {
+    + MiaEccezioneListaPiena()
+}
+
+class Exception {
+}
+
+' Inheritance
+Libro <|-- Cartaceo
+Libro <|-- Digitale
+Exception <|-- MiaEccezioneLibroEsistente
+Exception <|-- MiaEccezioneListaPiena
+
+' Associations (Role Name, Multiplicity, Navigation)
+' ArticoliLettura contains an array of Libro named 'articoli'
+ArticoliLettura "1" --> "0..3" Libro : articoli
+
+' Libro contains an array of Autore named 'autori'
+Libro "1" --> "0..*" Autore : autori
+
+' Dependencies (Exceptions and instantiation)
+ArticoliLettura ..> MiaEccezioneLibroEsistente : <<throws>>
+ArticoliLettura ..> MiaEccezioneListaPiena : <<throws>>
+GestoreArrticoli ..> Cartaceo : <<instantiates>>
+GestoreArrticoli ..> Digitale : <<instantiates>>
+GestoreArrticoli ..> ArticoliLettura : <<instantiates>>
+@enduml

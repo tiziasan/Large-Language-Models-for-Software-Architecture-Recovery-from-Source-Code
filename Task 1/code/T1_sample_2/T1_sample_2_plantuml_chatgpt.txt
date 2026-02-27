@@ -1,0 +1,76 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package galleria {
+
+  class Galleria {
+    +{static} void main(String[] args)
+  }
+
+  interface Resizable {
+    +void resize(int percentage)
+    +boolean checkQuality()
+  }
+
+  abstract class Multimedia {
+    ~String fileName
+    ~char resolution
+    ~boolean raw
+
+    +Multimedia(String fileName, char resolution, boolean raw)
+    +String toString()
+    +boolean checkQuality()
+  }
+
+  class Image {
+    +int xPixel
+    +int yPixel
+
+    +Image(int xPixel, int yPixel, String fileName, char resolution, boolean raw)
+    +void resize(int percentage)
+    +String toString()
+  }
+
+  class Video {
+    +int numFrames
+
+    +Video(int numFrames, String fileName, char resolution, boolean raw)
+    +void resize(int percentage)
+    +String toString()
+  }
+
+  class Lista {
+    ~Nodo testa
+
+    ~Lista()
+    +boolean empty()
+    +boolean full()
+    +void push(Multimedia e)
+    +void elimina(Multimedia e)
+    +Multimedia pop()
+    +boolean inLista(Multimedia e)
+    +void stampa()
+
+    class Nodo {
+      -Multimedia data
+      -Nodo next
+      ~Nodo(Multimedia elem)
+    }
+  }
+
+  ' Inheritance / realization
+  Multimedia ..|> Resizable
+  Image --|> Multimedia
+  Video --|> Multimedia
+
+  ' Field-based associations (navigation is from holder to referenced type)
+  Lista "1" --> "0..1" Lista.Nodo : testa
+  Lista.Nodo "1" --> "0..1" Lista.Nodo : next
+  Lista.Nodo "1" --> "0..1" Multimedia : data
+
+  ' Usage from main()
+  Galleria ..> Lista
+  Galleria ..> Image
+}
+
+@enduml

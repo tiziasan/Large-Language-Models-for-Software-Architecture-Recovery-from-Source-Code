@@ -1,0 +1,97 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package esame_02_traccia1 {
+
+  interface Increasable {
+    +increase(value : int) : void
+  }
+
+  ' PlantUML-safe representation of the generic interface used in the code
+  interface "Comparable<VeicoloAutonomo>" as Comparable_VeicoloAutonomo
+
+  abstract class VeicoloAutonomo {
+    -carica : int
+    -kmPercorsi : int
+    -Id : String
+
+    +VeicoloAutonomo(carica : int, kmPercorsi : int, Id : String)
+    +getCarica() : int
+    +toString() : String
+    +compareTo(va : VeicoloAutonomo) : int
+    +hashCode() : int
+    +equals(obj : Object) : boolean
+  }
+
+  class Automobile {
+    -velocitaCorrente : int
+
+    +Automobile(velocitaCorrente : int, carica : int, kmPercorsi : int, Id : String)
+    +toString() : String
+    +hashCode() : int
+    +equals(obj : Object) : boolean
+    +increase(value : int) : void
+  }
+
+  class Drone {
+    -altezzaCorrente : int
+
+    +Drone(altezzaCorrente : int, carica : int, kmPercorsi : int, Id : String)
+    +toString() : String
+    +hashCode() : int
+    +equals(obj : Object) : boolean
+    +increase(value : int) : void
+  }
+
+  class Lista {
+    ~testa : Nodo
+
+    ~Lista()
+    +empty() : boolean
+    +full() : boolean
+    +push(e : VeicoloAutonomo) : void
+    +append(e : VeicoloAutonomo) : void
+    +inserisci(e : VeicoloAutonomo) : void
+    +pop() : VeicoloAutonomo
+    +top() : VeicoloAutonomo
+    +pop_back() : VeicoloAutonomo
+    +top_back() : VeicoloAutonomo
+    +elimina(e : VeicoloAutonomo) : void
+    +inLista(e : VeicoloAutonomo) : boolean
+    +stampa() : void
+    +inserisciConOrdine(e : VeicoloAutonomo) : void
+  }
+
+  class Nodo <<inner>> {
+    -data : VeicoloAutonomo
+    -next : Nodo
+
+    ~Nodo(elem : VeicoloAutonomo)
+  }
+
+  class Esame_02_Traccia1 {
+    +main(args : String[]) : void
+  }
+}
+
+' ===== Inheritance / Realization (explicit in code) =====
+esame_02_traccia1.Automobile --|> esame_02_traccia1.VeicoloAutonomo
+esame_02_traccia1.Drone --|> esame_02_traccia1.VeicoloAutonomo
+
+esame_02_traccia1.VeicoloAutonomo ..|> esame_02_traccia1.Increasable
+esame_02_traccia1.VeicoloAutonomo ..|> esame_02_traccia1.Comparable_VeicoloAutonomo
+
+' ===== Associations (derived strictly from fields) =====
+esame_02_traccia1.Lista "1" --> "0..1" esame_02_traccia1.Nodo : testa
+esame_02_traccia1.Nodo "1" --> "0..1" esame_02_traccia1.VeicoloAutonomo : data
+esame_02_traccia1.Nodo "1" --> "0..1" esame_02_traccia1.Nodo : next
+
+' ===== Dependencies (imports / referenced types) =====
+esame_02_traccia1.Lista ..> ArrayList
+esame_02_traccia1.VeicoloAutonomo ..> Objects
+
+esame_02_traccia1.Esame_02_Traccia1 ..> esame_02_traccia1.Automobile
+esame_02_traccia1.Esame_02_Traccia1 ..> esame_02_traccia1.Drone
+esame_02_traccia1.Esame_02_Traccia1 ..> esame_02_traccia1.Lista
+
+@enduml

@@ -1,0 +1,94 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package esame_02_traccia2 {
+
+  interface Tunable {
+    +tune(value: int) : void throws IllegalArgumentException
+  }
+
+  interface Comparable
+
+  abstract class Canale implements Tunable, Comparable {
+    -frequenza : int
+    -nomeCanale : String
+
+    +Canale(frequenza: int, nomeCanale: String)
+    +getFrequenza() : int
+    +compareTo(c: Canale) : int
+    +toString() : String
+    +hashCode() : int
+    +equals(obj: Object) : boolean
+  }
+
+  class Audio extends Canale {
+    -audioQuality : int
+
+    +Audio(audioQuality: int, frequenza: int, nomeCanale: String)
+    +tune(value: int) : void throws IllegalArgumentException
+    +toString() : String
+  }
+
+  class Video extends Canale {
+    -videoQuality : int
+    -resolution : int
+
+    +Video(videoQuality: int, resolution: int, frequenza: int, nomeCanale: String)
+    +tune(value: int) : void throws IllegalArgumentException
+    +toString() : String
+  }
+
+  class Lista {
+    ~testa : Nodo
+
+    ~Lista()
+    +empty() : boolean
+    +full() : boolean
+    +push(e: Canale) : void
+    +append(e: Canale) : void
+    +inserisci(e: Canale) : void
+    +pop() : Canale
+    +top() : Canale
+    +pop_back() : Canale
+    +top_back() : Canale
+    +elimina(e: Canale) : void
+    +inLista(e: Canale) : boolean
+    +stampa() : void
+    +canaliRipetuti() : void
+    +modificaLista() : void
+  }
+
+  class Nodo <<inner>> {
+    -data : Canale
+    -next : Nodo
+    ~Nodo(elem: Canale)
+  }
+
+  class Esame_02_Traccia2 {
+    +main(args: String[]) : void
+  }
+}
+
+' ---- Inheritance / Implements ----
+Canale ..|> Tunable
+Canale ..|> Comparable
+Audio --|> Canale
+Video --|> Canale
+
+' ---- Inner-class containment (declared inside Lista) ----
+Lista +-- Nodo : inner
+
+' ---- Field-based relations ----
+Lista *-- "0..1" Nodo : testa
+Nodo --> "1" Canale : data
+Nodo --> "0..1" Nodo : next
+
+' ---- Usage dependencies (explicit in code) ----
+Esame_02_Traccia2 ..> Audio : creates/uses
+Esame_02_Traccia2 ..> Video : creates/uses
+Esame_02_Traccia2 ..> Lista : creates/uses
+
+Lista ..> "java.util.ArrayList<Canale>" ArrayList : uses
+Lista ..> Audio : instanceof
+
+@enduml

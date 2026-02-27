@@ -1,0 +1,89 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package VulnScanner {
+
+  interface Exploitable {
+    +checkExploitable() : boolean
+    +fix() : void
+  }
+
+  abstract class Vulnerability {
+    +severity : int
+    +attackPattern : boolean
+    +Vulnerability(severity : int, attackPattern : boolean)
+    +checkExploitable() : boolean
+    +toString() : String
+  }
+
+  class HWVulnerability {
+    ~device : String
+    ~connected : boolean = true
+    +HWVulnerability(device : String, severity : int, attackPattern : boolean)
+    +hashCode() : int
+    +equals(obj : Object) : boolean
+    +toString() : String
+    +fix() : void
+  }
+
+  class SWVulnerability {
+    ~software : String
+    ~ports : int
+    +SWVulnerability(software : String, ports : int, severity : int, attackPattern : boolean)
+    +hashCode() : int
+    +equals(obj : Object) : boolean
+    +toString() : String
+    +fix() : void
+  }
+
+  class Lista {
+    ~testa : Lista.Nodo
+    ~Lista()
+    +empty() : boolean
+    +full() : boolean
+    +push(e : Vulnerability) : void
+    +append(e : Vulnerability) : void
+    +pop() : Vulnerability
+    +elimina(e : Vulnerability) : void
+    +inLista(e : Vulnerability) : boolean
+    +stampa() : void
+    +numberExploitable() : int[]
+    +removeNotExploitable() : void
+  }
+
+  class "Lista.Nodo" as Lista_Nodo {
+    -data : Vulnerability
+    -next : Lista.Nodo
+    ~Nodo(elem : Vulnerability)
+  }
+
+  class VulnerabilityScanner {
+    +main(args : String[]) : void
+    +leggiDaFile(l : Lista) : void
+  }
+
+  ' ===== Realization / Inheritance =====
+  Vulnerability ..|> Exploitable
+  HWVulnerability --|> Vulnerability
+  SWVulnerability --|> Vulnerability
+
+  ' ===== Explicit nesting (inner class declaration) =====
+  Lista *-- "0..*" Lista_Nodo : innerNodes
+
+  ' ===== Associations (from fields) =====
+  Lista "1" --> "0..1" Lista_Nodo : testa
+
+  Lista_Nodo "1" --> "0..1" Lista_Nodo : next
+  Lista_Nodo "1" --> "0..1" Vulnerability : data
+
+  ' ===== Dependencies (from method parameters / instantiation / instanceof) =====
+  VulnerabilityScanner ..> Lista : uses
+  VulnerabilityScanner ..> SWVulnerability : creates
+  VulnerabilityScanner ..> HWVulnerability : creates
+
+  Lista ..> Vulnerability : uses
+  Lista ..> SWVulnerability : instanceof
+  Lista ..> HWVulnerability : instanceof
+}
+
+@enduml

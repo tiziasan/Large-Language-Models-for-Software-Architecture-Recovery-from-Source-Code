@@ -1,0 +1,112 @@
+@startuml
+
+' Interface Definition
+interface Increasable {
+    + increase(value: int) : void
+}
+
+' External Classes/Interfaces
+interface "Comparable<VeicoloAutonomo>" as Comparable {
+    + compareTo(o: VeicoloAutonomo) : int
+}
+
+class "java.util.ArrayList" as ArrayList {
+}
+
+' Abstract Class
+abstract class VeicoloAutonomo {
+    - carica : int
+    - kmPercorsi : int
+    - Id : String
+    + VeicoloAutonomo(carica: int, kmPercorsi: int, Id: String)
+    + getCarica() : int
+    + toString() : String
+    + compareTo(va: VeicoloAutonomo) : int
+    + hashCode() : int
+    + equals(obj: Object) : boolean
+}
+
+' Concrete Classes
+class Automobile {
+    - velocitaCorrente : int
+    + Automobile(velocitaCorrente: int, carica: int, kmPercorsi: int, Id: String)
+    + toString() : String
+    + hashCode() : int
+    + equals(obj: Object) : boolean
+    + increase(value: int) : void
+}
+
+class Drone {
+    - altezzaCorrente : int
+    + Drone(altezzaCorrente: int, carica: int, kmPercorsi: int, Id: String)
+    + toString() : String
+    + hashCode() : int
+    + equals(obj: Object) : boolean
+    + increase(value: int) : void
+}
+
+' List Class
+class Lista {
+    ~ testa : Nodo
+    ~ Lista()
+    + empty() : boolean
+    + full() : boolean
+    + push(e: VeicoloAutonomo) : void
+    + append(e: VeicoloAutonomo) : void
+    + inserisci(e: VeicoloAutonomo) : void
+    + pop() : VeicoloAutonomo
+    + top() : VeicoloAutonomo
+    + pop_back() : VeicoloAutonomo
+    + top_back() : VeicoloAutonomo
+    + elimina(e: VeicoloAutonomo) : void
+    + inLista(e: VeicoloAutonomo) : boolean
+    + stampa() : void
+    + inserisciConOrdine(e: VeicoloAutonomo) : void
+}
+
+' Inner Class Nodo (Package-Private)
+class Nodo {
+    - data : VeicoloAutonomo
+    - next : Nodo
+    ~ Nodo(elem: VeicoloAutonomo)
+}
+
+' Main Class
+class Esame_02_Traccia1 {
+    + {static} main(args: String[]) : void
+}
+
+' --- RELATIONSHIPS ---
+
+' Realization & Inheritance
+VeicoloAutonomo ..|> Increasable
+VeicoloAutonomo ..|> Comparable
+Automobile --|> VeicoloAutonomo
+Drone --|> VeicoloAutonomo
+
+' Nesting
+Lista +-- Nodo
+
+' Associations (Attributes acting as relationships)
+' Role Name: testa, Navigation: Lista -> Nodo
+Lista "1" --> "0..1" Nodo : testa
+
+' Role Name: next, Navigation: Nodo -> Nodo
+Nodo "1" --> "0..1" Nodo : next
+
+' Role Name: data, Navigation: Nodo -> VeicoloAutonomo
+Nodo "*" --> "1" VeicoloAutonomo : data
+
+' Dependencies (Usage in methods/constructors)
+' Lista depends on VeicoloAutonomo in public API signatures
+Lista ..> VeicoloAutonomo : <<use>>
+
+' Lista uses ArrayList inside inserisciConOrdine
+Lista ..> ArrayList : <<use>>
+
+' Main class instantiations
+Esame_02_Traccia1 ..> Automobile : <<create>>
+Esame_02_Traccia1 ..> Drone : <<create>>
+Esame_02_Traccia1 ..> Lista : <<create>>
+
+@enduml

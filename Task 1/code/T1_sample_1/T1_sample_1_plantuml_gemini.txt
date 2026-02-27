@@ -1,0 +1,96 @@
+@startuml
+
+' Disable icons for visibility to use text symbols (+, -, ~, #)
+skinparam classAttributeIconSize 0
+
+package VulnScanner {
+
+    interface Exploitable {
+        + checkExploitable() : boolean
+        + fix() : void
+    }
+
+    abstract class Vulnerability {
+        + severity : int
+        + attackPattern : boolean
+        + Vulnerability(severity : int, attackPattern : boolean)
+        + checkExploitable() : boolean
+        + toString() : String
+    }
+
+    class HWVulnerability {
+        ~ device : String
+        ~ connected : boolean
+        + HWVulnerability(device : String, severity : int, attackPattern : boolean)
+        + hashCode() : int
+        + equals(obj : Object) : boolean
+        + toString() : String
+        + fix() : void
+    }
+
+    class SWVulnerability {
+        ~ software : String
+        ~ ports : int
+        + SWVulnerability(software : String, ports : int, severity : int, attackPattern : boolean)
+        + hashCode() : int
+        + equals(obj : Object) : boolean
+        + toString() : String
+        + fix() : void
+    }
+
+    class Lista {
+        ~ testa : Nodo
+        ~ Lista()
+        + empty() : boolean
+        + full() : boolean
+        + push(e : Vulnerability) : void
+        + append(e : Vulnerability) : void
+        + pop() : Vulnerability
+        + elimina(e : Vulnerability) : void
+        + inLista(e : Vulnerability) : boolean
+        + stampa() : void
+        + numberExploitable() : int[]
+        + removeNotExploitable() : void
+    }
+
+    class Nodo {
+        - data : Vulnerability
+        - next : Nodo
+        ~ Nodo(elem : Vulnerability)
+    }
+
+    class VulnerabilityScanner {
+        + {static} main(args : String[]) : void
+        + {static} leggiDaFile(l : Lista) : void
+    }
+
+}
+
+' Relationships
+
+' Realization: Vulnerability implements Exploitable
+Exploitable <|.. Vulnerability
+
+' Generalization: HW/SW extend Vulnerability
+Vulnerability <|-- HWVulnerability
+Vulnerability <|-- SWVulnerability
+
+' Nesting: Nodo is an inner class of Lista
+Lista +-- Nodo
+
+' Associations
+' Lista has a "testa" attribute pointing to Nodo
+Lista --> "0..1" Nodo : testa
+
+' Nodo has a "next" attribute pointing to another Nodo (recursive)
+Nodo --> "0..1" Nodo : next
+
+' Nodo has a "data" attribute pointing to a Vulnerability
+Nodo --> "1" Vulnerability : data
+
+' Dependency: Scanner uses Lista and creates concrete Vulnerabilities
+VulnerabilityScanner ..> Lista
+VulnerabilityScanner ..> HWVulnerability : <<creates>>
+VulnerabilityScanner ..> SWVulnerability : <<creates>>
+
+@enduml

@@ -1,0 +1,117 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package esame_03_traccia1 {
+
+  class Contatto {
+    - nome : String
+    - numero : String
+    + Contatto(nome : String, numero : String)
+    + getNome() : String
+    + getNumero() : String
+    + toString() : String
+  }
+
+  class Orario {
+    - ora : int
+    - minuto : int
+    + Orario(ora : int, minuto : int)
+    + getOra() : int
+    + getMinuto() : int
+    + toString() : String
+  }
+
+  abstract class Messaggio {
+    - istante : Orario
+    - mittente : Contatto
+    + Messaggio(ora : int, minuto : int, nome : String, numero : String)
+    + getNomeContatto() : String
+    + getNumeroContatto() : String
+    + getOraIstante() : int
+    + getMinutoIstante() : int
+    + equals(obj : Object) : boolean
+    + toString() : String
+  }
+
+  class Testo {
+    - contenuto : String
+    + Testo(contenuto : String, ora : int, minuto : int, nome : String, numero : String)
+    + toString() : String
+    + getContenuto() : String
+  }
+
+  class Vocale {
+    - durata : int
+    + Vocale(durata : int, ora : int, minuto : int, nome : String, numero : String)
+    + toString() : String
+    + getDurata() : int
+  }
+
+  class MiaEccezione {
+    + MiaEccezione(message : String)
+  }
+
+  class Lista {
+    ~ testa : Nodo
+    ~ Lista()
+    + empty() : boolean
+    + full() : boolean
+    - push(e : Messaggio) : void
+    + append(e : Messaggio) : void
+    + pop() : Messaggio
+    + top() : Messaggio
+    + inLista(e : Messaggio) : boolean
+    + stampa() : void
+    + RicercaTesti(s : String) : void
+    + ContattiMaxVocali() : java.util.ArrayList<Vocale>
+  }
+
+  class Gruppo {
+    + main(args : String[]) : void
+    + leggiDaFile(l : Lista) : void
+  }
+
+  ' Inner (non-static) class inside Lista
+  class "Lista::Nodo" as Nodo {
+    - data : Messaggio
+    - next : Nodo
+    ~ Nodo(elem : Messaggio)
+  }
+
+}
+
+' External types referenced (declared here only as placeholders)
+class Exception
+class IOException
+class Object
+
+' Inheritance
+Testo --|> Messaggio
+Vocale --|> Messaggio
+MiaEccezione --|> Exception
+
+' Associations from attributes (role names from field identifiers)
+Messaggio --> "1" Orario : istante
+Messaggio --> "1" Contatto : mittente
+
+' Lista contains Nodo via field "testa"
+Lista *--> "0..1" Nodo : testa
+
+' Nodo self-link via field "next"
+Nodo *--> "0..1" Nodo : next
+
+' Nodo refers to a Messaggio via field "data"
+Nodo --> "1" Messaggio : data
+
+' Dependencies explicitly present via method parameters / throws / instantiation
+Gruppo ..> Lista : uses
+Gruppo ..> Testo : creates
+Gruppo ..> Vocale : creates
+Gruppo ..> MiaEccezione : catches
+Gruppo ..> IOException : throws/catches
+
+Lista ..> Testo : uses (instanceof/cast)
+Lista ..> Vocale : uses (instanceof/cast, returns)
+Lista ..> MiaEccezione : throws
+
+@enduml

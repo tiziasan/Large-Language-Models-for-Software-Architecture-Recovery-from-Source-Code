@@ -1,0 +1,111 @@
+@startuml
+
+' Class Definitions
+
+class Contatto {
+    - String nome
+    - String numero
+    + Contatto(String nome, String numero)
+    + String getNome()
+    + String getNumero()
+    + String toString()
+}
+
+class Gruppo {
+    + {static} void main(String[] args)
+    + {static} void leggiDaFile(Lista l)
+}
+
+class Lista {
+    ~ Nodo testa
+    ~ Lista()
+    + boolean empty()
+    + boolean full()
+    - void push(Messaggio e)
+    + void append(Messaggio e)
+    + Messaggio pop()
+    + Messaggio top()
+    + boolean inLista(Messaggio e)
+    + void stampa()
+    + void RicercaTesti(String s)
+    + ArrayList<Vocale> ContattiMaxVocali()
+}
+
+' Inner class definition for Lista
+class Nodo {
+    - Messaggio data
+    - Nodo next
+    ~ Nodo(Messaggio elem)
+}
+
+abstract class Messaggio {
+    - Orario istante
+    - Contatto mittente
+    + Messaggio(int ora, int minuto, String nome, String numero)
+    + String getNomeContatto()
+    + String getNumeroContatto()
+    + int getOraIstante()
+    + int getMinutoIstante()
+    + boolean equals(Object obj)
+    + String toString()
+}
+
+class MiaEccezione {
+    + MiaEccezione(String message)
+}
+
+class Orario {
+    - int ora
+    - int minuto
+    + Orario(int ora, int minuto)
+    + int getOra()
+    + int getMinuto()
+    + String toString()
+}
+
+class Testo {
+    - String contenuto
+    + Testo(String contenuto, int ora, int minuto, String nome, String numero)
+    + String toString()
+    + String getContenuto()
+}
+
+class Vocale {
+    - int durata
+    + Vocale(int durata, int ora, int minuto, String nome, String numero)
+    + String toString()
+    + int getDurata()
+}
+
+' Inheritance Relationships
+Testo --|> Messaggio
+Vocale --|> Messaggio
+MiaEccezione --|> java.lang.Exception
+
+' Inner Class Relationship (Nesting)
+Lista +-- Nodo
+
+' Associations and Compositions
+
+' Messaggio creates Orario and Contatto in constructor (Composition)
+Messaggio *-- "1" Orario : istante
+Messaggio *-- "1" Contatto : mittente
+
+' Lista uses Nodo structure (Association)
+Lista --> "0..1" Nodo : testa
+
+' Nodo structure (Association)
+Nodo --> "1" Messaggio : data
+Nodo --> "0..1" Nodo : next
+
+' Dependencies (Usage in methods)
+Gruppo ..> Lista : instantiates
+Gruppo ..> Testo : instantiates
+Gruppo ..> Vocale : instantiates
+Gruppo ..> MiaEccezione : catches
+
+Lista ..> MiaEccezione : throws
+Lista ..> Testo : uses
+Lista ..> Vocale : uses
+
+@enduml

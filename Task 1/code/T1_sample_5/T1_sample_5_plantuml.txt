@@ -1,0 +1,103 @@
+@startuml
+package esame_03_traccia1 {
+
+  class Contatto {
+    - nome : String
+    - numero : String
+    + Contatto(nome : String, numero : String)
+    + getNome() : String
+    + getNumero() : String
+    + toString() : String
+  }
+
+  class Orario {
+    - ora : int
+    - minuto : int
+    + Orario(ora : int, minuto : int)
+    + getOra() : int
+    + getMinuto() : int
+    + toString() : String
+  }
+
+  abstract class Messaggio {
+    - istante : Orario
+    - mittente : Contatto
+    + Messaggio(ora : int, minuto : int, nome : String, numero : String)
+    + getNomeContatto() : String
+    + getNumeroContatto() : String
+    + getOraIstante() : int
+    + getMinutoIstante() : int
+    + equals(obj : Object) : boolean
+    + toString() : String
+  }
+
+  class Testo {
+    - contenuto : String
+    + Testo(contenuto : String, ora : int, minuto : int, nome : String, numero : String)
+    + toString() : String
+    + getContenuto() : String
+  }
+
+  class Vocale {
+    - durata : int
+    + Vocale(durata : int, ora : int, minuto : int, nome : String, numero : String)
+    + toString() : String
+    + getDurata() : int
+  }
+
+  class MiaEccezione {
+    + MiaEccezione(message : String)
+  }
+
+  class Lista {
+    ~ testa : Lista.Nodo
+    ~ Lista()
+    + empty() : boolean
+    + full() : boolean
+    - push(e : Messaggio) : void
+    + append(e : Messaggio) : void
+    + pop() : Messaggio
+    + top() : Messaggio
+    + inLista(e : Messaggio) : boolean
+    + stampa() : void
+    + RicercaTesti(s : String) : void
+    + ContattiMaxVocali() : ArrayList<Vocale>
+  }
+
+  class "Lista.Nodo" as Lista_Nodo {
+    - data : Messaggio
+    - next : Lista.Nodo
+    ~ Nodo(elem : Messaggio)
+  }
+
+  class Gruppo {
+    + main(args : String[]) : void
+    + leggiDaFile(l : Lista) : void
+  }
+
+  ' Inheritance
+  Messaggio <|-- Testo
+  Messaggio <|-- Vocale
+  Exception <|-- MiaEccezione
+
+  ' Field-based relationships (explicit)
+  Messaggio *-- "1" Orario : istante
+  Messaggio *-- "1" Contatto : mittente
+
+  Lista *-- "0..1" Lista_Nodo : testa
+  Lista_Nodo --> "1" Messaggio : data
+  Lista_Nodo --> "0..1" Lista_Nodo : next
+
+  ' Dependencies (explicit via parameter/local usage)
+  Gruppo ..> Lista
+  Gruppo ..> Testo
+  Gruppo ..> Vocale
+  Gruppo ..> MiaEccezione
+
+  Lista ..> Testo
+  Lista ..> Vocale
+  Lista ..> MiaEccezione
+  Lista ..> "ArrayList<Vocale>"
+
+}
+@enduml
