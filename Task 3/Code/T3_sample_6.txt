@@ -1,0 +1,655 @@
+/**
+ * Description.
+ * Connect to MongoDB Client.
+ * Do basic CRUD operations with MongoDB.
+**/
+const config = require('./config');
+const MongoClient = require('mongodb').MongoClient;
+
+const configDB = config.dbConfig;
+// Database configuration.
+const uri = "mongodb+srv://"
+            + configDB.user + ":"
+            + configDB.password + "@"
+            + configDB.server
+            + configDB.database
+            + "?retryWrites=true&w=majority";
+/**
+ * Update MongoDB with incomming logs.
+ * @param {JSON} message - Incomming messages to be updated to DB.
+ * @param {String} collectionInterface - Connect to specific collection of the DB.
+ * @param {Boolean} stream - If incomming messages are from a kafka stream or not.
+**/
+async function updateMongoDB(message, collectionInterface = configDB.collectionStream, stream=true){
+    
+    if (stream == true){
+        console.log(
+            'kafka ',
+            JSON.parse(message.value)
+        );
+        var logs_ = JSON.parse(message.value)
+    } else {
+        console.log(
+            'Ml_Prediction ',
+            message
+        );
+        logs_ = message
+    }
+    let client = await MongoClient(uri, { useNewUrlParser: true,  useUnifiedTopology: true });
+    client.connect(err => {
+    if (err) throw err;
+    const collection = client.db(configDB.database).collection(collectionInterface);
+    collection.insertOne(logs_, function(err, res) {
+        if (err) throw err;
+        console.log("documents inserted." + res.insertedCount);
+    });
+    });
+    client.close();
+}
+/**
+ * Get information about the Database collection.
+ * @return {integer} size of the database collection.
+ * @return {JSON} return first three logs of the database collection.
+**/
+async function getDBInfo(){
+    
+    let client = await MongoClient(uri, { useNewUrlParser: true,  useUnifiedTopology: true });
+    client.connect(err => {
+    if (err) throw err;
+    const collection = client.db(configDB.database).collection(configDB.collectionStream);
+    collection.find({},{ projection: { _id: 0, Date: 1, Open: 1, High: 1, Low: 1, Close:1, Volume:1 } 
+        }).toArray(function(err, result) {
+            if (err) throw err;
+            console.log("Size of DB: "+result.length);
+            console.log("First three objects of the Array: ");
+            console.log(result.slice(0,3));
+    client.close();
+        });
+    });
+}
+
+module.exports = { updateMongoDB, MongoClient, uri, getDBInfo}
+const config = {
+
+	"kafkaConfig":{
+		KafkaHost:'localhost:9092',
+	    KafkaTopic1: 'StockMarketAnalysis',
+	    KafkaTopic2: 'StockMarketPredictions',
+	},
+    "dbConfig":{
+    	user: 'VictorBasu',
+	    password: 'V1cTOR',
+	    server: 'clustera1.cvglu.mongodb.net/',
+	    database: 'StockLogsDB',
+	    collectionStream: 'StockData',
+	    collectionML: 'mlPrediction',
+    },
+    "trainConfig":{
+    	trainSize: 85,
+    	epoch: 50,
+    	batchSize: 32,
+        modelDir: 'models',
+    },
+    "type": "Open"
+};
+
+module.exports = config;
+/**
+ * Description.
+ * Consumer - consumer of the Kafka Stream.
+ * Consume messages from the stream and update them to MongoDB.
+**/
+const kafka = require('kafka-node');
+const config = require('./config');
+const db = require('./InstantiateDB');
+
+const configKafka = config.kafkaConfig;
+const Consumer = kafka.Consumer;
+const client = new kafka.KafkaClient({idleConnection: 24 * 60 * 60 * 1000,  kafkaHost: configKafka.KafkaHost});
+let consumer = new Consumer(
+	client,
+	[{topic: configKafka.KafkaTopic1, partition: 0 }],
+    {
+    	autoCommit: true,
+    	fetchMaxWaitMs: 1000,
+    	fetchMaxBytes: 1024 * 1024,
+    	encoding: 'utf8',
+        // fromOffset: false
+    }
+	);
+consumer.on('message', async function(message){
+    // Storing or updating consumed stream messages to MongoDB.
+	db.updateMongoDB(message)
+});
+consumer.on('error', function(error) {
+    //  handle error 
+    console.log('error', error);
+});
+const kafka = require('kafka-node');
+const config = require('./config');
+const client = new kafka.KafkaClient({kafkaHost: config.KafkaHost});
+
+const topicToCreate = [{
+	topic: config.KafkaTopic1,
+	partitions: 1,
+	replicationFactor: 3,
+},
+{
+	topic: config.KafkaTopic2,
+	partitions: 1,
+	replicationFactor: 3,
+}
+]
+client.createTopics(topicToCreate, (error, result) => {
+	// result is an array of any errors if a given topic could not be created
+	console.log(result, 'topic created successfully');
+})
+/**
+ * Description.
+ * Consume logs from 2nd topic of the stream pipeline.
+ * Tfjs model predict output in real-time.
+**/
+const kafka = require('kafka-node');
+const config = require('./config');
+const db = require('./InstantiateDB');
+const pre_process = require('./pre_process');
+const model = require('./tf_model');
+
+const configKafka = config.kafkaConfig;
+const Consumer = kafka.Consumer;
+var data_ = [];
+let cnt = 0;
+var type = config.type;
+const client = new kafka.KafkaClient({idleConnection: 24 * 60 * 60 * 1000,  kafkaHost: configKafka.KafkaHost});
+let consumer = new Consumer(
+	client,
+	[{topic: configKafka.KafkaTopic2, partition: 0 }],
+    {
+    	autoCommit: true,
+    	fetchMaxWaitMs: 1000,
+    	fetchMaxBytes: 1024 * 1024,
+    	encoding: 'utf8',
+        // fromOffset: false
+    }
+	);
+
+consumer.on('message', async function(message){
+    console.log(message.value)
+    cnt = cnt+1;
+    // process data from incomming stream
+    if (cnt != 8){
+        data_.push(JSON.parse(message.value));
+    } else {
+        var scaled = pre_process.transform(data_,type);
+        const prediction = model.processModel([scaled]);
+        // Predict output.
+        prediction.then(function(result) {
+            
+            var predicted_stock_price = pre_process.inverse_transform(result.arraySync());
+            console.log("Prediction",type, predicted_stock_price)
+        });   
+        cnt=0;
+        data_ = [];
+    }
+
+});
+consumer.on('error', function(error) {
+    //  handle error 
+    console.log('error', error);
+});
+/**
+ * Description.
+ * Preprocess data with MinMaxScalar algorithm.
+ * X_std = (X - X.min()) / (X.max() - X.min())
+ * X_scaled = X_std * (max - min) + min
+**/
+const fs = require('fs');
+var X_min = 0;
+var X_max = 0;
+var min_ = 0;
+var max_ = 1;
+/**
+ * Write the minimum and maximum to be used for later scaling to a file.
+ * Use the values for future transformation of data before model prediction.
+**/
+function write_util(){
+
+	const fs = require('fs') 
+	// Data which will write in a file. 
+	let data = {"X_max":X_max, "X_min":X_min, "max_":max_, "min_":min_};
+	  
+	fs.writeFileSync('utils.json', JSON.stringify(data));
+}
+/**
+ * fit data for preprocessing.
+ * @param {Array} X - input data.
+ * @param {integer} min - minimum value of the feature range.
+ * @param {integer} max - maximum value of the feature range.
+ * @return {Array} X_scaled - Final scaled array fitted within Feature Range.
+**/
+function fit(X, min=0, max=1){
+
+    X_max = Math.max.apply(null,X)
+    X_min = Math.min.apply(null,X)
+    min_ = min;
+    max_ = max;
+
+	var X_minArr = X.map(function(values){
+		return values - X_min
+	});
+	// X_std = (X - X.min()) / (X.max() - X.min())
+	var X_std = X_minArr.map(function(values){
+		return values / (X_max - X_min)
+	});
+	// X_scaled = X_std * (max - min) + min
+	var X_scaled = X_std.map(function(values){
+		return values*(max - min) + min
+	});
+
+    return X_scaled
+}
+/**
+ * Fit to data, then transform it.
+ * @param {Array} result - array of objects.
+ * @param {String} attribute  - proprety of the JSON object to be accessed.
+ * @return {Array} train_scaled - Final scaled array fitted within Feature Range.
+**/
+function fit_transform(result, attribute){
+    var data = null;
+    try{
+    	data = result.map(value => value[attribute]);
+    } catch (error) {
+        console.log("attribute undefined.");
+  
+    }
+	
+    var train_scaled = fit(data);
+    write_util();
+    return train_scaled;
+}
+/**
+ * Scale features of X according to feature_range.
+ * @param {Array} result - array of objects.
+ * @param {String} attribute  - proprety of the JSON object to be accessed.
+ * @return {Array} X_scaled - Final scaled array fitted within Feature Range.
+**/
+function transform(result, attribute){
+    var data = null;
+    let fit = require('./utils.json');
+
+	var data = null;
+    try{
+    	data = result.map(value => value[attribute]);
+    } catch (error) {
+        console.log("attribute undefined."); 
+    }
+    console.log(fit.X_max,fit.X_min)
+    var X_minArr = data.map(function(values){
+		return values - fit.X_min
+	});
+	var X_std = X_minArr.map(function(values){
+		return values / (fit.X_max - fit.X_min)
+	});
+	var X_scaled = X_std.map(function(values){
+		return values*(fit.max_ - fit.min_) + fit.min_
+	});
+
+    return X_scaled
+}
+/**
+ * Undo the scaling of X according to feature_range.
+ * @param {Array} inp - Scaled array according to feature_range.
+ * @param {integer} min - minimum value of the feature range.
+ * @param {integer} max - maximum value of the feature range.
+ * @return {Array} X_ - Inverse Scaled Array.
+**/
+function inverse_transform(inp, min=0, max=1){
+    
+    let fit = require('./utils.json');
+    
+	var X = inp.map(function(values){
+		return (values - min)/ (max - min)
+	});
+	var X_ = X.map(function(values){
+		return values * (fit.X_max - fit.X_min) + fit.X_min
+	});
+
+	return X_
+}
+
+module.exports = { fit_transform, transform, inverse_transform }
+/**
+ * Description.
+ * Producer - Producer of the Kafka Stream. 
+ * Pipeline logs from source to two Topics.
+**/
+const Kafka = require('kafka-node');
+const config = require('./config');
+const fs = require('fs');
+const parse = require('csv-parse');
+var async = require('async');
+var path = require('path');
+
+const configKafka = config.kafkaConfig;
+const Producer = Kafka.Producer;
+const client = new Kafka.KafkaClient({kafkaHost: configKafka.KafkaHost});
+var producer = new Producer(client, {requireAcks: 1, partitionerType: 2});
+var KeyedMessage = Kafka.KeyedMessage;
+var km = new KeyedMessage('key', 'message');
+
+const parentDir = './Datasets/';
+const averageDelay = 3000;  // in miliseconds
+const spreadInDelay = 2000; // in miliseconds
+var ProducerReady = false ;
+var stockArray;
+
+producer.on('ready', async function () {
+    console.log("Producer is ready");
+    ProducerReady = true;
+});
+
+producer.on('error', function (err) {
+  console.error("Problem with producing Kafka message "+err);
+})
+ 
+var parser = parse({delimiter: ','}, function (err, data){
+    stockArray = data;
+    handleStock(1);  
+});
+// Read data from a data-source.
+fs.createReadStream(parentDir.concat('HPQ.csv')).pipe(parser); 
+/**
+ * Read data from a file and sent it for streaming.
+ * @param {integer} dataCount - maintains the row count.
+**/
+function handleStock(dataCount){
+	var line = stockArray[dataCount];
+	var stock = { "Date":line[0]
+		        , "Open":parseFloat(line[1])
+		        , "High":parseFloat(line[2])
+		        , "Low":parseFloat(line[3])
+		        , "Close":parseFloat(line[4])
+		        , "Volume":parseFloat(line[6])
+		};
+	stockMarketMessages(stock)
+	// Adds delay after passing each log to the pipeline.
+	var delay = averageDelay + (Math.random() -0.5) * spreadInDelay;
+	setTimeout(handleStock.bind(null,dataCount+1), delay);
+
+}
+/**
+ * Pipeline processed logs into 2 topics.
+ *  @param {JSON} data - processed logs.
+**/
+function stockMarketMessages(data){
+	KeyedMessage = Kafka.KeyedMessage;
+	KM = new KeyedMessage(data.code, JSON.stringify(data));
+    // Pipeline logs into two topics.
+	payloadToKafkaTopic = [
+        { topic: configKafka.KafkaTopic1, partition: 0, messages: KM },
+        { topic: configKafka.KafkaTopic2, partition: 0, messages: KM },
+    ];
+    if(ProducerReady){
+	    producer.send(payloadToKafkaTopic, function (err, data) {
+	        console.log(data);
+	    });
+    } else {
+    	console.error("sorry, Producer is not ready yet, failed to produce message to Kafka.");
+    }
+    
+}
+const ml = require('./tf_train');
+const ml_val = require('./tf_validate')
+const http = require('http');
+const socketio = require('socket.io');
+
+const TIMEOUT_BETWEEN_EPOCHS_MS = 500;
+const PORT = 8001;
+
+// util function to sleep for a given ms
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Main function to start server, perform model training, and emit stats via the socket connection
+async function run() {
+
+	const port = process.env.PORT || PORT;
+	const server = http.createServer();
+	const io = socketio(server);
+
+	server.listen(port, () => {
+	    console.log(`  > Running socket on port: ${port}`);
+	  });
+    io.on('connection', (socket) => {
+    	socket.on('Train', async () => {
+    		io.emit('Model Performance', await ml.train());
+	    });
+
+	    socket.on('Validate', async () => {
+    		io.emit('Model Performance', await ml_val.val());
+	    });
+
+	 });
+
+    ml.train();
+    io.emit('trainingComplete', true);
+	
+}
+run();
+/**
+ * Description.
+ * Developing model Architecture.
+ * Compiling and fitting the model with training data.
+ * Save and Load model.
+**/
+const tf = require('@tensorflow/tfjs-node');
+const config = require('./config');
+
+const configTrain = config.trainConfig;
+/**
+ * create tfjs model architecture.
+ * @param {tensor} input_ - input tensor.
+ * @return {tensor} model - Model architecture.
+**/
+function createModel(input_){
+
+	const model = tf.sequential();
+
+	model.add(tf.layers.reshape({inputShape:[input_[0].length], 
+		                        targetShape: [input_[0].length, 1]}));
+	model.add(tf.layers.lstm({units: 50, returnSequences: true}));
+	model.add(tf.layers.dropout(0.20));
+
+	model.add(tf.layers.lstm({units: 50, returnSequences: true}));
+	model.add(tf.layers.dropout(0.25));
+
+	model.add(tf.layers.lstm({units: 50, returnSequences: true}));
+	model.add(tf.layers.dropout(0.20));
+
+	model.add(tf.layers.lstm({units: 50}));
+	model.add(tf.layers.dropout(0.25));
+
+    model.add(tf.layers.dense({units: 1}));
+
+    return model;
+}
+/**
+ * compute loss and error at the end of every batch.
+ * @param {integer} batch - batch number.
+ * @param {dict} logs - computed loss and error estimated by loss functions.
+**/
+function onBatchEnd(batch, logs) {
+  console.log({"loss":logs.loss, "mse": logs.mse, "mae": logs.mae});
+}
+/**
+ * Save model weight.
+ * @param {tensor} model - trained model.
+**/
+async function saveModel(model){
+    
+	const savedModel = await model.save('file://'+ configTrain.modelDir);
+	console.log("Model weights saved.");
+}
+/**
+ * train model.
+ *@param {tensor} model - tfjs model to be trained.
+ *@param {Array} X - model input.
+ *@param {Array} y - target to prediction.
+**/
+async function train(model, X, y){
+	// prepare the model for training
+	model.compile({
+				    optimizer: tf.train.adam(),
+				    loss: 'meanSquaredError',
+				    metrics: ['mse','mae'],
+				});
+
+    // train model
+    await model.fit(
+            	tf.tensor(X),
+            	tf.tensor(y),
+            	{
+            		epochs: configTrain.epoch,
+				    batchSize: configTrain.batchSize,
+				    callbacks: {onBatchEnd}
+
+            	}
+        );
+    // save model
+    saveModel(model);
+}
+/**
+ * Load Model weight and predict output.
+ * @param {Array} test_data - input data for model to predict.
+ * @return {Array} - Predicted output.
+**/
+async function processModel(test_data){
+	const model =  await tf.loadLayersModel('file://'+configTrain.modelDir+'/model.json');
+	               
+	return model.predict(tf.tensor(test_data))
+}
+module.exports = { createModel, onBatchEnd, train, saveModel, processModel}
+/**
+ * Description.
+ * Train the tensorflow.js model.
+ * Save the trained model.
+**/
+const config = require('./config');
+const db = require('./InstantiateDB');
+const pre_process = require('./pre_process');
+const model = require('./tf_model');
+
+const configDB = config.dbConfig;
+const mlConfig = config.trainConfig;
+const timesteps = 7;
+const type = config.type;
+var i;
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+/**
+ * train the tfjs model with 80% data of the database.
+ * @return {tfjs} save the trained model in a directory.
+**/
+async function train(){
+
+
+	let client = new db.MongoClient(db.uri, { useNewUrlParser: true,  useUnifiedTopology: true });
+	    client.connect(err => {
+	    if (err) throw err;
+	    const collection = client.db(configDB.database).collection(configDB.collectionStream);
+	    // Get all data from the database.
+	    collection.find({},{ projection: { _id: 0, Date: 1, Open: 1, High: 1, Low: 1, Close:1, Volume:1 } 
+	        }).toArray(async function(err, result) {
+	            if (err) throw err;
+	            var X_train=[];
+	            var y_train=[];
+                // Using 80% of the total data for training the tfjs model.
+	            result = result.slice(0, parseInt((mlConfig.trainSize/100) * result.length));
+                // Preprocess data with MinMaxScalar.
+	            var train_scaled = pre_process.fit_transform(result,type);
+	             for (i=timesteps; i<train_scaled.length; i++){
+	                    X_train.push(train_scaled.slice(i-timesteps,i));
+	                    y_train.push(train_scaled[i]);
+	            }
+                // Create the tfjs model.
+	            const model_ = model.createModel(X_train);
+	            model_.weights.forEach(w => {
+					    console.log(w.name, w.shape);
+					});
+                // Train the model and save it.
+	            model.train(model_, X_train, y_train);
+	            sleep(2000);
+
+	            client.close();
+	        });
+	    });
+	    
+}
+train();
+module.exports = { train }
+/**
+ * Description.
+ * Validate the tensorflow.js model performance.
+ * Update the database with model performance.
+**/
+const config = require('./config');
+const db = require('./InstantiateDB');
+const pre_process = require('./pre_process');
+const model = require('./tf_model');
+const train = config.trainConfig;
+const configDB = config.dbConfig;
+const timesteps = 7;
+const type = config.type;
+/**
+ * Validate the ml model perfromance with 20% data of the database.
+ * Update database with model performance.
+**/
+async function val(){
+
+    let client = new db.MongoClient(db.uri, { useNewUrlParser: true,  useUnifiedTopology: true });
+        client.connect(err => {
+        if (err) throw err;
+        const collection = client.db(configDB.database).collection(configDB.collectionStream);
+        collection.find({},{ projection: { _id: 0, Date: 1, Open: 1, High: 1, Low: 1, Close:1, Volume:1 } 
+            }).toArray(async function(err, result) {
+            	var X_test=[];
+                
+                // Using 20% of the total data for training the tfjs model. 
+            	var test_data = result.slice(parseInt((train.trainSize/100) * result.length), result.length);
+                var test_data_inp = result.slice(result.length - test_data.length - timesteps, 
+                    result.length);
+                // Preprocess data with MinMaxScalar.
+                var test_scaled = pre_process.transform(test_data_inp,type);
+                for (i=timesteps; i<test_data.length + timesteps; i++){
+                        X_test.push(test_scaled.slice(i-timesteps,i));
+                }
+                // Get model prediction.
+                const prediction = model.processModel(X_test);
+                prediction.then(function(result) {
+    		       // Inverse scale the predicted values to original value.
+    			   var predicted_stock_price = pre_process.inverse_transform(result.arraySync());
+                   
+                   for(var i=0; i<test_data.length; i++){
+                    data_ = {"date": test_data[i].Date, 
+                             "Prediction": predicted_stock_price[i],
+                             "real":  test_data[i][type],
+                             "type": type
+                         }
+                    // Update database with model performance.
+                    db.updateMongoDB(data_, configDB.collectionML, false)
+                }
+                   
+    			})
+            	client.close();
+                
+
+            });
+        
+        });
+
+}
+val();
+

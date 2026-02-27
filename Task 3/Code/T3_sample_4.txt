@@ -1,0 +1,685 @@
+from __future__ import print_function
+import boto3
+import os
+
+dynamodb_resource = boto3.resource('dynamodb')
+table = dynamodb_resource.Table(os.environ["TABLE_NAME"])
+
+
+def handle(event, context):
+    for record in event['Records']:
+        if not record["dynamodb"].get("NewImage"):
+            print("Continuing cause no NewImage")
+            continue
+        if 'trafficJamIndicator' in record["dynamodb"]["NewImage"]:
+            unique_id = record["dynamodb"]["NewImage"]["uniqueId"]['S']
+            alert_indicator = record["dynamodb"]["NewImage"]["trafficJamIndicator"]['N']
+            location = record["dynamodb"]["NewImage"]["loc"]['S']
+            save_traffic_jam_alert_item(unique_id, alert_indicator, location)
+
+
+def save_traffic_jam_alert_item(unique_id, alert_indicator, location):
+    try:
+        table.update_item(
+            Key={
+                'uniqueId': unique_id
+            },
+            UpdateExpression="set alertIndicator = :ai, loc=:l",
+            ExpressionAttributeValues={
+                ':ai':  alert_indicator,
+                ':l': location
+            },
+            ConditionExpression='alertIndicator <> :ai')
+    except dynamodb_resource.meta.client.exceptions.ConditionalCheckFailedException as e:
+        None
+		
+import json
+import logging
+import os
+
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
+
+
+SLACK_CHANNEL = os.environ['SLACK_CHANNEL']
+SLACK_WEBHOOK = os.environ['SLACK_WEBHOOK']
+FLASK_API = os.environ['FLASK_API']
+
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def handle(event, context):
+    for record in event['Records']:
+        if not record["dynamodb"].get("NewImage"):
+            continue;
+        unique_id = record["dynamodb"]["NewImage"]["uniqueId"]['S']
+        location = record["dynamodb"]["NewImage"]["loc"]['S']
+        alert_indicator = record["dynamodb"]["NewImage"]["alertIndicator"]['S']
+
+        if alert_indicator == "1":
+            message = f"*NEW* *traffic jam* at location: *{location}* :sob:"
+            api_message = f"New traffic jam at location: {location}"
+            send_message(message)
+            send_api_message(api_message, True)
+        elif alert_indicator == "0":
+            if not record["dynamodb"].get("OldImage"):
+                continue
+            else:
+                message = f"The *traffic jam* at location: *{location}* is *GONE*! :smile:"
+                api_message = f"The traffic jam at location: {location} is gone!"
+                send_message(message)
+                send_api_message(api_message, False)
+
+
+def send_message(message):
+    slack_message = {
+        'channel': SLACK_CHANNEL,
+        'text': message
+    }
+
+    req = Request(SLACK_WEBHOOK, json.dumps(slack_message).encode('utf-8'))
+
+    try:
+        response = urlopen(req)
+        response.read()
+        logger.info("Message posted to %s", slack_message['channel'])
+    except HTTPError as e:
+        logger.error("Request failed: %d %s", e.code, e.reason)
+    except URLError as e:
+        logger.error("Server connection failed: %s", e.reason)
+
+
+def send_api_message(message, incoming):
+    api_notification = {
+        'message': message,
+        'incoming': incoming
+    }
+    req_api = Request(FLASK_API, json.dumps(api_notification).encode('utf-8'))
+
+    try:
+        response = urlopen(req_api)
+        response.read()
+        logger.info("Message posted to flask api (for frontend integration)")
+    except HTTPError as e:
+        logger.error("Request failed: %d %s", e.code, e.reason)
+    except URLError as e:
+        logger.error("Server connection failed: %s", e.reason)
+
+import boto3
+import botocore
+import base64
+import os
+import json
+from decimal import Decimal
+
+dynamodb_resource = boto3.resource('dynamodb')
+table = dynamodb_resource.Table(os.environ["TABLE_NAME"])
+
+
+def handle(event, context):
+    dynamodb_items = scan_table()
+    data = [parse_dynamo_item_to_dict(item) for item in dynamodb_items]
+    print(data)
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(data)
+    }
+    return response
+
+
+def scan_table(input={}):
+    response = table.scan(**input)
+    data = response['Items']
+    while 'LastEvaluatedKey' in response:
+        response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'], **input)
+        data.extend(response['Items'])
+    return data
+
+
+def create_scan_input(table_name):
+    return {
+        "TableName": table_name,
+        "ProjectionExpression": "#a97a0,#a97a1",
+        "ExpressionAttributeNames": {"#a97a0":"uniqueId", "#a97a1":"outputType"}
+    }
+
+
+def parse_dynamo_item_to_dict(item):
+    return json.loads(json.dumps(item, indent=4, cls=DecimalEncoder))
+
+
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+import boto3
+import os
+import json
+from decimal import Decimal
+
+dynamodb_resource = boto3.resource('dynamodb')
+table = dynamodb_resource.Table(os.environ["TABLE_NAME"])
+
+
+def handle(event, context):
+    dynamodb_items = scan_table()
+    items = [parse_dynamo_item_to_dict(item) for item in dynamodb_items]
+    print(items)
+    trafficLocations = create_traffic_locations_list(items)
+
+    response_body = {
+        "trafficLocations": trafficLocations
+    }
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(response_body)
+    }
+    return response
+
+
+def create_traffic_locations_list(items):
+    print(items)
+    unique_ids = list(set([d["uniqueId"] for d in items]))
+    trafficLocations = []
+    for id in unique_ids:
+        data = {
+            id: [i for i in items if i["uniqueId"] == id]
+        }
+        trafficLocations.append(data)
+    return trafficLocations
+
+
+def scan_table(input={}):
+    response = table.scan(**input)
+    data = response['Items']
+    while 'LastEvaluatedKey' in response:
+        response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'], **input)
+        data.extend(response['Items'])
+    return data
+
+
+def create_scan_input(table_name):
+    return {
+        "TableName": table_name,
+        "ProjectionExpression": "#a97a0,#a97a1",
+        "ExpressionAttributeNames": {"#a97a0": "uniqueId", "#a97a1": "outputType"}
+    }
+
+
+def parse_dynamo_item_to_dict(item):
+    return json.loads(json.dumps(item, indent=4, cls=DecimalEncoder))
+
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+		
+import boto3
+import requests
+import base64
+import os
+import json
+
+STEAMING_DATASET_URL = os.environ.get('STEAMING_DATASET_URL')
+
+def handle(event, context):
+    for record in event['Records']:
+        payload = base64.b64decode(record['kinesis']['data'])
+        data = json.loads(payload)
+        composed_key = create_outputType_recordTimestamp_composed_key(data)
+        data["outputType_recordTimestamp"] = composed_key
+        print(f"Data that will be forwarded {json.dumps(data)}")
+        forward_to_pbi(data)
+
+
+def create_outputType_recordTimestamp_composed_key(data_item):
+    output_type = data_item.get('outputType')
+    record_timestamp = data_item.get('recordTimestamp')
+    combo_key = output_type + '_' + str(record_timestamp)
+    return combo_key
+
+
+def forward_to_pbi(data):
+    # data dict must be contained in a list
+    payload = [data]
+
+    # post/push data to the streaming API
+    headers = {
+        "Content-Type": "application/json"
+    }
+    response = requests.request(
+        method="POST",
+        url=STEAMING_DATASET_URL,
+        headers=headers,
+        data=json.dumps(payload)
+    )
+
+    print(response)
+    print(response.content)
+	
+import json
+import boto3
+import os
+import dateutil.parser as dp
+import logging
+from collections.abc import MutableMapping
+
+
+s3_resource = boto3.resource('s3')
+s3_client = boto3.client('s3')
+firehose_client = boto3.client('firehose')
+
+
+BUCKET = os.environ["BUCKET_NAME"]
+S3_JSON_PREFIX = os.environ["S3_JSON_PREFIX"]
+DELIVERY_STREAM_NAME = os.environ["DELIVERY_STREAM_NAME"]
+
+
+def handle(event, context):
+    s3_event = event["Records"][0]
+    object_key = s3_event["s3"]["object"]["key"]
+    json_data_blob = get_from_s3(object_key)
+    json_data = json.loads(json_data_blob)
+    meetpunten = json_data["miv"]["meetpunt"]
+    events = transform_meetpunten_to_events(meetpunten)
+    print('Sending {} events to firehose'.format(len(events)))
+    push_data_to_firehose(events)
+
+    response = {
+        "statusCode": 200,
+        "body": json.dumps('success!')
+    }
+    return response
+
+
+def get_from_s3(key):
+    obj = s3_resource.Object(BUCKET, key)
+    return obj.get()['Body'].read().decode('utf-8')
+
+
+def transform_meetpunten_to_events(meetpunten):
+    events = []
+    for mp in meetpunten:
+        event = transform_meetpunt_to_event(mp)
+        events.append(event)
+    return events
+
+
+def update_event_time(event):
+    current = str(event["tijd_waarneming"])
+    new_event = event.copy()
+    parsed_t = dp.parse(current)
+    t_in_seconds = parsed_t.strftime('%s')
+    new_event["tijd_waarneming"] = str(t_in_seconds)
+    return new_event
+
+
+def transform_meetpunt_to_event(meetpunt):
+    event = meetpunt
+    event = clean_keys(event)
+    meetdata = event["meetdata"]
+    meetdata_dict = generate_meetdata_dict(meetdata)
+    event.pop("meetdata")
+    event.update(meetdata_dict)
+    rekendata_flattened = flatten({"rekendata": event["rekendata"]})
+    event.pop("rekendata")
+    event.update(rekendata_flattened)
+    updated_event = update_event_time(event)
+    return updated_event
+
+
+def generate_meetdata_dict(meetdata):
+    meetdata_dict = {}
+    for md in meetdata:
+        klasse_id = md.get("klasse_id")
+        verkeersintensiteit_key, voertuigsnelheid_rekenkundig_key, voertuigsnelheid_harmonisch_key = create_unique_klasse_keys(klasse_id)
+        meetdata_dict[verkeersintensiteit_key] = md.get('verkeersintensiteit')
+        meetdata_dict[voertuigsnelheid_rekenkundig_key] = md.get('voertuigsnelheid_rekenkundig')
+        meetdata_dict[voertuigsnelheid_harmonisch_key] = md.get('voertuigsnelheid_harmonisch')
+    return meetdata_dict
+
+
+def create_unique_klasse_keys(klasse_id):
+    key1 = 'verkeersintensiteit' + '_klasse' + klasse_id
+    key2 = 'voertuigsnelheid_rekenkundig' + '_klasse' + klasse_id
+    key3 = 'voertuigsnelheid_harmonisch' + '_klasse' + klasse_id
+    return key1, key2, key3
+
+
+def clean_keys(md):
+    md_as_string = json.dumps(md)
+    md_as_string_updated = md_as_string.replace('@', '')
+    md = json.loads(md_as_string_updated)
+    return md
+
+
+def flatten(d, parent_key='', sep='_'):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, MutableMapping):
+            items.extend(flatten(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
+def push_data_to_firehose(events):
+    number_of_events_sent = 0
+    number_of_events_to_send = len(events)
+    batch = []
+    for i in range(number_of_events_to_send):
+        record = {'Data': json.dumps(events[i])}
+        batch.append(record)
+        if len(batch) == 100 or i == number_of_events_to_send - 1:
+            put_batch(batch)
+            number_of_events_sent += len(batch)
+            batch = []
+
+        if (i+1) % 100 == 0 or i == number_of_events_to_send - 1:
+            print('Number of events sent: {}'.format(number_of_events_sent))
+
+
+def put_batch(batch):
+    response = firehose_client.put_record_batch(
+        DeliveryStreamName=DELIVERY_STREAM_NAME,
+        Records=batch
+    )
+
+import json
+import boto3
+import requests
+import logging
+import os
+import time
+
+from botocore.exceptions import ClientError
+
+
+s3_client = boto3.client('s3')
+
+URL = os.environ["TRAFFIC_DATA_URL"]
+BUCKET = os.environ["BUCKET_NAME"]
+S3_XML_PREFIX = os.environ["S3_XML_PREFIX"]
+
+
+def retrieve_data():
+    r = requests.get(URL)
+    return r.text
+
+
+def store_data(data, object_key, bucket):
+    try:
+        response = s3_client.put_object(Body=data, Bucket=bucket, Key=object_key, ContentType='application/xml')
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
+
+def handle(event, context):
+    xml_data = retrieve_data()
+
+    now = str(int(round(time.time() * 1000)))
+    key = S3_XML_PREFIX + now + '.xml'
+    store_data(xml_data, key, BUCKET)
+
+    response = {
+        "statusCode": 200,
+        "body": 'hello'
+    }
+
+    return response
+	
+import boto3
+import botocore
+import base64
+import os
+import json
+
+dynamodb_resource = boto3.resource('dynamodb')
+table = dynamodb_resource.Table(os.environ["TABLE_NAME"])
+
+
+def handle(event, context):
+    print("START----------------------------------------------START")
+
+    for record in event['Records']:
+        payload = base64.b64decode(record['kinesis']['data'])
+        data = json.loads(payload)
+        if data.get('outputType') == 'SPEED_DIFFERENTIAL':
+            save_speed_diff_item(data)
+        elif data.get('outputType') == 'TRAFFIC_JAM':
+            save_traffic_jam_item(data)
+        elif data.get('outputType') == 'SPEED_AVG':
+            item = create_speed_avg_item(data)
+            print(f"Will save item: {item}")
+            table.put_item(Item=item)
+
+    print("END----------------------------------------------END")
+
+
+def save_speed_diff_item(data_item):
+    combo_key = create_outputType_recordTimestamp_key(data_item)
+    try:
+        table.update_item(
+            Key={
+                'uniqueId': str(data_item.get('uniqueId')),
+                'outputType': str(data_item.get('outputType'))
+            },
+            UpdateExpression="set recordTimestamp = :r, currentSpeed=:c, previousSpeed=:p, speedDiffIndicator=:sd, bezettingsgraad=:bg, outputType_recordTimestamp=:otrts, loc=:l",
+            ExpressionAttributeValues={
+                ':r':  str(data_item.get('recordTimestamp')),
+                ':c': data_item.get('currentSpeed'),
+                ':p': data_item.get('previousSpeed'),
+                ':sd': data_item.get('speedDiffIndicator'),
+                ':bg': data_item.get('bezettingsgraad'),
+                ':l': data_item.get('location'),
+                ':otrts': combo_key
+            },
+            ConditionExpression='speedDiffIndicator <> :sd')
+    except dynamodb_resource.meta.client.exceptions.ConditionalCheckFailedException as e:
+        None
+
+
+def create_speed_avg_item(data_item):
+    combo_key = create_outputType_recordTimestamp_key(data_item)
+    speed_avg_item = {
+        'uniqueId': str(data_item.get('uniqueId')),
+        'recordTimestamp': str(data_item.get('recordTimestamp')),
+        'outputType': data_item.get('outputType'),
+        'outputType_recordTimestamp': combo_key,
+        'currentSpeed': data_item.get('currentSpeed'),
+        'avgSpeed3Minutes': data_item.get('avgSpeed3Minutes'),
+        'avgSpeed10Minutes': data_item.get('avgSpeed10Minutes'),
+        'loc': data_item.get('location'),
+    }
+    return speed_avg_item
+
+
+def save_traffic_jam_item(data_item):
+    combo_key = create_outputType_recordTimestamp_key(data_item)
+    try:
+        table.update_item(
+            Key={
+                'uniqueId': str(data_item.get('uniqueId')),
+                'outputType': str(data_item.get('outputType'))
+            },
+            UpdateExpression="set recordTimestamp = :r, currentSpeed=:c, trafficJamIndicator=:tji, outputType_recordTimestamp=:otrts, loc=:l",
+            ExpressionAttributeValues={
+                ':r':  str(data_item.get('recordTimestamp')),
+                ':c': data_item.get('currentSpeed'),
+                ':tji': data_item.get('trafficJamIndicator'),
+                ':l': data_item.get('location'),
+                ':otrts': combo_key
+            },
+            ConditionExpression='trafficJamIndicator <> :tji')
+    except dynamodb_resource.meta.client.exceptions.ConditionalCheckFailedException as e:
+        None
+
+
+def create_outputType_recordTimestamp_key(data_item):
+    output_type = data_item.get('outputType')
+    record_timestamp = data_item.get('recordTimestamp')
+    combo_key = output_type + '_' + str(record_timestamp)
+    return combo_key
+	
+import json
+import boto3
+import os
+import base64
+
+klasses = [
+    "klasse1",
+    "klasse2",
+    "klasse3",
+    "klasse4",
+    "klasse5",
+]
+
+traffic_prefixes = {
+    "traffic_intensity_prefix": "verkeersintensiteit",
+    "speed_math_prefix": "voertuigsnelheid_rekenkundig",
+    "speed_harmonic_prefix": "voertuigsnelheid_harmonisch"
+}
+
+
+def handle(event, context):
+    output = []
+
+    for record in event['records']:
+        payload = base64.b64decode(record['data'])
+
+        # print(payload.decode("utf-8"))
+        result = 'Dropped'
+
+        # Do custom processing on the payload here
+        result, updated_payload = check_and_update_payload(json.loads(payload.decode("utf-8")), result)
+
+        output_record = {
+            'recordId': record['recordId'],
+            'result': result,
+            'data': base64.b64encode(json.dumps(updated_payload).encode("utf-8")).decode("utf-8")
+        }
+        output.append(output_record)
+
+    print('Successfully processed {} records.'.format(len(event['records'])))
+
+    return {'records': output}
+
+
+def check_and_update_payload(payload, result):
+    should_forward = matches_filter_criteria(payload)
+    updated_payload = None
+    if should_forward:
+        result = 'Ok'
+        updated_payload = remove_non_measurements(payload)
+        print(f"Updated payload is {updated_payload}")
+    return result, updated_payload
+
+
+def matches_filter_criteria(payload=None):
+    if payload.get(traffic_prefixes.get("speed_harmonic_prefix") + "_" + klasses[1]) in ['252', '254']:
+        return False
+    filter_ids = os.environ["FILTER_IDS"]
+    if filter_ids == '*':
+        return True
+    else:
+        filter_ids = filter_ids.replace(" ", "")
+        permitted_ids = filter_ids.split(",")
+        if payload.get("unieke_id") in permitted_ids:
+            payload_id = payload.get("unieke_id")
+            print(f"Payload matched cause it has id: {payload_id}")
+            print("Permitted ids are {}".format(permitted_ids))
+            print("Forwarding payload")
+            print(json.dumps(payload))
+            return True
+    return False
+
+
+def remove_non_measurements(payload):
+    for k in klasses:
+        harmonic_key = traffic_prefixes.get("speed_harmonic_prefix") + "_" + k
+        if payload.get(harmonic_key) == '252':
+            remove_elements_for_klasse(payload, k)
+    return payload
+
+
+def remove_elements_for_klasse(payload, k):
+    for v in traffic_prefixes.values():
+        payload.pop(v + '_' + k)
+
+
+import json
+import boto3
+import os
+import xmltodict
+import logging
+from botocore.exceptions import ClientError
+
+
+s3_resource = boto3.resource('s3')
+s3_client = boto3.client('s3')
+
+BUCKET = os.environ["BUCKET_NAME"]
+S3_XML_PREFIX = os.environ["S3_XML_PREFIX"]
+S3_JSON_PREFIX = os.environ["S3_JSON_PREFIX"]
+
+
+def handle(event, context):
+    s3_event = event["Records"][0]
+    object_key = s3_event["s3"]["object"]["key"]
+
+    xml_data = get_from_s3(object_key)
+    json_data = convert_xml_to_dict(xml_data)
+    json_object_key = create_new_key(object_key)
+    store_data(json_data, json_object_key, BUCKET)
+
+    response = {
+        "statusCode": 200,
+        "body": json.dumps('success!')
+    }
+    return response
+
+
+def get_from_s3(key):
+    obj = s3_resource.Object(BUCKET, key)
+    return obj.get()['Body'].read().decode('utf-8')
+
+
+def convert_xml_to_dict(xml_data):
+    my_dict = xmltodict.parse(xml_data)
+    json_data = json.dumps(my_dict)
+    return json_data
+
+
+def create_new_key(previous_key):
+    file_name = previous_key.replace(S3_XML_PREFIX, '')
+    file_name_without_suffix = os.path.splitext(file_name)[0]
+    new_json_object_key = S3_JSON_PREFIX + file_name_without_suffix + '.json'
+    return new_json_object_key
+
+
+def store_data(data, object_key, bucket):
+    try:
+        response = s3_client.put_object(Body=data, Bucket=bucket, Key=object_key, ContentType='application/json')
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
+

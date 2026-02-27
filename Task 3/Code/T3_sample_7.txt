@@ -1,0 +1,703 @@
+import json
+
+from flask import Flask, request, jsonify, Response
+from flask_restful import abort
+
+from configuration import Configuration
+from pollen.attack_reporting import AttackReporting
+
+from logger import Logger
+
+logger = Logger("BloSS")
+
+app = Flask(__name__)
+pollen_blockchain = None
+config = Configuration()
+attack_reporting = AttackReporting(config)
+
+
+@app.route('/api/v1.0/report', methods=['POST'])
+def report():
+    if not request.json:
+        abort(400, message="No attack reports provided")
+    json_data = None
+    attack_reports = []
+    try:
+        json_data = json.loads(request.get_json(force=True))
+        for message in json_data:
+            attack_reports.append(attack_reporting.parse_attack_report_message(message))
+    except Exception as e:
+        logger.info(e)
+
+    if json_data is None:
+        try:
+            json_data = request.json
+            logger.info("[BLOSS/report (second try block) type(json_date):{}".format(json_data))
+            attack_report = attack_reporting.parse_attack_report_from_node(json_data)
+            attack_reports.append(attack_report)
+        except Exception as e:
+            logger.info(e)
+    logger.info(attack_reports)
+    try:
+        pollen_blockchain.report_attackers(attack_reports)
+    except:
+        return "Failed to report attackers to blockchain", 500
+    return "Successfully reported attackers to blockchain", 201
+
+
+@app.route('/api/v1.0/set_blocked', methods=['POST'])
+def set_blocked():
+    if not request.json:
+        abort(400, message="No hash provided.")
+    json_data = json.loads(request.get_json(force=True))
+    try:
+        pollen_blockchain.set_blocked(json_data['hash'])
+    except:
+        return "Failed to mark attack report hash as blocked", 500
+    return "Successfully marked attack report hash as blocked", 201
+    
+import json
+import time
+from threading import Thread
+
+import requests
+
+import api
+from configuration import Configuration
+from logger import Logger
+from pollen.blockchain import PollenBlockchain
+
+
+class BloSS:
+    def __init__(self):
+        self._config = Configuration()
+        self._logger = Logger("BloSS")
+        self._pollen_blockchain = PollenBlockchain(
+            enable_encryption=self._config['DATASTORE']['ENCRYPTION']
+        )
+        retrieval_thread = Thread(target=self._retrieve_attackers_periodically)
+        retrieval_thread.daemon = True
+        retrieval_thread.start()
+
+        self._api_thread = Thread(target=self._start_api)
+        self._api_thread.daemon = True
+        self._api_thread.start()
+
+    def _start_api(self):
+        api.pollen_blockchain = self._pollen_blockchain
+        api.app.run(debug=False, host='0.0.0.0', port=6000)
+
+    def _retrieve_attackers_periodically(self):
+        while True:
+            try:
+                attack_report = self._pollen_blockchain.retrieve_attackers()
+                if attack_report:
+                    requests.post(self._config['ENDPOINT']['NODE']
+                                  + "/api/v1.0/report",
+                                  json=json.dumps(
+                                      json.loads(
+                                          str(attack_report)
+                                      )
+                                  )
+                                  )
+                    self._logger.info("[BLOSS]:attack_report {}".format(attack_report))
+                    self._logger.info("Successfully retrieved {} attackers "
+                                      "targeting {}"
+                                      .format(len(attack_report.addresses),
+                                              attack_report.target))
+                time.sleep(self._config['INTERVAL']['RETRIEVE_SECONDS'])
+            except Exception as e:
+                time.sleep(self._config['INTERVAL']['RETRIEVE_SECONDS'])
+
+
+if __name__ == '__main__':
+    BloSS()
+
+import json
+from datetime import datetime
+
+from logger import Logger
+
+
+class AttackReportingException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return repr(self.message)
+
+
+class AttackReport(object):
+    def __init__(self, target, action, timestamp,
+                 subnetwork, addresses, hash=None):
+        self._target = self.target = target
+        self._action = self.action = action
+        self._timestamp = self.timestamp = timestamp
+        self._subnetwork = self.subnetwork = subnetwork
+        self._addresses = self.addresses = addresses
+        if (hash is None and target is not None
+                and action is not None
+                and timestamp is not None):
+            self._calculate_hash()
+        else:
+            self._hash = hash
+
+    def __str__(self):
+        dict_representation = {"target": self.target,
+                               "action": self.action,
+                               "timestamp": self.timestamp,
+                               "subnetwork": self.subnetwork,
+                               "addresses": list(self.addresses),
+                               "hash": self._hash}
+        return json.dumps(dict_representation)
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        try:
+            return (self.target == other.target and
+                    self.action == other.action and
+                    self.timestamp == other.timestamp and
+                    self.subnetwork == other.subnetwork and
+                    self.addresses == other.addresses)
+        except AttributeError:
+            return NotImplemented
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def _calculate_hash(self):
+        self._hash = hash((self.target,
+                           self.action,
+                           self.subnetwork,
+                           self.timestamp))
+
+    @property
+    def target(self):
+        return self._target
+
+    @target.setter
+    def target(self, value):
+        self._target = value
+
+    @property
+    def action(self):
+        return self._action
+
+    @action.setter
+    def action(self, value):
+        self._action = value
+
+    @property
+    def timestamp(self):
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, value):
+        self._timestamp = value
+
+    @property
+    def subnetwork(self):
+        return self._subnetwork
+
+    @subnetwork.setter
+    def subnetwork(self, value):
+        self._subnetwork = value
+
+    @property
+    def addresses(self):
+        return self._addresses
+
+    @addresses.setter
+    def addresses(self, value):
+        self._addresses = value
+
+
+class AttackReporting:
+    def __init__(self, config):
+        self._config = config
+        self._logger = Logger("Pollen")
+        self._last_report_timestamp = datetime.now()
+        self._last_attack_reports = []
+
+    def process(self, attack_reports):
+        if not attack_reports:
+            raise AttackReportingException('No attack reports provided.')
+
+        current_timestamp = datetime.now()
+        timespan_since_last_report = (
+                current_timestamp - self._last_report_timestamp
+        ).total_seconds()
+
+        max_interval = self._config['INTERVAL']['MAX_REPORT_SECONDS']
+        min_interval = self._config['INTERVAL']['MIN_REPORT_SECONDS']
+
+        if timespan_since_last_report > max_interval:
+            self._last_attack_reports = []
+
+        if timespan_since_last_report >= min_interval:
+            self._last_report_timestamp = current_timestamp
+            filtered_reports = []
+
+            if not self._last_attack_reports:
+                self._last_attack_reports = filtered_reports = attack_reports
+            elif self._last_attack_reports == attack_reports:
+                raise AttackReportingException('Reports already submitted.')
+            else:
+                for report in attack_reports:
+                    exclude = False
+                    for last_report in self._last_attack_reports:
+                        if (report.target == last_report.target and
+                                report.subnetwork == last_report.subnetwork):
+                            old_attackers = (report.addresses
+                                             & last_report.addresses)
+                            if old_attackers == report.addresses:
+                                exclude = True
+                    if not exclude:
+                        filtered_reports.append(report)
+                self._last_attack_reports = attack_reports
+        else:
+            raise AttackReportingException('Reporting frequency too high.')
+        return filtered_reports
+
+    def parse_attack_report_from_node(self, message):
+        target = message['target']
+        action = message['action']
+        timestamp = message['timestamp']
+        subnetwork = str(message['subnetwork'])
+        addresses = set(message['addresses'])
+        hash = message['hash']
+        return AttackReport(target=target,
+                            action=action,
+                            timestamp=timestamp,
+                            subnetwork=subnetwork,
+                            addresses=addresses,
+                            hash=hash)
+
+    def parse_attack_report_message(self, message):
+        message_keys = ["target", "action", "timestamp",
+                        "subnetwork", "addresses", "hash"]
+        if any(key not in message for key in message_keys):
+            raise AttackReportingException('Attack report message malformed.')
+        if type(message) != dict:
+            try:
+                message = json.loads(message)
+            except:
+                raise AttackReportingException('Cannot convert to dictionary')
+        timestamp_format = self._config['DEFAULT']['TIMESTAMP_FORMAT']
+        target = action = timestamp = subnetwork = addresses = hash = None
+        for key, value in message.iteritems():
+            if key == "target":
+                target = value
+            elif key == "action":
+                action = value
+            elif key == "timestamp":
+                timestamp = datetime.strptime(value, timestamp_format)
+                current_timestamp = datetime.now()
+                delta_timestamp_seconds = (current_timestamp - timestamp).total_seconds()
+                if (delta_timestamp_seconds >= self._config['INTERVAL']['MESSAGE_LIFETIME_SECONDS']):
+                    return None
+            elif key == "subnetwork":
+                subnetwork = str(value)
+            elif key == "addresses":
+                addresses = set(value)
+            elif key == "hash":
+                hash = value
+        return AttackReport(target=target,
+                            action=action,
+                            timestamp=timestamp.strftime(timestamp_format),
+                            subnetwork=subnetwork,
+                            addresses=addresses,
+                            hash=hash)
+                            
+from datetime import datetime
+
+from influxdb import InfluxDBClient
+
+
+class PollenDatabase:
+    def __init__(self, config):
+        self._config = config
+        self._client = InfluxDBClient(self._config['DATABASE']['HOST'],
+                                      self._config['DATABASE']['PORT'],
+                                      self._config['DATABASE']['USER'],
+                                      self._config['DATABASE']['PASSWORD'],
+                                      self._config['DATABASE']['NAME'])
+        self._client.drop_database(self._config['DATABASE']['NAME'])
+        self._client.create_database(self._config['DATABASE']['NAME'])
+        # Only keep data for 1 day
+        self._client.create_retention_policy(name="drop",
+                                             duration="1d",
+                                             replication="1",
+                                             database=self._config['DATABASE']
+                                             ['NAME'])
+
+    def _write(self, json_body):
+        try:
+            self._client.write_points(json_body)
+        except:
+            pass
+
+    def update_inbound_traffic(self, datapath_id, workload):
+        json_body = [
+            {
+                "measurement": "inboundtraffic",
+                "tags":
+                    {
+                        "datapath_id": datapath_id
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "mbps": workload
+                    }
+            }
+        ]
+        self._write(json_body)
+
+    def update_outbound_traffic(self, datapath_id, workload):
+        json_body = [
+            {
+                "measurement": "outboundtraffic",
+                "tags":
+                    {
+                        "datapath_id": datapath_id
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "mbps": workload
+                    }
+            }
+        ]
+        self._write(json_body)
+
+    def update_transit_traffic(self, datapath_id, workload):
+        json_body = [
+            {
+                "measurement": "transittraffic",
+                "tags":
+                    {
+                        "datapath_id": datapath_id
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "mbps": workload
+                    }
+            }
+        ]
+        self._write(json_body)
+
+    def update_outbound_intratraffic(self, host, ip_address, workload):
+        json_body = [
+            {
+                "measurement": "outboundintratraffic",
+                "tags":
+                    {
+                        "ip_address": ip_address
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "host": host,
+                        "mbps": workload
+
+                    }
+            }
+        ]
+        self._write(json_body)
+
+    def update_inbound_intratraffic(self, host, ip_address, workload):
+        "Outbound traffic"
+        json_body = [
+            {
+                "measurement": "inboundintratraffic",
+                "tags":
+                    {
+                        "ip_address": ip_address
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "host": host,
+                        "mbps": workload
+                    }
+            }
+        ]
+        self._write(json_body)
+
+    def update_reported_addresses(self, datapath_id, count):
+        json_body = [
+            {
+                "measurement": "reported_addresses",
+                "tags":
+                    {
+                        "datapath_id": datapath_id
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "count": count
+                    }
+            }
+        ]
+        self._write(json_body)
+
+    def update_blocked_addresses(self, datapath_id, count):
+        json_body = [
+            {
+                "measurement": "blocked_addresses",
+                "tags":
+                    {
+                        "datapath_id": datapath_id
+                    },
+                "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields":
+                    {
+                        "count": count
+                    }
+            }
+        ]
+        self._write(json_body)
+        
+import json
+
+import ipfsapi
+from ipfsapi.exceptions import ConnectionError, ProtocolError, TimeoutError
+
+from configuration import Configuration
+from logger import Logger
+
+
+class PollenDatastore:
+
+    def __init__(self, encryption=None):
+        self._config = Configuration()
+        self._logger = Logger("Pollen")
+        self.connection = ipfsapi.connect(self._config['DATASTORE']['HOST'],
+                                          self._config['DATASTORE']['PORT'])
+        self._encryption = encryption
+
+    def store(self, data, to_sign=None, serialized_public_key=None):
+        try:
+            if all([to_sign, serialized_public_key, self._encryption]):
+                data = self._encryption.encrypt(to_sign,
+                                                data,
+                                                serialized_public_key)
+                self._logger.info("Encrypted attack report with hash {}."
+                                  .format(to_sign))
+                data = json.dumps(data)
+            return self.connection.add_bytes(bytes(data))
+        except (ProtocolError, ConnectionError, TimeoutError) as e:
+            return ""
+
+    def retrieve(self, ipfs_hash):
+        try:
+            data = self.connection.cat(ipfs_hash)
+            if self._encryption is not None:
+                try:
+                    encrypted_payload = json.loads(data)
+                    data = json.loads(
+                        self._encryption.decrypt(
+                            encrypted_payload=encrypted_payload
+                        )
+                    )
+                    if type(data) == dict:
+                        data['signature'] = encrypted_payload['signature']
+                except:
+                    pass
+            return data
+        except (ProtocolError, ConnectionError, TimeoutError) as e:
+            return ""
+            
+import base64
+import os
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+
+import paths
+from logger import Logger
+
+
+class PollenEncryptionException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return repr(self.message)
+
+
+class PollenEncryption:
+    def __init__(self):
+        self._logger = Logger("Pollen")
+        self._private_key = self._load_private_key()
+        if self._private_key is not None:
+            self._public_key = self._private_key.public_key()
+
+    def _load_private_key(self):
+        private_key = None
+        path = os.path.join(paths.ROOT_DIR, "private_key.pem")
+        if os.path.isfile(path):
+            try:
+                with open(path) as key_file:
+                    private_key = serialization.load_pem_private_key(
+                        key_file.read(),
+                        password=None,
+                        backend=default_backend()
+                    )
+            except:
+                self._logger.error("Failed to load private key from {}"
+                                   .format(path))
+        else:
+            private_key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=2048,
+                backend=default_backend()
+            )
+            with open(path, "wb") as key_file:
+                key_file.write(private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.TraditionalOpenSSL,
+                    encryption_algorithm=serialization.NoEncryption(),
+                ))
+        return private_key
+
+    def get_serialized_public_key(self):
+        return self._public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+    def encrypt(self, to_sign, data, serialized_public_key):
+        public_key = serialization.load_pem_public_key(
+            serialized_public_key,
+            backend=default_backend()
+        )
+        symmetric_key = Fernet.generate_key()
+        encrypted_symmetric_key = base64.b64encode(
+            public_key.encrypt(
+                bytes(symmetric_key),
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+        )
+        cipher = Fernet(symmetric_key)
+        encrypted_data = cipher.encrypt(bytes(data))
+        signature = base64.b64encode(
+            self._private_key.sign(
+                bytes(to_sign),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+        )
+        return {"encrypted_symmetric_key": encrypted_symmetric_key,
+                "signature": signature,
+                "encrypted_data": encrypted_data}
+
+    def decrypt(self, encrypted_payload):
+        message_keys = ["encrypted_symmetric_key",
+                        "signature",
+                        "encrypted_data"]
+        if any(key not in encrypted_payload for key in message_keys):
+            raise PollenEncryptionException("Unable to decrypt malformed data")
+        symmetric_key = self._private_key.decrypt(
+            base64.b64decode(encrypted_payload['encrypted_symmetric_key']),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        try:
+            cipher = Fernet(symmetric_key)
+            return cipher.decrypt(bytes(encrypted_payload['encrypted_data']))
+        except:
+            pass
+        return encrypted_payload
+
+    @staticmethod
+    def verify(signed_hash, signature, serialized_public_key):
+        public_key = serialization.load_pem_public_key(
+            serialized_public_key,
+            backend=default_backend()
+        )
+        try:
+            public_key.verify(
+                base64.b64decode(signature),
+                bytes(signed_hash),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return True
+        except InvalidSignature as e:
+            return False
+            
+pragma solidity ^0.4.10;
+
+contract AutonomousSystem {
+    function reportAttackers(string attackReport_) {}
+    function getPublicKey() constant returns (string) {}
+}
+
+contract Relay {
+
+    mapping(string => address) subnetworkMappings;
+
+    function getContractAddress(string subnetwork_) public returns (address) {
+        return subnetworkMappings[subnetwork_];
+    }
+
+    function addSubnetwork(string subnetwork_, address contractAddress_) {
+        subnetworkMappings[subnetwork_] = contractAddress_;
+    }
+
+    function reportAttackers(string subnetwork_, string attackReport_) {
+        address contractAddress = subnetworkMappings[subnetwork_];
+        AutonomousSystem autonomousSystem = AutonomousSystem(contractAddress);
+        autonomousSystem.reportAttackers(attackReport_);
+    }
+
+    function getPublicKey(string subnetwork_) public returns (string) {
+        address contractAddress = subnetworkMappings[subnetwork_];
+        AutonomousSystem autonomousSystem = AutonomousSystem(contractAddress);
+        return autonomousSystem.getPublicKey();
+    }
+}
+
+import json
+import requests
+
+from flask import Flask, request, jsonify
+from flask_restful import abort
+
+from configuration import Configuration
+from logger import Logger
+from pollen.attack_reporting import AttackReporting
+
+logger = Logger("Stalk")
+
+app = Flask(__name__)
+config = Configuration()
+attack_reporting = AttackReporting(config)
+stalk_controller = None
+
+
+
+
